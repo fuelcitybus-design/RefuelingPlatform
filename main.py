@@ -33,7 +33,7 @@ ocr_model = PaddleOCR(lang="ch",
 USERNAME = "$oil-tank-refueling"
 PASSWORD = "xrzqs40NcHhiqk1c2ukoTc4wTSoHHgFy77MjzRzsXlgkusz8uqhnd6KZ3tsR"
 KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
-
+auth = HTTPBasicAuth(USERNAME, PASSWORD)
 #========================================================================================================
 
 locations = ["{請選擇}", "CFD創富", "CWD柴灣", "SHD小蠔灣", "SWD上環", "TCD東涌", "TKD將軍澳", "TMD屯門", "WCD黃竹坑", "WKD西九"]
@@ -75,7 +75,7 @@ tab_list_S = {
 
 required_tabs = ["油車前", "油車後"]
 forced_check = False #Forced required image batch uploading button)
-ROOT_FOLDER = "/content/drive/MyDrive/data"
+ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 #=========================================================================================================================
 
@@ -87,13 +87,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         username = request.username if request and hasattr(request, "username") else "anonymous"
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         num_images = len(uploaded_tabs)
-        logger.info(
-            f"UPLOAD START | IP: {client_ip} | User: {username} | "
-            f"Location: {location} | Car: {car_id} | Tank: {tank_id} | "
-            f"Uploaded tabs: {uploaded_tabs} ({num_images} images)"
-        )
-
-
+        
         #Warning for not selecting depot, tank car and tank info
         if (
             not location or location == "{請選擇}"
@@ -124,7 +118,8 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
 
         # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
         detected_tabs_exist = []
-        if os.path.exists(base_dir):
+        r = requests.get(base_dir + "/", auth=auth)
+        if r.status_code == 200:
             # Check if any file of any image type to be uploaded exists in the folder
             existing_files = os.listdir(base_dir)
             for f in existing_files:
@@ -139,9 +134,10 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 if "油車後" in name.lower() and "油車後" not in detected_tabs_exist:
                     detected_tabs_exist.append("油車後")
 
-        else:
-            #Create image folder
-            os.makedirs(base_dir, exist_ok=True)
+        elif r.status_code == 404:
+            # Create folder
+            headers = {"Content-Type": "application/json"}
+            r = requests.put(base_dir + "/", headers=headers, auth=auth)
 
         #Saving the images
         return_msg = []
@@ -154,17 +150,18 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 info_log = f"Skipped uploaded image {tab_names[i]}"
                 return_msg.append(info_msg)
                 continue
-
+        
             original_width, original_height = img.size
             new_width = int(original_width * (400 / original_height))
             img = img.resize((new_width, 400))
 
             tab_name = tab_names[i]
             filename = f"{tab_name}.jpg"
-            filepath = os.path.join(base_dir, filename)
-
-            img.save(filepath)
-            saved_paths.append(filepath)
+            url = f"{base_dir}/{filename}"
+            headers = {"If-Match": "*"}
+                
+            requests.put(url, headers=headers, data=img_file, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=30)
+            saved_paths.append(url)
 
         #Completion message
         if saved_paths:
