@@ -8,7 +8,6 @@ import base64
 import requests
 from requests.auth import HTTPBasicAuth
 import gradio as gr
-from PIL import Image
 import io
 from pathlib import Path
 import glob
