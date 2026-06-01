@@ -115,8 +115,9 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
         detected_tabs_exist = []
         existing_files = requests.get(base_dir + "/", auth=HTTPBasicAuth(USERNAME, PASSWORD))
-        files_json = exisiting_files.json()
-        if existing_files:
+        
+        if existing_files.status_code == 200:
+            files_json = existing_files.json()
             # Check if any file of any image type to be uploaded exists in the folder
             for item in files_json:                        
                 filename = item.get("name", "")
@@ -125,15 +126,15 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 detected_tabs_exist.append(filename)
 
                 # Special handling: detect 'before' or 'after' anywhere in the filename
-                if "油車前" in name.lower() and "油車前" not in detected_tabs_exist:
+                if "油車前" in filename.lower() and "油車前" not in detected_tabs_exist:
                     detected_tabs_exist.append("油車前")
-                if "油車後" in name.lower() and "油車後" not in detected_tabs_exist:
+                if "油車後" in filename.lower() and "油車後" not in detected_tabs_exist:
                     detected_tabs_exist.append("油車後")
 
-        elif r.status_code == 404:
+        elif existing_files.status_code == 404:
             # Create folder
             headers = {"Content-Type": "application/json"}
-            r = requests.put(base_dir + "/", headers=headers, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+            requests.put(base_dir + "/", headers=headers, auth=HTTPBasicAuth(USERNAME, PASSWORD))
 
         #Saving the images
         return_msg = []
@@ -258,7 +259,7 @@ def clear_images(selection):
 
 #============================================================================================================================================================
 
-with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() instead.
+with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
