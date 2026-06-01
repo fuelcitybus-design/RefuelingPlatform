@@ -79,7 +79,129 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 #=========================================================================================================================
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
-        return none
+    try:
+        # logging
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        client_ip = request.client.host if request else "unknown"
+        username = request.username if request and hasattr(request, "username") else "anonymous"
+        uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
+        num_images = len(uploaded_tabs)
+        
+        #Warning for not selecting depot, tank car and tank info
+        if (
+            not location or location == "{請選擇}"
+            or not car_id or car_id == "{請選擇}"
+            or not tank_id or tank_id == "{請選擇}"
+           ):
+            info_msg = "警告：確保已輸入地點，車號，缸號"
+            info_log = "Error: Please select Location, Car ID, and Tank ID."
+            return info_msg
+
+        #File path and name format for the images
+        prefix = f"{location}/{car_id}_{tank_id}"
+        #Auto-select today's date
+        today = datetime.now().strftime("%Y-%m-%d")
+
+
+        # --- Warning checkpoint 1: Check required tabs if any necessary images to be uploaded are missing (Forced batch uploading)---
+        if required_tabs and forced_check:
+            tab_dict = dict(zip(tab_names, images))
+            missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
+            if missing:
+                info_msg = f"警告：確保已輸入以下照片 {', '.join(missing)}"
+                info_log = f"Error: Missing images for required tabs: {', '.join(missing)}"
+                return info_msg
+
+        #Setup connection to base directory
+        base_dir = os.path.join(ROOT_FOLDER, today, prefix)
+
+        # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
+        detected_tabs_exist = []
+        r = requests.get(base_dir + "/", auth=auth)
+        if r.status_code == 200:
+            # Check if any file of any image type to be uploaded exists in the folder
+            existing_files = os.listdir(base_dir)
+            for f in existing_files:
+                name, ext = os.path.splitext(f)
+
+                # Always add the raw filename (without extension)
+                detected_tabs_exist.append(name)
+
+                # Special handling: detect 'before' or 'after' anywhere in the filename
+                if "油車前" in name.lower() and "油車前" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車前")
+                if "油車後" in name.lower() and "油車後" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車後")
+
+        elif r.status_code == 404:
+            # Create folder
+            headers = {"Content-Type": "application/json"}
+            r = requests.put(base_dir + "/", headers=headers, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+
+        #Saving the images
+        return_msg = []
+        saved_paths = []
+        for i, img in enumerate(images):
+            if img is None:
+                continue
+            if tab_names[i] in detected_tabs_exist:
+                info_msg = f"跳過已上傳照片 {tab_names[i]}"
+                info_log = f"Skipped uploaded image {tab_names[i]}"
+                return_msg.append(info_msg)
+                continue
+        
+            original_width, original_height = img.size
+            new_width = int(original_width * (400 / original_height))
+            img = img.resize((new_width, 400))
+
+            tab_name = tab_names[i]
+            filename = f"{tab_name}.jpg"
+            url = f"{base_dir}/{filename}"
+            headers = {"If-Match": "*"}
+                
+            requests.put(url, headers=headers, data=img_file, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=30)
+            saved_paths.append(url)
+
+        #Completion message
+        if saved_paths:
+            detected_tabs_exist = []
+            if os.path.exists(base_dir):
+                # Check if any file of any image type to be uploaded exists in the folder
+                existing_files = os.listdir(base_dir)
+                for f in existing_files:
+                    name, ext = os.path.splitext(f)
+
+                    # Always add the raw filename (without extension)
+                    detected_tabs_exist.append(name)
+
+                    # Special handling: detect 'before' or 'after' anywhere in the filename
+                    if "油車前" in name.lower() and "油車前" not in detected_tabs_exist:
+                        detected_tabs_exist.append("油車前")
+                    if "油車後" in name.lower() and "油車後" not in detected_tabs_exist:
+                        detected_tabs_exist.append("油車後")
+
+            missing = [tab for tab in required_tabs if tab not in detected_tabs_exist]
+
+            #Reminder message for if any required images are missing
+            if missing:
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片\n請上傳{', '.join(missing)}."
+              info_log = f"Uploaded {len(saved_paths)} new images \nPlease upload{', '.join(missing)}."
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
+            else:
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片"
+              info_log = f"Uploaded {len(saved_paths)} new images"
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
+        else:
+            info_msg = "警告：沒有新照片"
+            info_log = "Warning: No new image"
+            return_msg.append(info_msg)
+            return '\n'.join(return_msg)
+
+    except Exception as e:
+        return f"未知錯誤: {str(e)}"
+
     
 def prefer_back_camera():
     custom_html = """
