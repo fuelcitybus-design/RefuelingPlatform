@@ -72,40 +72,26 @@ def nearest(gps):
     pass
 
 def update_tank_dropdown(tank_id):
-    tank_dropdown = tank_list.get(tank_id, ["{請選擇}"])
-    return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], allow_custom_value=False, filterable=False, interactive=True)
+    pass
 
 def toggle_tabs(location, car, tank):
 
     # For each tab, set visible=True if it belongs to the selected depot
-    updates = []
-    active_tabs = tab_list_S.get(location, [])
-    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        for tab in tab_names:
-            if tab in active_tabs:
-                updates.append(gr.update(visible=True))
-            else:
-                updates.append(gr.update(visible=False))
-    # Also return the active dictionary slice for display
-    return updates + [str({location: active_tabs})]
+    pass
 
 def toggle_save(location, car, tank):
     # Show save button only if all dropdowns are not placeholders
-    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        return gr.update(visible=True)
-    else:
-        return gr.update(visible=False)
+    pass
 
 def clear_images(selection):
     # Reset all images when depot changes
-    return [gr.update(value=None) for _ in tab_names]
+    pass
 
 
 #============================================================================================================================================================
 
 with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
     gr.Markdown("落油記錄工具")
-
     with gr.Tabs():
         # Module 2
         with gr.Tab("拍照"):
@@ -152,10 +138,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             car_dropdown.change(clear_images, location_dropdown, image_inputs)
             tank_dropdown.change(clear_images, location_dropdown, image_inputs)
 
-    demo.css = """
-    #camera_input button {
-        transform: scale(2);   /* Scaling for making all gr.image buttons larger */
-    }
-    """
+
 
 app = gr.mount_gradio_app(app, demo, path="/")
