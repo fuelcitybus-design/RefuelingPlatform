@@ -8,23 +8,11 @@ import base64
 import requests
 from requests.auth import HTTPBasicAuth
 import gradio as gr
-import io
-from pathlib import Path
-import glob
-import numpy as np
-import re
-
-from openpyxl import Workbook, load_workbook
-from openpyxl.utils import get_column_letter
-from openpyxl.drawing.image import Image
 from datetime import datetime
 
 os.environ["FLAGS_use_mkldnn"] = "0"
 
-ocr_model = PaddleOCR(lang="ch",
-        use_doc_orientation_classify=False,
-        use_doc_unwarping=False,
-        use_textline_orientation=False, enable_mkldnn=False)
+
 # --- CONFIGURATION ---
 # Replace these with your actual Azure App Service credentials
 USERNAME = "$oil-tank-refueling"
