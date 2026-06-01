@@ -102,7 +102,6 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
            ):
             info_msg = "警告：確保已輸入地點，車號，缸號"
             info_log = "Error: Please select Location, Car ID, and Tank ID."
-            logger.info(f"UPLOAD FAILED | {info_log}")
             return info_msg
 
         #File path and name format for the images
@@ -118,7 +117,6 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             if missing:
                 info_msg = f"警告：確保已輸入以下照片 {', '.join(missing)}"
                 info_log = f"Error: Missing images for required tabs: {', '.join(missing)}"
-                logger.info(f"UPLOAD FAILED | {info_log}")
                 return info_msg
 
         #Setup connection to base directory
@@ -155,7 +153,6 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 info_msg = f"跳過已上傳照片 {tab_names[i]}"
                 info_log = f"Skipped uploaded image {tab_names[i]}"
                 return_msg.append(info_msg)
-                logger.info(f"UPLOAD WARNING | {info_log}")
                 continue
 
             original_width, original_height = img.size
@@ -194,23 +191,19 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
               info_msg = f"已上傳 {len(saved_paths)} 張新照片\n請上傳{', '.join(missing)}."
               info_log = f"Uploaded {len(saved_paths)} new images \nPlease upload{', '.join(missing)}."
               return_msg.append(info_msg)
-              logger.info(f"UPLOAD SUCCESS | {info_log}")
               return '\n'.join(return_msg)
             else:
               info_msg = f"已上傳 {len(saved_paths)} 張新照片"
               info_log = f"Uploaded {len(saved_paths)} new images"
               return_msg.append(info_msg)
-              logger.info(f"UPLOAD SUCCESS | {info_log}")
               return '\n'.join(return_msg)
         else:
             info_msg = "警告：沒有新照片"
             info_log = "Warning: No new image"
             return_msg.append(info_msg)
-            logger.info(f"UPLOAD FAILED | {info_log}")
             return '\n'.join(return_msg)
 
     except Exception as e:
-        logger.info(f"SUBMISSION EXCEPTION | Error: {str(e)}", exc_info=True)
         return f"未知錯誤: {str(e)}"
 
 def prefer_back_camera():
