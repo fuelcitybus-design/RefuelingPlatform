@@ -13,8 +13,6 @@ import io
 from pathlib import Path
 import glob
 import numpy as np
-import cv2
-from paddleocr import PaddleOCR
 import re
 
 from openpyxl import Workbook, load_workbook
