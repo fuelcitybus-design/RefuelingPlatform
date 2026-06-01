@@ -78,6 +78,63 @@ forced_check = False #Forced required image batch uploading button)
 ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 #=========================================================================================================================
+def save_images(location, car_id, tank_id, request: gr.Request, *images):
+        return none
+    
+def prefer_back_camera():
+    custom_html = """
+    <script>
+    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+
+    navigator.mediaDevices.getUserMedia = (constraints) => {
+      if (!constraints.video.facingMode) {
+        constraints.video.facingMode = {ideal: "environment"};
+      }
+
+      constraints.video.width = {exact: 400};
+      constraints.video.height = {exact: 400};
+
+      return originalGetUserMedia(constraints);
+    };
+    </script>
+    """
+    return custom_html
+
+def nearest(gps):
+    if "Allow" in gps:
+        return "{請選擇}"
+    lat, lon = map(float, gps.strip("[]").split(","))
+    d = lambda c: (lat-c[1])**2 + (lon-c[2])**2
+    return min(depot_gps, key=d)[0]
+
+def update_tank_dropdown(tank_id):
+    tank_dropdown = tank_list.get(tank_id, ["{請選擇}"])
+    return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], allow_custom_value=False, filterable=False, interactive=True)
+
+def toggle_tabs(location, car, tank):
+
+    # For each tab, set visible=True if it belongs to the selected depot
+    updates = []
+    active_tabs = tab_list_S.get(location, [])
+    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+        for tab in tab_names:
+            if tab in active_tabs:
+                updates.append(gr.update(visible=True))
+            else:
+                updates.append(gr.update(visible=False))
+    # Also return the active dictionary slice for display
+    return updates + [str({location: active_tabs})]
+
+def toggle_save(location, car, tank):
+    # Show save button only if all dropdowns are not placeholders
+    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+        return gr.update(visible=True)
+    else:
+        return gr.update(visible=False)
+
+def clear_images(selection):
+    # Reset all images when depot changes
+    return [gr.update(value=None) for _ in tab_names]
 
 
 #============================================================================================================================================================
