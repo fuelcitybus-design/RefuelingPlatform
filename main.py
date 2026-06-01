@@ -64,7 +64,7 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 #=========================================================================================================================
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
-    return none
+    return 0
 
     
 def prefer_back_camera():
