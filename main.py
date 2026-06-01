@@ -113,19 +113,19 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 return info_msg
 
         #Setup connection to base directory
-        base_dir = os.path.join(ROOT_FOLDER, today, prefix)
+        base_dir = f"{ROOT_FOLDER}/{today}_{prefix}"
 
         # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
         detected_tabs_exist = []
-        r = requests.get(base_dir + "/", auth=auth)
-        if r.status_code == 200:
+        existing_files = requests.get(base_dir + "/", auth=HTTPBasicAuth(USERNAME, PASSWORD))
+        files_json = exisiting_files.json()
+        if existing_files:
             # Check if any file of any image type to be uploaded exists in the folder
-            existing_files = os.listdir(base_dir)
-            for f in existing_files:
-                name, ext = os.path.splitext(f)
+            for item in files_json:                        
+                filename = item.get("name", "")
 
                 # Always add the raw filename (without extension)
-                detected_tabs_exist.append(name)
+                detected_tabs_exist.append(filename)
 
                 # Special handling: detect 'before' or 'after' anywhere in the filename
                 if "油車前" in name.lower() and "油車前" not in detected_tabs_exist:
@@ -159,7 +159,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             url = f"{base_dir}/{filename}"
             headers = {"If-Match": "*"}
                 
-            requests.put(url, headers=headers, data=img_file, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=30)
+            requests.put(url, headers=headers, data=img, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=30)
             saved_paths.append(url)
 
         #Completion message
