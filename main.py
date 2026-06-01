@@ -31,7 +31,7 @@ ocr_model = PaddleOCR(lang="ch",
 # --- CONFIGURATION ---
 # Replace these with your actual Azure App Service credentials
 USERNAME = "$oil-tank-refueling"
-PASSWORD = "xrzqs40NcHhiqk1c2ukoTc4wTSoHHgFy77MjzRzsXlgkusz8uqhnd6KZ3tsR"
+PASSWORD = "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK"
 KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
 
 #========================================================================================================
