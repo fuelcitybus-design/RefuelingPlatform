@@ -57,9 +57,9 @@ jobs:
         with:
           name: python-app
       
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure WebApp
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
-          app-name: 'oil-tank-refueling'
-          publish-profile: ${{secrets.AZURE_WEBAPP_PUBLISH_PROFILE}}
+          app-name: oil-tank-refueling
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+          package: .
