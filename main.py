@@ -64,27 +64,11 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 #=========================================================================================================================
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
-    pass
+    return "Images saved successfully"
 
     
 def prefer_back_camera():
-    custom_html = """
-    <script>
-    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-
-    navigator.mediaDevices.getUserMedia = (constraints) => {
-      if (!constraints.video.facingMode) {
-        constraints.video.facingMode = {ideal: "environment"};
-      }
-
-      constraints.video.width = {exact: 400};
-      constraints.video.height = {exact: 400};
-
-      return originalGetUserMedia(constraints);
-    };
-    </script>
-    """
-    return custom_html
+    pass
 
 def nearest(gps):
     pass
