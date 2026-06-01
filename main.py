@@ -10,8 +10,6 @@ from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
 
-os.environ["FLAGS_use_mkldnn"] = "0"
-
 
 # --- CONFIGURATION ---
 # Replace these with your actual Azure App Service credentials
