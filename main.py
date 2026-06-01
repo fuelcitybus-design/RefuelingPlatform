@@ -33,7 +33,7 @@ ocr_model = PaddleOCR(lang="ch",
 USERNAME = "$oil-tank-refueling"
 PASSWORD = "xrzqs40NcHhiqk1c2ukoTc4wTSoHHgFy77MjzRzsXlgkusz8uqhnd6KZ3tsR"
 KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
-auth = HTTPBasicAuth(USERNAME, PASSWORD)
+
 #========================================================================================================
 
 locations = ["{請選擇}", "CFD創富", "CWD柴灣", "SHD小蠔灣", "SWD上環", "TCD東涌", "TKD將軍澳", "TMD屯門", "WCD黃竹坑", "WKD西九"]
@@ -137,7 +137,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         elif r.status_code == 404:
             # Create folder
             headers = {"Content-Type": "application/json"}
-            r = requests.put(base_dir + "/", headers=headers, auth=auth)
+            r = requests.put(base_dir + "/", headers=headers, auth=HTTPBasicAuth(USERNAME, PASSWORD))
 
         #Saving the images
         return_msg = []
