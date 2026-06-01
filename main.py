@@ -64,7 +64,7 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 #=========================================================================================================================
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
-    return 0
+    pass
 
     
 def prefer_back_camera():
@@ -87,11 +87,7 @@ def prefer_back_camera():
     return custom_html
 
 def nearest(gps):
-    if "Allow" in gps:
-        return "{請選擇}"
-    lat, lon = map(float, gps.strip("[]").split(","))
-    d = lambda c: (lat-c[1])**2 + (lon-c[2])**2
-    return min(depot_gps, key=d)[0]
+    pass
 
 def update_tank_dropdown(tank_id):
     tank_dropdown = tank_list.get(tank_id, ["{請選擇}"])
@@ -136,11 +132,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
                 tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False)
 
-                raw_gps = gr.Textbox(visible=False)
-                demo.load(None, None, raw_gps, js="""() => new Promise(r => navigator.geolocation.getCurrentPosition(
-                    p => r(`[${p.coords.latitude}, ${p.coords.longitude}]`),
-                    () => r("[Tap Allow Location]"), {enableHighAccuracy:true}))""")
-                raw_gps.change(nearest, raw_gps, location_dropdown)
+                #GPS stuff add later
 
                 location_dropdown.change(fn=update_tank_dropdown, inputs=location_dropdown, outputs=tank_dropdown)
 
