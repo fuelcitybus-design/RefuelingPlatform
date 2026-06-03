@@ -61,32 +61,104 @@ forced_check = False #Forced required image batch uploading button)
 ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 #=========================================================================================================================
-def save_images(location, car_id, tank_id, request: gr.Request, *images):
-    return "Images saved successfully"
 
+# Function to get car ID list
+def get_car_ids(date, location):
+    # Convert timestamp to YYYY-MM-DD
+    date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
+    # Find all subfolders that look like carID folders
+    candidates = requests.get(BASE_URL, auth=auth)
+    if candidates.status_code == 200:
+        items = candidates.json()
+        folders = [item['name'] for item in items if item['mime'] == 'inode/directory']
+        car_ids = [c.split("_")[0] for c in folders]
+        return sorted(set(car_ids))
+    else:
+        return f"Error: {r.status_code} {r.text}"
+  
+def update_car_dropdown(date, location):
+    car_ids = get_car_ids(date, location)
+    if car_ids:
+        return gr.update(choices=car_ids, value=car_ids[0])
+    else:
+        return gr.update(choices=[], value=None)
+
+# Function to get tank namessgdgdgdgdgdg
+def get_tank_names(date, location, id):
+    date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
+    candidates = requests.get(BASE_URL, auth=auth)
+    tanks = []
+    if candidates.status_code == 200:
+        items = candidates.json()
+        for item in items:
+                if item.get("mime") == "inode/directory":
+                    folder_name = item.get("name", "")
+                    parts = folder_name.split("_", 1)  # split into two parts only
+                    if len(parts) == 2 and id in parts[0]:
+                        tanks.append(parts[1])  # keep the second part
+    else:
+        return f"Error: {r.status_code} {r.text}"
+    candidates = glob.glob(f"{base_path}/{id}_*", recursive=False)
     
-def prefer_back_camera():
-    pass
 
-def nearest(gps):
-    pass
+# Function to fetch images for a given tank
+def find_jpg_images(date, location, id, tank):
+    date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+    url = f"{ROOT_FOLDER}/{date}/{location}/{id}_{tank}"
+    gallery_items = []
 
-def update_tank_dropdown(tank_id):
-    pass
+    try:
+        response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=30)
+        if response.status_code != 200:
+            return [], f"❌ Failed to fetch directory contents: HTTP {response.status_code}"
 
-def toggle_tabs(location, car, tank):
+        files_json = response.json()
 
-    # For each tab, set visible=True if it belongs to the selected depot
-    pass
+        # Ensure local cache folder exists
+        os.makedirs("kudu_cache", exist_ok=True)
 
-def toggle_save(location, car, tank):
-    # Show save button only if all dropdowns are not placeholders
-    pass
+        for item in files_json:
+            # Skip folders, only process files
+            if item.get("mime") == "inode/directory":
+                continue
 
-def clear_images(selection):
-    # Reset all images when depot changes
-    pass
+            filename = item.get("name", "")
+            file_url = f"url/{filename}"
 
+            file_response = requests.get(file_url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=15)
+            if file_response.status_code == 200:
+                local_cache_path = os.path.join("kudu_cache", filename)
+                with open(local_cache_path, "wb") as f:
+                    f.write(file_response.content)
+
+                # Add to gallery with filename as caption
+                gallery_items.append((local_cache_path, filename))
+
+        if not gallery_items:
+            return [], "ℹ️ Connection successful, but no files were found in /data/."
+
+        return gallery_items, f"🖼️ Loaded {len(gallery_items)} files successfully from Kudu storage."
+
+    except Exception as e:
+        return [], f"💥 Error accessing file structures: {str(e)}"
+
+def assign_tanks(date, location, id):
+    tanks = get_tank_names(date, location, id)
+    galleries_data = []
+    labels = []
+    # Show up to 4 tanks
+    for i in range(4):
+        if i < len(tanks):
+            tank_name = tanks[i]
+            galleries_data.append(find_jpg_images(date, location, id, tank_name))
+            labels.append(f"Tank: {tank_name}")
+        else:
+            galleries_data.append([])
+            labels.append("No Tank")
+    msg = f"Found {len(tanks)} tank records: {', '.join(tanks)}"
+    return galleries_data[0], labels[0], galleries_data[1], labels[1], galleries_data[2], labels[2], galleries_data[3], labels[3], msg
 
 #============================================================================================================================================================
 
@@ -94,49 +166,54 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
     gr.Markdown("落油記錄工具")
     with gr.Tabs():
         # Module 2
-        with gr.Tab("拍照"):
+        with gr.Tab("記錄"):
             with gr.Row():
-                location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
-                car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
-                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False)
+                date_picker = gr.DateTime(
+                    label="日期", include_time=False,
+                    value=datetime.now().date().isoformat()
+                )
+                location_dropdown2 = gr.Dropdown(
+                    choices=locations, label="地點(gps)", value=locations[0]
+                )
+                car_dropdown2 = gr.Dropdown(
+                    choices=[], label="車號", value=None
+                )
 
-                #GPS stuff add later
+            # Overall status message
+            tank_message = gr.Textbox(label="Tank Summary", interactive=False,lines=2)
 
-                location_dropdown.change(fn=update_tank_dropdown, inputs=location_dropdown, outputs=tank_dropdown)
+            # Tank labels + galleries
+            tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
+            gallery1 = gr.Gallery(columns=4)
 
-            with gr.Tabs() as img_tabs:
-                image_inputs = []
-                tab_list = []
-                for tab_name in tab_names:
-                    with gr.Tab(tab_name,visible=False) as tab:
-                        img_input = gr.Image(type="pil", label=f"Upload {tab_name} photo", height=400, sources=['webcam'], mirror_webcam=False, elem_id="camera_input")
-                        image_inputs.append(img_input)
-                        tab_list.append(tab)
+            tank_label2 = gr.Textbox(label="Tank Info 2", interactive=False)
+            gallery2 = gr.Gallery(columns=4)
 
-            save_btn = gr.Button("儲存所有照片", variant="primary", size="lg",visible=False)
+            tank_label3 = gr.Textbox(label="Tank Info 3", interactive=False)
+            gallery3 = gr.Gallery(columns=4)
 
-            output_text = gr.Textbox(label="狀態", lines=6)
+            tank_label4 = gr.Textbox(label="Tank Info 4", interactive=False)
+            gallery4 = gr.Gallery(columns=4)
 
-            save_btn.click(
-                fn=save_images,
-                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=output_text
-            )
+            # Update galleries + labels + summary when inputs change
+            def update_all(date, location, car):
+                g1, l1, g2, l2, g3, l3, g4, l4, msg = assign_tanks(date, location, car)
+                return g1, l1, g2, l2, g3, l3, g4, l4, msg
 
-            #Toggle tabs avaliable based on depot selection
-            location_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-            car_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-            tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
+            # Refresh car dropdown whenever date or location changes
+            date_picker.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
+            location_dropdown2.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
 
-            #Toggle save button
-            location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-
-            #Clear uploaded images when changing information values
-            location_dropdown.change(clear_images, location_dropdown, image_inputs)
-            car_dropdown.change(clear_images, location_dropdown, image_inputs)
-            tank_dropdown.change(clear_images, location_dropdown, image_inputs)
+            # Update tanks whenever any input changes
+            date_picker.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
+                              [gallery1, tank_label1, gallery2, tank_label2,
+                                gallery3, tank_label3, gallery4, tank_label4, tank_message])
+            location_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
+                                      [gallery1, tank_label1, gallery2, tank_label2,
+                                      gallery3, tank_label3, gallery4, tank_label4, tank_message])
+            car_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
+                                [gallery1, tank_label1, gallery2, tank_label2,
+                                  gallery3, tank_label3, gallery4, tank_label4, tank_message])
 
 
 
