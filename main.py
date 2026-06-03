@@ -115,7 +115,7 @@ def get_tank_names(date, location, id):
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
     BASE_URL = f"{ROOT_FOLDER}/{date}/{location}/"
     candidates = requests.get(BASE_URL, auth=auth)
-    tanks = []
+    tank = []
     if candidates.status_code == 200:
         items = candidates.json()
         for item in items:
@@ -123,8 +123,8 @@ def get_tank_names(date, location, id):
                     folder_name = item.get("name", "")
                     parts = folder_name.split("_")  # split into two parts only
                     if id == parts[0]:
-                        tanks.append(parts[1])  # keep the second part
-        return tanks
+                        tank.append(parts[1])  # keep the second part
+        return tank
     else:
         return f"Error: {candidates.status_code} {candidates.text}"
     
