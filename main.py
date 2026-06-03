@@ -15,6 +15,7 @@ from datetime import datetime
 # Replace these with your actual Azure App Service credentials
 USERNAME = "$oil-tank-refueling"
 PASSWORD = "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK"
+auth=HTTPBasicAuth(USERNAME, PASSWORD)
 KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
 
 #========================================================================================================
@@ -62,6 +63,27 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 #=========================================================================================================================
 
+def prefer_back_camera():
+    custom_html = """
+    <script>
+    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+
+    navigator.mediaDevices.getUserMedia = (constraints) => {
+      if (!constraints.video.facingMode) {
+        constraints.video.facingMode = {ideal: "environment"};
+      }
+
+      constraints.video.width = {exact: 400};
+      constraints.video.height = {exact: 400};
+
+      return originalGetUserMedia(constraints);
+    };
+    </script>
+    """
+    return custom_html
+
+#=========================================================================================================================
+
 # Function to get car ID list
 def get_car_ids(date, location):
     # Convert timestamp to YYYY-MM-DD
@@ -75,7 +97,7 @@ def get_car_ids(date, location):
         car_ids = [c.split("_")[0] for c in folders]
         return sorted(set(car_ids))
     else:
-        return f"Error: {r.status_code} {r.text}"
+        return f"Error: {candidates.status_code} {candidates.text}"
   
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
@@ -100,7 +122,7 @@ def get_tank_names(date, location, id):
                         tanks.append(parts[1])  # keep the second part
         return tanks
     else:
-        return f"Error: {r.status_code} {r.text}"
+        return f"Error: {candidates.status_code} {candidates.text}"
     
 
 # Function to fetch images for a given tank
