@@ -150,7 +150,7 @@ def find_jpg_images(date, location, id, tank):
             filename = item.get("name", "")
             file_url = url + filename   # <-- fix: build full file URL
 
-            file_response = requests.get(file_url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=15)
+            file_response = requests.get(file_url, auth=auth, timeout=15)
             if file_response.status_code == 200:
                 local_cache_path = os.path.join("kudu_cache", filename)
                 with open(local_cache_path, "wb") as f:
@@ -168,29 +168,36 @@ def find_jpg_images(date, location, id, tank):
 
 
 def assign_tanks(date, location, id):
-    # Add validation for None/empty car ID
     if not id:
         return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "Please select a car first"
     
     tanks = get_tank_names(date, location, id)
     
-    # Handle error responses from get_tank_names
-    if isinstance(tanks, str):  # It's an error message
+    if isinstance(tanks, str):  # error message from get_tank_names
         return [], "Error", [], "Error", [], "Error", [], "Error", tanks
     
     galleries_data = []
     labels = []
-    # Show up to 4 tanks
+    
     for i in range(4):
         if i < len(tanks):
             tank_name = tanks[i]
-            galleries_data.append(find_jpg_images(date, location, id, tank_name))
+            gallery_items, msg = find_jpg_images(date, location, id, tank_name)
+            galleries_data.append((gallery_items, msg))   # always a tuple
             labels.append(f"Tank: {tank_name}")
         else:
-            galleries_data.append([])
+            galleries_data.append(([], "No files"))       # <-- fix: tuple not list
             labels.append("No Tank")
+    
     msg = f"Found {len(tanks)} tank records: {', '.join(tanks)}"
-    return galleries_data[0], labels[0], galleries_data[1], labels[1], galleries_data[2], labels[2], galleries_data[3], labels[3], msg
+    return (
+        galleries_data[0][0], labels[0],
+        galleries_data[1][0], labels[1],
+        galleries_data[2][0], labels[2],
+        galleries_data[3][0], labels[3],
+        msg
+    )
+
 
 #============================================================================================================================================================
 
