@@ -88,12 +88,12 @@ def prefer_back_camera():
 def get_car_ids(date, location):
     # Convert timestamp to YYYY-MM-DD
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
+    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}/"
     # Find all subfolders that look like carID folders
     candidates = requests.get(BASE_URL, auth=auth)
     car_id = []
     
-    return f"Error: {candidates.status_code} {candidates.text}"
+    return f"{candidates.status_code} {candidates.text}"
   
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
