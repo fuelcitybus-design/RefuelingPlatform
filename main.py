@@ -93,8 +93,9 @@ def get_car_ids(date, location):
     candidates = requests.get(BASE_URL, auth=auth)
     if candidates.status_code == 200:
         items = candidates.json()
-        folders = [item['name'] for item in items if item['mime'] == 'inode/directory']
-        return sorted(set(folders))
+        folders = [item['name'] for item in items if item['mime'] == 'inode/directory' and item.get('name')]
+        car_ids = [c.split("_")[0] for c in folders if c and "_" in c]  # Only split if has underscore
+        return sorted(set(car_ids)) if car_ids else []
     else:
         return f"Error: {candidates.status_code} {candidates.text}"
   
