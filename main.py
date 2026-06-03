@@ -87,38 +87,22 @@ def prefer_back_camera():
 
 # Function to get car ID list
 def get_car_ids(date, location):
-    # Skip if location is not selected
-    if not location or location == "{請選擇}":
-        return []
-    
     # Convert timestamp to YYYY-MM-DD
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    
-    # URL encode the location for safe transmission
-    encoded_location = urllib.parse.quote(location)
-    BASE_URL = f"{ROOT_FOLDER}/{date}/{encoded_location}"
-    
-    try:
-        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
-        car_id = []
-        
-        if candidates.status_code == 200:
-            items = candidates.json()
-            for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    # Split on underscore and take the first part (car ID)
-                    parts = folder_name.split("_")
-                    if len(parts) > 0 and parts[0]:  # Ensure first part is not empty
-                        car_id.append(parts[0])
-            return sorted(set(car_id))
-        else:
-            # Return empty list on error instead of error string
-            print(f"API Error: {candidates.status_code} - {BASE_URL}")
-            return []
-    except Exception as e:
-        print(f"Exception in get_car_ids: {str(e)}")
-        return []
+    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
+    candidates = requests.get(BASE_URL, auth=auth)
+
+    if candidates.status_code == 200:
+        items = candidates.json()
+        # comprehension: split by "_" and take the first part
+        car_ids = {
+            item["name"].split("_", 1)[0]
+            for item in items
+            if item.get("mime") == "inode/directory" and "_" in item.get("name", "")
+        }
+        return sorted(car_ids)
+    else:
+        return f"Error: {candidates.status_code} {candidates.text}"
   
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
