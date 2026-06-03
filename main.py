@@ -92,8 +92,16 @@ def get_car_ids(date, location):
     # Find all subfolders that look like carID folders
     candidates = requests.get(BASE_URL, auth=auth)
     car_id = []
-    
-    return f"{candidates.status_code} {candidates.text}"
+    if candidates.status_code == 200:
+        items = candidates.json()
+        for item in items:
+                if item.get("mime") == "inode/directory":
+                    folder_name = item.get("name", "")
+                    parts = folder_name.split("_")  # split into two parts only
+                    car_id.append(parts[0])  # keep the second part
+        return sorted(set(car_id))
+    else:
+        return f"{candidates.status_code} {candidates.text}"
   
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
@@ -105,7 +113,7 @@ def update_car_dropdown(date, location):
 # Function to get tank namessgdgdgdgdgdg
 def get_tank_names(date, location, id):
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
+    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}/"
     candidates = requests.get(BASE_URL, auth=auth)
     tanks = []
     if candidates.status_code == 200:
@@ -124,7 +132,7 @@ def get_tank_names(date, location, id):
 # Function to fetch images for a given tank
 def find_jpg_images(date, location, id, tank):
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    url = f"{ROOT_FOLDER}/{date}/{location}/{id}_{tank}"
+    url = f"{ROOT_FOLDER}/{date}/{location}/{id}_{tank}/"
     gallery_items = []
 
     try:
