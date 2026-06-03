@@ -141,17 +141,14 @@ def find_jpg_images(date, location, id, tank):
             return [], f"❌ Failed to fetch directory contents: HTTP {response.status_code}"
 
         files_json = response.json()
-
-        # Ensure local cache folder exists
         os.makedirs("kudu_cache", exist_ok=True)
 
         for item in files_json:
-            # Skip folders, only process files
             if item.get("mime") == "inode/directory":
                 continue
 
             filename = item.get("name", "")
-            file_url = f"url{filename}"
+            file_url = url + filename   # <-- fix: build full file URL
 
             file_response = requests.get(file_url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=15)
             if file_response.status_code == 200:
@@ -159,16 +156,16 @@ def find_jpg_images(date, location, id, tank):
                 with open(local_cache_path, "wb") as f:
                     f.write(file_response.content)
 
-                # Add to gallery with filename as caption
                 gallery_items.append((local_cache_path, filename))
 
         if not gallery_items:
-            return [], "ℹ️ Connection successful, but no files were found in /data/."
+            return [], "ℹ️ Connection successful, but no files were found in this tank folder."
 
         return gallery_items, f"🖼️ Loaded {len(gallery_items)} files successfully from Kudu storage."
 
     except Exception as e:
         return [], f"💥 Error accessing file structures: {str(e)}"
+
 
 def assign_tanks(date, location, id):
     # Add validation for None/empty car ID
