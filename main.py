@@ -94,8 +94,7 @@ def get_car_ids(date, location):
     if candidates.status_code == 200:
         items = candidates.json()
         folders = [item['name'] for item in items if item['mime'] == 'inode/directory']
-        car_ids = [c.split("_")[0] for c in folders]
-        return sorted(set(car_ids))
+        return sorted(set(folders))
     else:
         return f"Error: {candidates.status_code} {candidates.text}"
   
@@ -186,7 +185,9 @@ def assign_tanks(date, location, id):
 
 with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
     gr.Markdown("落油記錄工具")
+        
     with gr.Tabs():
+            
         # Module 2
         with gr.Tab("記錄"):
             with gr.Row():
