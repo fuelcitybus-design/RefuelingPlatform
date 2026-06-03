@@ -98,9 +98,9 @@ def get_tank_names(date, location, id):
                     parts = folder_name.split("_", 1)  # split into two parts only
                     if len(parts) == 2 and id in parts[0]:
                         tanks.append(parts[1])  # keep the second part
+        return tanks
     else:
         return f"Error: {r.status_code} {r.text}"
-    candidates = glob.glob(f"{base_path}/{id}_*", recursive=False)
     
 
 # Function to fetch images for a given tank
