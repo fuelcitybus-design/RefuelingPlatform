@@ -9,6 +9,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
+import urllib.parse
 
 
 # --- CONFIGURATION ---
@@ -86,53 +87,88 @@ def prefer_back_camera():
 
 # Function to get car ID list
 def get_car_ids(date, location):
+    # Skip if location is not selected
+    if not location or location == "{請選擇}":
+        return []
+    
     # Convert timestamp to YYYY-MM-DD
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
-    # Find all subfolders that look like carID folders
-    candidates = requests.get(BASE_URL, auth=auth)
-    car_id = []
-    if candidates.status_code == 200:
-        items = candidates.json()
-        for item in items:
+    
+    # URL encode the location for safe transmission
+    encoded_location = urllib.parse.quote(location)
+    BASE_URL = f"{ROOT_FOLDER}/{date}/{encoded_location}"
+    
+    try:
+        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
+        car_id = []
+        
+        if candidates.status_code == 200:
+            items = candidates.json()
+            for item in items:
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
-                    parts = folder_name.split("_")  # split into two parts only
-                    car_id.append(parts[0])  # keep the second part
-        return sorted(set(car_id))
-    else:
-        return f"Error: {candidates.status_code} {candidates.text}"
+                    # Split on underscore and take the first part (car ID)
+                    parts = folder_name.split("_")
+                    if len(parts) > 0 and parts[0]:  # Ensure first part is not empty
+                        car_id.append(parts[0])
+            return sorted(set(car_id))
+        else:
+            # Return empty list on error instead of error string
+            print(f"API Error: {candidates.status_code} - {BASE_URL}")
+            return []
+    except Exception as e:
+        print(f"Exception in get_car_ids: {str(e)}")
+        return []
   
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
-    if car_ids:
+    # car_ids is guaranteed to be a list now
+    if car_ids and len(car_ids) > 0:
         return gr.update(choices=car_ids, value=car_ids[0])
     else:
         return gr.update(choices=[], value=None)
 
-# Function to get tank namessgdgdgdgdgdg
+# Function to get tank names
 def get_tank_names(date, location, id):
+    # Validate inputs
+    if not id or not location or location == "{請選擇}":
+        return []
+    
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
-    candidates = requests.get(BASE_URL, auth=auth)
-    tanks = []
-    if candidates.status_code == 200:
-        items = candidates.json()
-        for item in items:
+    encoded_location = urllib.parse.quote(location)
+    BASE_URL = f"{ROOT_FOLDER}/{date}/{encoded_location}"
+    
+    try:
+        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
+        tanks = []
+        
+        if candidates.status_code == 200:
+            items = candidates.json()
+            for item in items:
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
-                    parts = folder_name.split("_", 1)  # split into two parts only
+                    print(folder_name)
+                    parts = folder_name.split("_", 1)  # split into at most 2 parts
                     if len(parts) == 2 and id in parts[0]:
-                        tanks.append(parts[1])  # keep the second part
-        return tanks
-    else:
-        return f"Error: {candidates.status_code} {candidates.text}"
+                        tanks.append(parts[1])  # keep the second part (tank name)
+            return tanks
+        else:
+            print(f"API Error: {candidates.status_code} - {BASE_URL}")
+            return []
+    except Exception as e:
+        print(f"Exception in get_tank_names: {str(e)}")
+        return []
     
 
 # Function to fetch images for a given tank
 def find_jpg_images(date, location, id, tank):
+    # Validate inputs
+    if not id or not tank or not location or location == "{請選擇}":
+        return [], "請選擇有效的日期、地點、車號和油缸"
+    
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    url = f"{ROOT_FOLDER}/{date}/{location}/{id}_{tank}"
+    encoded_location = urllib.parse.quote(location)
+    url = f"{ROOT_FOLDER}/{date}/{encoded_location}/{id}_{tank}"
     gallery_items = []
 
     try:
@@ -171,15 +207,15 @@ def find_jpg_images(date, location, id, tank):
         return [], f"💥 Error accessing file structures: {str(e)}"
 
 def assign_tanks(date, location, id):
-    # Add validation for None/empty car ID
-    if not id:
-        return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "Please select a car first"
+    # Validate input before processing
+    if not id or not date or not location or location == "{請選擇}":
+        return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "請先選擇有效的日期、地點和車號"
     
     tanks = get_tank_names(date, location, id)
     
-    # Handle error responses from get_tank_names
-    if isinstance(tanks, str):  # It's an error message
-        return [], "Error", [], "Error", [], "Error", [], "Error", tanks
+    # Handle empty tank list
+    if not tanks or len(tanks) == 0:
+        return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "此車號無可用的油缸記錄"
     
     galleries_data = []
     labels = []
@@ -190,7 +226,7 @@ def assign_tanks(date, location, id):
             galleries_data.append(find_jpg_images(date, location, id, tank_name))
             labels.append(f"Tank: {tank_name}")
         else:
-            galleries_data.append([])
+            galleries_data.append(([], ""))
             labels.append("No Tank")
     msg = f"Found {len(tanks)} tank records: {', '.join(tanks)}"
     return galleries_data[0], labels[0], galleries_data[1], labels[1], galleries_data[2], labels[2], galleries_data[3], labels[3], msg
@@ -199,9 +235,7 @@ def assign_tanks(date, location, id):
 
 with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
     gr.Markdown("落油記錄工具")
-        
     with gr.Tabs():
-            
         # Module 2
         with gr.Tab("記錄"):
             with gr.Row():
