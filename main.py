@@ -173,7 +173,7 @@ def assign_tanks(date, location, id):
     
     tanks = get_tank_names(date, location, id)
     
-    if isinstance(tanks, str):  # error message from get_tank_names
+    if isinstance(tanks, str):  # error message
         return [], "Error", [], "Error", [], "Error", [], "Error", tanks
     
     galleries_data = []
@@ -183,18 +183,18 @@ def assign_tanks(date, location, id):
         if i < len(tanks):
             tank_name = tanks[i]
             gallery_items, msg = find_jpg_images(date, location, id, tank_name)
-            galleries_data.append((gallery_items, msg))   # always a tuple
+            galleries_data.append(gallery_items)   # only keep the list of images
             labels.append(f"Tank: {tank_name}")
         else:
-            galleries_data.append(([], "No files"))       # <-- fix: tuple not list
+            galleries_data.append([])              # empty list for missing tanks
             labels.append("No Tank")
     
     msg = f"Found {len(tanks)} tank records: {', '.join(tanks)}"
     return (
-        galleries_data[0][0], labels[0],
-        galleries_data[1][0], labels[1],
-        galleries_data[2][0], labels[2],
-        galleries_data[3][0], labels[3],
+        galleries_data[0], labels[0],
+        galleries_data[1], labels[1],
+        galleries_data[2], labels[2],
+        galleries_data[3], labels[3],
         msg
     )
 
