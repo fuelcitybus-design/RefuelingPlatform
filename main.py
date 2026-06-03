@@ -148,7 +148,7 @@ def get_tank_names(date, location, id):
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
                     parts = folder_name.split("_", 1)  # split into at most 2 parts
-                    if len(parts) == 2 and id in parts[0]:
+                    if len(parts) == 2 and id == parts[0]:
                         tanks.append(parts[1])  # keep the second part (tank name)
             return tanks
         else:
