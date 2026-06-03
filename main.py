@@ -97,7 +97,8 @@ def get_car_ids(date, location):
         for item in items:
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
-                    car_id.append(folder_name)  # keep the second part
+                    parts = folder_name.split("_", )  # split into two parts only
+                    car_id.append([parts[0])  # keep the second part
         return sorted(set(car_id))
     else:
         return f"Error: {candidates.status_code} {candidates.text}"
@@ -170,7 +171,16 @@ def find_jpg_images(date, location, id, tank):
         return [], f"💥 Error accessing file structures: {str(e)}"
 
 def assign_tanks(date, location, id):
+    # Add validation for None/empty car ID
+    if not id:
+        return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "Please select a car first"
+    
     tanks = get_tank_names(date, location, id)
+    
+    # Handle error responses from get_tank_names
+    if isinstance(tanks, str):  # It's an error message
+        return [], "Error", [], "Error", [], "Error", [], "Error", tanks
+    
     galleries_data = []
     labels = []
     # Show up to 4 tanks
