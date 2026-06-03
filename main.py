@@ -10,6 +10,10 @@ from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
 
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image
+from datetime import datetime
 
 # --- CONFIGURATION ---
 # Replace these with your actual Azure App Service credentials
