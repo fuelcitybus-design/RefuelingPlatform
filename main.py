@@ -105,7 +105,7 @@ def get_car_ids(date, location):
                     car_id.append(parts[0])  # keep the first part
         return sorted(set(car_id))
     else:
-        return set("沒有相關紀錄")
+        return []
             
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
@@ -178,7 +178,7 @@ def assign_tanks(date, location, id):
     tanks = get_tank_names(date, location, id)
 
     if not tanks:
-        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "沒有相關紀錄"
+        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "注意：沒有相關紀錄"
         
     if isinstance(tanks, str):  # error message
         return [], "錯誤信號", [], "錯誤信號", [], "錯誤信號", [], "錯誤信號", tanks
