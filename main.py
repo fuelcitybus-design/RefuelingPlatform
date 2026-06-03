@@ -105,7 +105,7 @@ def get_car_ids(date, location):
                     car_id.append(parts[0])  # keep the first part
         return sorted(set(car_id))
     else:
-        return []
+        return set("沒有相關紀錄")
             
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
@@ -173,12 +173,12 @@ def find_jpg_images(date, location, id, tank):
 
 def assign_tanks(date, location, id):
     if not id:
-        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "請先選取車號"
+        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "請先選取有效日期、地點、車號"
     
     tanks = get_tank_names(date, location, id)
 
     if not tanks:
-        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "紀錄不在/已被移除"
+        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "沒有相關紀錄"
         
     if isinstance(tanks, str):  # error message
         return [], "錯誤信號", [], "錯誤信號", [], "錯誤信號", [], "錯誤信號", tanks
@@ -196,7 +196,7 @@ def assign_tanks(date, location, id):
             galleries_data.append([])              # empty list for missing tanks
             labels.append("No Tank")
     
-    msg = f"找到 {len(tanks)} 紀錄: {', '.join(tanks)}"
+    msg = f"找到 {len(tanks)} 組紀錄: {', '.join(tanks)}"
     return (
         galleries_data[0], labels[0],
         galleries_data[1], labels[1],
