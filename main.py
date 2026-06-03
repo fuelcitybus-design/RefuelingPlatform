@@ -101,7 +101,7 @@ def get_car_ids(date, location):
                     car_id.append(parts[0])  # keep the second part
         return sorted(set(car_id))
     else:
-        return f"Error: {fghjklcandidates.status_code} {candidates.text}"
+        return f"ddfddfbfdbfdbdError: {candidates.status_code} {candidates.text}"
   
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
