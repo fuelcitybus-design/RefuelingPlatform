@@ -92,16 +92,13 @@ def get_car_ids(date, location):
     # Find all subfolders that look like carID folders
     candidates = requests.get(BASE_URL, auth=auth)
     car_id = []
-    if candidates.status_code == 200:
-        items = candidates.json()
-        for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    parts = folder_name.split("_")  # split into two parts only
-                    car_id.append(parts[0])  # keep the second part
-        return sorted(set(car_id))
-    else:
-        return f"Error: {candidates.status_code} {candidates.text}"
+    items = candidates.json()
+    for item in items:
+        if item.get("mime") == "inode/directory":
+                folder_name = item.get("name", "")
+                parts = folder_name.split("_")  # split into two parts only
+                car_id.append(parts[0])  # keep the second part
+    return sorted(set(car_id))
   
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
