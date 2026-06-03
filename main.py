@@ -97,8 +97,7 @@ def get_car_ids(date, location):
         for item in items:
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
-                    parts = folder_name.split("_")  # split into two parts only
-                    car_id.append(parts[0])  # keep the second part
+                    car_id.append(folder_name)  # keep the second part
         return sorted(set(car_id))
     else:
         return f"Error: {candidates.status_code} {candidates.text}"
