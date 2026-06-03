@@ -91,11 +91,15 @@ def get_car_ids(date, location):
     BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
     # Find all subfolders that look like carID folders
     candidates = requests.get(BASE_URL, auth=auth)
+    car_id = []
     if candidates.status_code == 200:
         items = candidates.json()
-        folders = [item['name'] for item in items if item['mime'] == 'inode/directory' and item.get('name')]
-        car_ids = [c.split("_")[0] for c in folders if c and "_" in c]  # Only split if has underscore
-        return sorted(set(car_ids)) if car_ids else []
+        for item in items:
+                if item.get("mime") == "inode/directory":
+                    folder_name = item.get("name", "")
+                    parts = folder_name.split("_")  # split into two parts only
+                    car_id.append(parts[0])  # keep the second part
+        return sorted(set(car_id))
     else:
         return f"Error: {candidates.status_code} {candidates.text}"
   
