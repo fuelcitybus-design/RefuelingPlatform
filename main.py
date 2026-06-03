@@ -98,7 +98,7 @@ def get_car_ids(date, location):
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
                     parts = folder_name.split("_")  # split into two parts only
-                    car_id.append(parts[0])  # keep the second part
+                    car_id.append(parts[0])  # keep the first part
         return sorted(set(car_id))
     else:
         return f"{candidates.status_code} {candidates.text}"
@@ -121,8 +121,8 @@ def get_tank_names(date, location, id):
         for item in items:
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
-                    parts = folder_name.split("_", 1)  # split into two parts only
-                    if len(parts) == 2 and id in parts[0]:
+                    parts = folder_name.split("_")  # split into two parts only
+                    if id == parts[0]:
                         tanks.append(parts[1])  # keep the second part
         return tanks
     else:
@@ -151,7 +151,7 @@ def find_jpg_images(date, location, id, tank):
                 continue
 
             filename = item.get("name", "")
-            file_url = f"url/{filename}"
+            file_url = f"url{filename}"
 
             file_response = requests.get(file_url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=15)
             if file_response.status_code == 200:
