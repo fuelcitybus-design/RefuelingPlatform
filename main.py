@@ -169,16 +169,17 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             original_width, original_height = img.size
             new_width = int(original_width * (400 / original_height))
             img = img.resize((new_width, 400))
-
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG")
+            buffer.seek(0)
             tab_name = tab_names[i]
             filename = f"{tab_name}.jpg"
             filepath = f"{base_url}{filename}"
             with open(img, "rb") as f:
-                response = requests.put(filepath, data=f, auth=auth)
+            response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
             if not(response.status_code in [200, 201]):
                 info_msg = f"❌{tab_name} save failed." 
                 return info_msg
-            img.save(filepath)
             saved_paths.append(tab_name)
             detected_tabs_exist.append(tab_name)
 
@@ -231,12 +232,16 @@ def toggle_tabs(location, car, tank):
     # Also return the active dictionary slice for display
     return updates + [str({location: active_tabs})]
 
-def toggle_save(location, car, tank):
+def toggle_save(location, car, tank, *args):
     # Show save button only if all dropdowns are not placeholders
-    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        return gr.update(visible=True)
-    else:
-        return gr.update(visible=False)
+    try:
+        if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+            return gr.update(visible=True)
+        else:
+            return gr.update(visible=False)
+    except Exception as e:
+        # 把錯誤訊息顯示在 output_text
+        return f"❌Toggle error: {str(e)}"
 
 def clear_images(selection):
     # Reset all images when depot changes
