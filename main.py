@@ -94,9 +94,10 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
     MAIN = wb['Main']
     local_image = "temp.jpg"
 
+    # Loop through all rows up to rowcount
     for i in range(2, rowcount + 2):
         if RAW.cell(row=i, column=2).value is None:
-            # Write data
+            # Write metadata
             RAW.cell(row=i, column=2).value = car
             RAW.cell(row=i, column=3).value = tank
             RAW.cell(row=i, column=4).value = int(before)
@@ -105,7 +106,7 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
             MAIN.cell(row=10 * (i - 1) + 1, column=1).value = car
             MAIN.cell(row=10 * (i - 1) + 2, column=1).value = tank
 
-            # Loop through all images
+            # Loop through all images for this row
             for j, img in enumerate(img_list):
                 if img is None:
                     continue
@@ -129,9 +130,7 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
 
                 MAIN.add_image(image, get_column_letter(3 * j + 2) + str(10 * i - 9))
 
-            # ✅ Break after filling the first empty row, but don’t return yet
-            break
-
+            # ✅ Do not return or break — continue to next row if needed
     # Function ends naturally after processing all rows
     return
 
@@ -236,9 +235,11 @@ def export(request: gr.Request, location, date):
     save_url = f"{folder_url}/{location}_{date}.xlsx"
     local_path = f"/tmp/{location}_{date}.xlsx"
     wb.save(local_path)
+    wbv = requests.get(save_url, auth=auth)
+    if wbv.status_code in [200, 201]:
+        response = requests.delete(save_url, auth=auth)
     with open(local_path, "rb") as f:
         wbp = requests.put(save_url, data=f, auth=auth)
-
     if wbp.status_code in [200, 201]:
         return local_path, "✅ 導出成功，已上傳"
     else:
