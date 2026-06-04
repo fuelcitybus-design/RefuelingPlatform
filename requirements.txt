@@ -43,7 +43,7 @@ safehttpx==0.1.7
 semantic-version==2.10.0
 shellingham==1.5.4
 six==1.17.0
-starlette==1.1.0
+starlette==0.52.1
 tomlkit==0.14.0
 tqdm==4.67.3
 typer==0.25.1
