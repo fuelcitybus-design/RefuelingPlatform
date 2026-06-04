@@ -232,7 +232,7 @@ def toggle_tabs(location, car, tank):
     # Also return the active dictionary slice for display
     return updates + [str({location: active_tabs})]
 
-def toggle_save(location, car, tank, *args):
+def toggle_save(location, car, tank, *tabs):
     # Show save button only if all dropdowns are not placeholders
     try:
         if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
@@ -240,8 +240,7 @@ def toggle_save(location, car, tank, *args):
         else:
             return gr.update(visible=False)
     except Exception as e:
-        # 把錯誤訊息顯示在 output_text
-        return f"❌Toggle error: {str(e)}"
+        return [gr.update()] * len(tabs) + [f"❌自訂錯誤：{str(e)}"]
 
 def clear_images(selection):
     # Reset all images when depot changes
@@ -294,9 +293,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             )
 
             #Toggle tabs avaliable based on depot selection
-            location_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-            car_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-            tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
+            location_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list+[output_text])
+            car_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list+[output_text])
+            tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list+[output_text])
 
             #Toggle save button
             location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
