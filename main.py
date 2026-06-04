@@ -232,16 +232,15 @@ def toggle_tabs(location, car, tank):
     return updates + [str({location: active_tabs})]
 
 def toggle_save(location, car, tank):
-        if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-            # Show all tabs
-            return [gr.update(visible=True) for _ in tab_names]
-        else:
-            # Hide all tabs
-            return [gr.update(visible=False) for _ in tab_names]
+    # Show save button only if all dropdowns are not placeholders
+    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+        return gr.update(visible=True)
+    else:
+        return gr.update(visible=False)
 
-def clear_images(selection):
+#def clear_images(selection):
     # Reset all images when depot changes
-    return [gr.update(value=None) for _ in tab_names]
+    #return [gr.update(value=None) for _ in tab_names]
 
 #============================================================================================================================================================
 
@@ -300,8 +299,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
 
             #Clear uploaded images when changing information values
-            location_dropdown.change(clear_images, location_dropdown, image_inputs)
-            car_dropdown.change(clear_images, location_dropdown, image_inputs)
-            tank_dropdown.change(clear_images, location_dropdown, image_inputs)
+            #location_dropdown.change(clear_images, location_dropdown, image_inputs)
+            #car_dropdown.change(clear_images, location_dropdown, image_inputs)
+            #tank_dropdown.change(clear_images, location_dropdown, image_inputs)
 
 app = gr.mount_gradio_app(app, demo, path="/")
