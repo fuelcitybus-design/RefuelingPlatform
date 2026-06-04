@@ -233,9 +233,11 @@ def toggle_tabs(location, car, tank):
 
 def toggle_save(location, car, tank):
         if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-            return gr.update(visible=True)
+            # Show all tabs
+            return [gr.update(visible=True) for _ in tab_names]
         else:
-            return gr.update(visible=False)
+            # Hide all tabs
+            return [gr.update(visible=False) for _ in tab_names]
 
 def clear_images(selection):
     # Reset all images when depot changes
