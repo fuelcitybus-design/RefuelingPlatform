@@ -10,7 +10,6 @@ from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
 from io import BytesIO
-import time
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
@@ -238,18 +237,12 @@ def export(request: gr.Request, location, date):
     local_path = f"/tmp/{location}_{date}.xlsx"
     wb.save(local_path)
 
-    retries = 5
-    for attempt in range(retries):
-        with open(local_path, "rb") as f:
-            wbp = requests.put(save_url, data=f, auth=auth)
-
-        if wbp.status_code in [200, 201]:
-            return local_path, "✅ 導出成功，已上傳"
-        else:
-            if attempt < retries - 1:
-                time.sleep(2 ** attempt)  # exponential backoff
-            else:
-                return local_path, f"❌ 導出成功，但上傳失敗: {wbp.status_code} {wbp.text}"
+    with open(local_path, "rb") as f:
+        wbp = requests.put(save_url, data=f, auth=auth)
+    if wbp.status_code in [200, 201]:
+        return local_path, "✅ 導出成功，已上傳"
+    else:
+        return local_path, f" 導出成功，只能從上下載最新版本: {wbp.status_code} {wbp.text}"
 
 #============================================================================================================================================================
 
