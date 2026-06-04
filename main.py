@@ -111,7 +111,7 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
                     continue
                 
                 # Download image from Kudu
-                response = requests.get(img, auth=auth))
+                response = requests.get(img, auth=auth)
                 if response.status_code != 200:
                     raise Exception(f"❌ Failed to download image: HTTP {response.status_code}")
                 
