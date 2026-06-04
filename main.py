@@ -72,35 +72,38 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     return """
-    <input id="backcam" type="file" accept="image/*;capture=environment">
+    <video id="video" autoplay playsinline width="400" height="400"></video>
+    <button id="capture">拍照</button>
     <script>
-    const input = document.getElementById("backcam");
-    input.addEventListener("change", async (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                const img = new Image();
-                img.onload = () => {
-                    // Draw flipped image onto canvas
-                    const canvas = document.createElement("canvas");
-                    const ctx = canvas.getContext("2d");
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.translate(canvas.width, 0);
-                    ctx.scale(-1, 1); // horizontal flip
-                    ctx.drawImage(img, 0, 0);
-                    const flippedDataURL = canvas.toDataURL("image/png");
-
-                    // Send flipped image to hidden textbox
-                    const hidden = document.getElementById("hidden_image");
-                    hidden.value = flippedDataURL;
-                    hidden.dispatchEvent(new Event("input"));
-                };
-                img.src = reader.result;
-            };
-            reader.readAsDataURL(file);
+    async function initCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { exact: "environment" }, width: 400, height: 400 }
+            });
+            const video = document.getElementById("video");
+            video.srcObject = stream;
+        } catch (err) {
+            console.error("Back camera not available, falling back:", err);
+            // fallback to any camera
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById("video").srcObject = stream;
         }
+    }
+    initCamera();
+
+    document.getElementById("capture").addEventListener("click", () => {
+        const video = document.getElementById("video");
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0);
+        const dataURL = canvas.toDataURL("image/png");
+
+        // send to hidden textbox
+        const hidden = document.getElementById("hidden_image");
+        hidden.value = dataURL;
+        hidden.dispatchEvent(new Event("input"));
     });
     </script>
     """
