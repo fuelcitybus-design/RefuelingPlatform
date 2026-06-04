@@ -10,6 +10,7 @@ from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
 from io import BytesIO
+import io
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
@@ -292,7 +293,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 raw_gps.change(nearest, raw_gps, location_dropdown)
 
                 location_dropdown.change(fn=update_tank_dropdown, inputs=location_dropdown, outputs=tank_dropdown)
-
+            
+            hidden_image = gr.Textbox(visible=False, elem_id="hidden_image")
+            
             with gr.Tabs() as img_tabs:
                 image_inputs = []
                 tab_list = []
