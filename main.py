@@ -237,7 +237,8 @@ def export(request: gr.Request, location, date):
     local_path = f"/tmp/{location}_{date}.xlsx"
     wb.save(local_path)
 
-    for attempt in range(5):
+    retries = 5
+    for attempt in range(retries):
         with open(local_path, "rb") as f:
             wbp = requests.put(save_url, data=f, auth=auth)
 
