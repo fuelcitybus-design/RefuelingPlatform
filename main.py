@@ -93,39 +93,48 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
     RAW = wb['RAW']
     MAIN = wb['Main']
     local_image = "temp.jpg"
-    for i in range(2,rowcount+2):
+
+    for i in range(2, rowcount + 2):
         if RAW.cell(row=i, column=2).value is None:
-            # data
+            # Write data
             RAW.cell(row=i, column=2).value = car
             RAW.cell(row=i, column=3).value = tank
             RAW.cell(row=i, column=4).value = int(before)
             RAW.cell(row=i, column=5).value = int(after)
-            MAIN.cell(row=10*(i-1)+1, column=1).value = car
-            MAIN.cell(row=10*(i-1)+2, column=1).value = tank
 
+            MAIN.cell(row=10 * (i - 1) + 1, column=1).value = car
+            MAIN.cell(row=10 * (i - 1) + 2, column=1).value = tank
+
+            # Loop through all images
             for j, img in enumerate(img_list):
-                if img == None:
+                if img is None:
                     continue
-                
+
                 # Download image from Kudu
                 response = requests.get(img, auth=HTTPBasicAuth(USERNAME, PASSWORD))
                 if response.status_code == 200:
                     with open(local_image, "wb") as f:
                         f.write(response.content)
-                    print("✅ Image downloaded successfully")
                 else:
                     raise Exception(f"❌ Failed to download image: HTTP {response.status_code}")
-                
+
+                # Insert image into Excel
                 image = XLImage(local_image)
                 if image.width > image.height:
-                    image.height = image.height/image.width*180
+                    image.height = image.height / image.width * 180
                     image.width = 180
                 else:
-                    image.width = image.width/image.height*180
+                    image.width = image.width / image.height * 180
                     image.height = 180
-                MAIN.add_image(image, get_column_letter(3*j+2)+str(10*i-9))
-            return
+
+                MAIN.add_image(image, get_column_letter(3 * j + 2) + str(10 * i - 9))
+
+            # ✅ Break after filling the first empty row, but don’t return yet
+            break
+
+    # Function ends naturally after processing all rows
     return
+
 
 def export(request: gr.Request, location, date):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
