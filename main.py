@@ -92,7 +92,7 @@ def prefer_back_camera():
 def add_data(wb, car, tank, before, after, img_list, rowcount):
     RAW = wb['RAW']
     MAIN = wb['Main']
-        local image = "temp.jpg"
+    local_image = "temp.jpg"
     for i in range(2,rowcount+2):
         if RAW.cell(row=i, column=2).value is None:
             # data
