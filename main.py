@@ -227,7 +227,7 @@ def toggle_tabs(location, car, tank):
         # Hide all tabs if not valid
         updates = [gr.update(visible=False) for _ in tab_names]
         info_msg = "Please select"
-    return 
+    return updates
 
 def toggle_save(location, car, tank):
     # Show save button only if all dropdowns are not placeholders
