@@ -54,5 +54,5 @@ virtualenv==21.3.3
 requests>=2.31.0 
 Pillow>=10.0.0
 paddleocr==3.6.0
-opencv-python==4.9.0.80
+opencv-python-headless==4.10.0.84
 openpyxl==3.1.5
