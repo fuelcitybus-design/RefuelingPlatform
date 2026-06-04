@@ -71,40 +71,20 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
-    return """
-    <video id="video" autoplay playsinline width="400" height="400"></video>
-    <button id="capture">拍照</button>
+    custom_html = """
     <script>
-    async function initCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { exact: "environment" }, width: 400, height: 400 }
-            });
-            const video = document.getElementById("video");
-            video.srcObject = stream;
-        } catch (err) {
-            console.error("Back camera not available, falling back:", err);
-            // fallback to any camera
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            document.getElementById("video").srcObject = stream;
-        }
-    }
-    initCamera();
+    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
 
-    document.getElementById("capture").addEventListener("click", () => {
-        const video = document.getElementById("video");
-        const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(video, 0, 0);
-        const dataURL = canvas.toDataURL("image/png");
+    navigator.mediaDevices.getUserMedia = (constraints) => {
+      if (!constraints.video.facingMode) {
+        constraints.video.facingMode = {ideal: "environment"};
+      }
 
-        // send to hidden textbox
-        const hidden = document.getElementById("hidden_image");
-        hidden.value = dataURL;
-        hidden.dispatchEvent(new Event("input"));
-    });
+      constraints.video.width = {exact: 400};
+      constraints.video.height = {exact: 400};
+
+      return originalGetUserMedia(constraints);
+    };
     </script>
     """
     return custom_html
@@ -237,6 +217,22 @@ def update_tank_dropdown(tank_id):
     tank_dropdown = tank_list.get(tank_id, ["{請選擇}"])
     return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], allow_custom_value=False, filterable=False, interactive=True)
 
+def toggle_ui_components(location, car, tank):
+    active_tabs = tab_list_S.get(location, [])
+    
+    # Check if all selections are valid
+    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+        tab_updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
+        save_btn_update = gr.update(visible=True)
+    else:
+        # Hide everything if not valid
+        tab_updates = [gr.update(visible=False) for _ in tab_names]
+        save_btn_update = gr.update(visible=False)
+        
+    # Return everything as a single flat list or tuple
+    return tab_updates + [save_btn_update]
+
+
 def toggle_tabs(location, car, tank):
     info_msg = []
     active_tabs = tab_list_S.get(location, [])
@@ -310,10 +306,11 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             )
 
             confirm_btn.click(
-                fn=toggle_tabs,
+                fn=toggle_ui_components,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                outputs=tab_list
+                outputs=tab_list + [save_btn]  # Combine the lists of outputs
             )
+
 
 
             
@@ -325,9 +322,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             #tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
 
             #Toggle save button
-            location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+            #location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+            #car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+            #tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
                 
             #Clear uploaded images when changing information values
             #location_dropdown.change(clear_images, location_dropdown, image_inputs)
