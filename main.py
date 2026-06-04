@@ -71,20 +71,37 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
-    custom_html = """
+    return """
+    <input id="backcam" type="file" accept="image/*;capture=environment">
     <script>
-    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    const input = document.getElementById("backcam");
+    input.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    // Draw flipped image onto canvas
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.translate(canvas.width, 0);
+                    ctx.scale(-1, 1); // horizontal flip
+                    ctx.drawImage(img, 0, 0);
+                    const flippedDataURL = canvas.toDataURL("image/png");
 
-    navigator.mediaDevices.getUserMedia = (constraints) => {
-      if (!constraints.video.facingMode) {
-        constraints.video.facingMode = {ideal: "environment"};
-      }
-
-      constraints.video.width = {exact: 400};
-      constraints.video.height = {exact: 400};
-
-      return originalGetUserMedia(constraints);
-    };
+                    // Send flipped image to hidden textbox
+                    const hidden = document.getElementById("hidden_image");
+                    hidden.value = flippedDataURL;
+                    hidden.dispatchEvent(new Event("input"));
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
     </script>
     """
     return custom_html
