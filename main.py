@@ -177,6 +177,9 @@ def export(request: gr.Request, location, date):
             for item in items:
                 if item.get("mime") != "inode/directory":  # only files
                     images.append(item["name"])
+        else:
+                info_msg = "Can't access image"
+                return None, info_msg
 
         for img in images:
             file_url = f"{subfolder_url}{img}"
