@@ -252,7 +252,7 @@ def export(request: gr.Request, location, date):
 def get_car_ids(date, location):
     # Convert timestamp to YYYY-MM-DD
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
+    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}/"
     # Find all subfolders that look like carID folders
     candidates = requests.get(BASE_URL, auth=auth)
     car_id = []
@@ -262,11 +262,11 @@ def get_car_ids(date, location):
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
                     parts = folder_name.split("_")  # split into two parts only
-                    car_id.append(parts[0])  # keep the second part
+                    car_id.append(parts[0])  # keep the first part
         return sorted(set(car_id))
     else:
-        return f"Error: {candidates.status_code} {candidates.text}"
-  
+        return []
+            
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
     if car_ids:
@@ -277,26 +277,26 @@ def update_car_dropdown(date, location):
 # Function to get tank namessgdgdgdgdgdg
 def get_tank_names(date, location, id):
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}"
+    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}/"
     candidates = requests.get(BASE_URL, auth=auth)
-    tanks = []
+    tank = []
     if candidates.status_code == 200:
         items = candidates.json()
         for item in items:
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
-                    parts = folder_name.split("_", 1)  # split into two parts only
-                    if len(parts) == 2 and id in parts[0]:
-                        tanks.append(parts[1])  # keep the second part
-        return tanks
+                    parts = folder_name.split("_")  # split into two parts only
+                    if id == parts[0]:
+                        tank.append(parts[1])  # keep the second part
+        return tank
     else:
-        return f"Error: {candidates.status_code} {candidates.text}"
+        return []
     
 
 # Function to fetch images for a given tank
 def find_jpg_images(date, location, id, tank):
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    url = f"{ROOT_FOLDER}/{date}/{location}/{id}_{tank}"
+    url = f"{ROOT_FOLDER}/{date}/{location}/{id}_{tank}/"
     gallery_items = []
 
     try:
@@ -305,59 +305,65 @@ def find_jpg_images(date, location, id, tank):
             return [], f"❌ Failed to fetch directory contents: HTTP {response.status_code}"
 
         files_json = response.json()
-
-        # Ensure local cache folder exists
         os.makedirs("kudu_cache", exist_ok=True)
 
         for item in files_json:
-            # Skip folders, only process files
             if item.get("mime") == "inode/directory":
                 continue
 
             filename = item.get("name", "")
-            file_url = f"url/{filename}"
+            file_url = url + filename   # <-- fix: build full file URL
 
-            file_response = requests.get(file_url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=15)
+            file_response = requests.get(file_url, auth=auth, timeout=15)
             if file_response.status_code == 200:
                 local_cache_path = os.path.join("kudu_cache", filename)
                 with open(local_cache_path, "wb") as f:
                     f.write(file_response.content)
 
-                # Add to gallery with filename as caption
                 gallery_items.append((local_cache_path, filename))
 
         if not gallery_items:
-            return [], "ℹ️ Connection successful, but no files were found in /data/."
+            return [], "ℹ️ Connection successful, but no files were found in this tank folder."
 
         return gallery_items, f"🖼️ Loaded {len(gallery_items)} files successfully from Kudu storage."
 
     except Exception as e:
         return [], f"💥 Error accessing file structures: {str(e)}"
 
+
 def assign_tanks(date, location, id):
-    # Add validation for None/empty car ID
     if not id:
-        return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "Please select a car first"
+        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "請先選取有效日期、地點、車號"
     
     tanks = get_tank_names(date, location, id)
-    
-    # Handle error responses from get_tank_names
-    if isinstance(tanks, str):  # It's an error message
-        return [], "Error", [], "Error", [], "Error", [], "Error", tanks
+
+    if not tanks:
+        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "注意：沒有相關紀錄"
+        
+    if isinstance(tanks, str):  # error message
+        return [], "錯誤信號", [], "錯誤信號", [], "錯誤信號", [], "錯誤信號", tanks
     
     galleries_data = []
     labels = []
-    # Show up to 4 tanks
+    
     for i in range(4):
         if i < len(tanks):
             tank_name = tanks[i]
-            galleries_data.append(find_jpg_images(date, location, id, tank_name))
+            gallery_items, msg = find_jpg_images(date, location, id, tank_name)
+            galleries_data.append(gallery_items)   # only keep the list of images
             labels.append(f"Tank: {tank_name}")
         else:
-            galleries_data.append([])
+            galleries_data.append([])              # empty list for missing tanks
             labels.append("No Tank")
-    msg = f"Found {len(tanks)} tank records: {', '.join(tanks)}"
-    return galleries_data[0], labels[0], galleries_data[1], labels[1], galleries_data[2], labels[2], galleries_data[3], labels[3], msg
+    
+    msg = f"找到 {len(tanks)} 組紀錄: {', '.join(tanks)}"
+    return (
+        galleries_data[0], labels[0],
+        galleries_data[1], labels[1],
+        galleries_data[2], labels[2],
+        galleries_data[3], labels[3],
+        msg
+    )
 
 #============================================================================================================================================================
 
