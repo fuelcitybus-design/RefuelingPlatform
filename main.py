@@ -383,54 +383,54 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             )
 
         # Module 4
-            with gr.Tab("記錄"):
-                with gr.Row():
-                    date_picker = gr.DateTime(
-                        label="日期", include_time=False,
-                        value=datetime.now().date().isoformat()
-                    )
-                    location_dropdown2 = gr.Dropdown(
-                        choices=locations, label="地點(gps)", value=locations[0]
-                    )
-                    car_dropdown2 = gr.Dropdown(
-                        choices=[], label="車號", value=None
-                    )
+        with gr.Tab("記錄"):
+            with gr.Row():
+                date_picker = gr.DateTime(
+                    label="日期", include_time=False,
+                    value=datetime.now().date().isoformat()
+                )
+                location_dropdown2 = gr.Dropdown(
+                    choices=locations, label="地點(gps)", value=locations[0]
+                )
+                car_dropdown2 = gr.Dropdown(
+                    choices=[], label="車號", value=None
+                )
 
-                # Overall status message
-                tank_message = gr.Textbox(label="Tank Summary", interactive=False,lines=2)
+            # Overall status message
+            tank_message = gr.Textbox(label="Tank Summary", interactive=False,lines=2)
 
-                # Tank labels + galleries
-                tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
-                gallery1 = gr.Gallery(columns=4)
+            # Tank labels + galleries
+            tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
+            gallery1 = gr.Gallery(columns=4)
 
-                tank_label2 = gr.Textbox(label="Tank Info 2", interactive=False)
-                gallery2 = gr.Gallery(columns=4)
+            tank_label2 = gr.Textbox(label="Tank Info 2", interactive=False)
+            gallery2 = gr.Gallery(columns=4)
 
-                tank_label3 = gr.Textbox(label="Tank Info 3", interactive=False)
-                gallery3 = gr.Gallery(columns=4)
+            tank_label3 = gr.Textbox(label="Tank Info 3", interactive=False)
+            gallery3 = gr.Gallery(columns=4)
 
-                tank_label4 = gr.Textbox(label="Tank Info 4", interactive=False)
-                gallery4 = gr.Gallery(columns=4)
+            tank_label4 = gr.Textbox(label="Tank Info 4", interactive=False)
+            gallery4 = gr.Gallery(columns=4)
 
-                # Update galleries + labels + summary when inputs change
-                def update_all(date, location, car):
-                    g1, l1, g2, l2, g3, l3, g4, l4, msg = assign_tanks(date, location, car)
-                    return g1, l1, g2, l2, g3, l3, g4, l4, msg
+            # Update galleries + labels + summary when inputs change
+            def update_all(date, location, car):
+                g1, l1, g2, l2, g3, l3, g4, l4, msg = assign_tanks(date, location, car)
+                return g1, l1, g2, l2, g3, l3, g4, l4, msg
 
-                # Refresh car dropdown whenever date or location changes
-                date_picker.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
-                location_dropdown2.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
+            # Refresh car dropdown whenever date or location changes
+            date_picker.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
+            location_dropdown2.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
 
-                # Update tanks whenever any input changes
-                date_picker.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
+            # Update tanks whenever any input changes
+            date_picker.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
                                 [gallery1, tank_label1, gallery2, tank_label2,
-                                    gallery3, tank_label3, gallery4, tank_label4, tank_message])
-                location_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
-                                        [gallery1, tank_label1, gallery2, tank_label2,
-                                        gallery3, tank_label3, gallery4, tank_label4, tank_message])
-                car_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
-                                    [gallery1, tank_label1, gallery2, tank_label2,
-                                    gallery3, tank_label3, gallery4, tank_label4, tank_message])
+                                gallery3, tank_label3, gallery4, tank_label4, tank_message])
+            location_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
+                                [gallery1, tank_label1, gallery2, tank_label2,
+                                gallery3, tank_label3, gallery4, tank_label4, tank_message])
+            car_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
+                                [gallery1, tank_label1, gallery2, tank_label2,
+                                gallery3, tank_label3, gallery4, tank_label4, tank_message])
 
 
 app = gr.mount_gradio_app(app, demo, path="/")
