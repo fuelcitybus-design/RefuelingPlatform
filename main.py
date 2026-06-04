@@ -218,13 +218,16 @@ def update_tank_dropdown(tank_id):
     return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], allow_custom_value=False, filterable=False, interactive=True)
 
 def toggle_tabs(location, car, tank):
+    info_msg = []
     active_tabs = tab_list_S.get(location, [])
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
+        info_msg = "Start uploading images"
     else:
         # Hide all tabs if not valid
         updates = [gr.update(visible=False) for _ in tab_names]
-    return updates
+        info_msg = "Please select"
+    return 
 
 def toggle_save(location, car, tank):
     # Show save button only if all dropdowns are not placeholders
@@ -255,7 +258,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 confirm_btn.click(
                     fn=toggle_tabs,
                     inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                    outputs=tab_list
+                    outputs=output_text
                 )
 
                 raw_gps = gr.Textbox(visible=False)
