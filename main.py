@@ -235,15 +235,6 @@ def export(request: gr.Request, location, date):
     local_path = f"/tmp/{location}_{date}.xlsx"
     wb.save(local_path)
         
-    wbv = requests.get(save_url, auth=auth)
-
-    # If file exists, try to delete it
-    if wbv.status_code == 200:
-        response = requests.delete(save_url, auth=auth)
-        if response.status_code not in [200, 204]:
-            return local_path, f"❌ 舊檔案刪除失敗: {response.status_code} {response.text}"
-
-    # Upload new file
     with open(local_path, "rb") as f:
         wbp = requests.put(save_url, data=f, auth=auth)
 
