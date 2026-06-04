@@ -288,12 +288,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             car_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
             tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
 
-            gr.on(
-                    triggers=[location_dropdown, car_dropdown, tank_dropdown],
-                    fn=toggle_tabs,
-                    inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                    outputs=tab_list
-            )
             #Toggle save button
             location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
             car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
