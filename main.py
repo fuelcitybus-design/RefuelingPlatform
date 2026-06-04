@@ -115,7 +115,7 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
                 if response.status_code != 200:
                     raise Exception(f"❌ Failed to download image: HTTP {response.status_code}")
                 
-                MAIN.cell(row=10 * (i - 1), column=2+3*(j-1)).value = img.split("/")[-1].rsplit(".", 1)[0]
+                MAIN.cell(row=10 * (i - 1), column=2+3*j).value = img.split("/")[-1].rsplit(".", 1)[0]
                 # Load directly from memory
                 image_data = BytesIO(response.content)
                 image = XLImage(image_data)
