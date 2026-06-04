@@ -71,23 +71,20 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
+    # Inject a custom capture button that forces back camera
     custom_html = """
-    <style>
-    /* Flip the preview back to normal */
-    video, img {
-      transform: scaleX(-1);
-    }
-    </style>
+    <input id="backcam" type="file" accept="image/*;capture=environment">
     <script>
-    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-
-    navigator.mediaDevices.getUserMedia = (constraints) => {
-      if (!constraints.video.facingMode) {
-        constraints.video.facingMode = {ideal: "environment"}; // prefer back camera
-      }
-      constraints.video.width = {exact: 400};
-      constraints.video.height = {exact: 400};
-      return originalGetUserMedia(constraints);
+    const input = document.getElementById("backcam");
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        // send base64 string into hidden textbox
+        document.getElementById("hidden_image").value = evt.target.result;
+        document.getElementById("hidden_image").dispatchEvent(new Event("input"));
+      };
+      reader.readAsDataURL(file);
     };
     </script>
     """
@@ -299,6 +296,13 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                         image_inputs.append(img_input)
                         tab_list.append(tab)
 
+            for img_input in image_inputs:
+                hidden_image.change(
+                    fn=decode_and_flip,
+                    inputs=hidden_image,
+                    outputs=img_input
+                )
+                
             save_btn = gr.Button("儲存所有照片", variant="primary", size="lg",visible=False)
 
             output_text = gr.Textbox(label="狀態", lines=6)
