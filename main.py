@@ -101,19 +101,21 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
             RAW.cell(row=i, column=3).value = tank
             RAW.cell(row=i, column=4).value = int(before)
             RAW.cell(row=i, column=5).value = int(after)
-
+                
+            MAIN.cell(row=10 * (i - 1), column=1).value = i-1
             MAIN.cell(row=10 * (i - 1) + 1, column=1).value = car
             MAIN.cell(row=10 * (i - 1) + 2, column=1).value = tank
 
             for j, img in enumerate(img_list):
                 if img is None:
                     continue
-
+                
                 # Download image from Kudu
-                response = requests.get(img, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                response = requests.get(img, auth=auth))
                 if response.status_code != 200:
                     raise Exception(f"❌ Failed to download image: HTTP {response.status_code}")
-
+                
+                MAIN.cell(row=10 * (i - 1), column=2+3*(j-1)).value = img.split("/")[-1].rsplit(".", 1)[0]
                 # Load directly from memory
                 image_data = BytesIO(response.content)
                 image = XLImage(image_data)
