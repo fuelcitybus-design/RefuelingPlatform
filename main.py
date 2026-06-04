@@ -120,7 +120,7 @@ def export(request: gr.Request, location, date):
     client_ip = request.client.host if request else "unknown"
     username = request.username if request and hasattr(request, "username") else "anonymous"
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    folder_url = f"{ROOT_FOLDER}/{date}/{location}"
+    folder_url = f"{ROOT_FOLDER}/{date}/{location}/"
     template_url = f"{ROOT_FOLDER}/template.xlsx"
 
     if not location or location == "{請選擇}":
@@ -165,7 +165,7 @@ def export(request: gr.Request, location, date):
 
     for subfolder_name in subfolders:
         carid, tankid = subfolder_name.split("_")
-        subfolder_url = f"{folder_url}/{subfolder_name}/"
+        subfolder_url = f"{folder_url}{subfolder_name}/"
 
         before = None
         after = None
