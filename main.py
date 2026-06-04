@@ -255,11 +255,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False)
                 confirm_btn = gr.Button("確認選擇")
 
-                confirm_btn.click(
-                    fn=toggle_tabs,
-                    inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                    outputs=output_text
-                )
+                
 
                 raw_gps = gr.Textbox(visible=False)
                 demo.load(None, None, raw_gps, js="""() => new Promise(r => navigator.geolocation.getCurrentPosition(
@@ -291,6 +287,12 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
                 outputs=output_text
+            )
+
+            confirm_btn.click(
+                fn=toggle_tabs,
+                inputs=[location_dropdown, car_dropdown, tank_dropdown],
+                outputs=tab_list
             )
 
             #Toggle tabs avaliable based on depot selection
