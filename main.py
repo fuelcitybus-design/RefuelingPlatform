@@ -233,10 +233,18 @@ def toggle_tabs(location, car, tank):
 
 def toggle_save(location, car, tank):
     # Show save button only if all dropdowns are not placeholders
+    # Hide all tabs by default
+    updates = [gr.update(visible=False) for _ in tab_names]
+
+    # Only show tabs if all dropdowns are valid
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        return gr.update(visible=True)
-    else:
-        return gr.update(visible=False)
+        # Example: show all tabs for now, or filter by depot logic
+        for i in range(len(tab_names)):
+            updates[i] = gr.update(visible=True)
+    else: 
+        for i in range(len(tab_names)):
+            updates[i] = gr.update(visible=False)     
+    return updates
 
 #def clear_images(selection):
     # Reset all images when depot changes
