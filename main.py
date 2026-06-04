@@ -218,20 +218,13 @@ def update_tank_dropdown(tank_id):
     return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], allow_custom_value=False, filterable=False, interactive=True)
 
 def toggle_tabs(location, car, tank):
-    updates = []
     active_tabs = tab_list_S.get(location, [])
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        for tab in tab_names:
-            if tab in active_tabs:
-                updates.append(gr.update(visible=True))
-            else:
-                updates.append(gr.update(visible=False))
+        updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
     else:
         # Hide all tabs if not valid
         updates = [gr.update(visible=False) for _ in tab_names]
-
-    # Return updates + status string
-    return updates + [str({location: active_tabs})]
+    return updates
 
 def toggle_save(location, car, tank):
     # Show save button only if all dropdowns are not placeholders
