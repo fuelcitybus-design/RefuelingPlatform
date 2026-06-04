@@ -13,6 +13,7 @@ from datetime import datetime
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
+from openpyxl.drawing.image import Image as XLImage
 from datetime import datetime
 
 # --- CONFIGURATION ---
@@ -104,7 +105,17 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
             for j, img in enumerate(img_list):
                 if img == None:
                     continue
-                image = Image(img)
+                
+                # Download image from Kudu
+                response = requests.get(img, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                if response.status_code == 200:
+                    with open(local_image, "wb") as f:
+                        f.write(response.content)
+                    print("✅ Image downloaded successfully")
+                else:
+                    raise Exception(f"❌ Failed to download image: HTTP {response.status_code}")
+                
+                image = XLImage(local_image)
                 if image.width > image.height:
                     image.height = image.height/image.width*180
                     image.width = 180
