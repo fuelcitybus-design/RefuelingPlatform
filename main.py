@@ -175,11 +175,10 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             tab_name = tab_names[i]
             filename = f"{tab_name}.jpg"
             filepath = f"{base_url}{filename}"
-            with open(img, "rb") as f:
-                response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
-            if not(response.status_code in [200, 201]):
-                info_msg = f"❌{tab_name} save failed." 
-                return info_msg
+            # Upload directly from buffer
+            response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
+            if response.status_code not in [200, 201]:
+                return f"❌{tab_name} save failed."
             saved_paths.append(tab_name)
             detected_tabs_exist.append(tab_name)
 
