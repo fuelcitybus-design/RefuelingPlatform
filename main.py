@@ -218,26 +218,13 @@ def update_tank_dropdown(tank_id):
     return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], allow_custom_value=False, filterable=False, interactive=True)
 
 def toggle_tabs(location, car, tank):
-    # Always return a list with len(tab_names) elements
     updates = [gr.update(visible=False) for _ in tab_names]
 
-    # Only show tabs if all dropdowns are valid
+    # Show all tabs only if all dropdowns are valid
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        # Example: show all tabs for now
         updates = [gr.update(visible=True) for _ in tab_names]
 
-        # If you want depot-specific filtering:
-        depot_tabs = {
-            "CFD創富": ["油錶前","油尺前","封條1","封條2","油車前","油車後","油錶後","油尺後","收據"],
-            "CWD柴灣": ["油錶前","封條1","封條2","油車前","油車後","油錶後","收據"],
-            # ... other depots
-        }
-        allowed = depot_tabs.get(location, [])
-        updates = [
-            gr.update(visible=(name in allowed))
-            for name in tab_names
-        ]
-
+    return updates
     return updates
 
 #def clear_images(selection):
