@@ -90,6 +90,17 @@ def prefer_back_camera():
     """
     return custom_html
 
+def decode_and_flip(base64_str):
+    if not base64_str:
+        return None
+    # decode base64 string
+    header, data = base64_str.split(",", 1)
+    image_bytes = base64.b64decode(data)
+    img = Image.open(io.BytesIO(image_bytes))
+    # flip horizontally
+    flipped = img.transpose(Image.FLIP_LEFT_RIGHT)
+    return flipped
+
 #=========================================================================================================================
 
 ### Module 1: Uploader function
