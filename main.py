@@ -73,42 +73,36 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     custom_html = """
+    <video id="preview" autoplay playsinline style="transform: scaleX(-1); width:400px; height:400px;"></video>
+    <button id="capture">Capture</button>
     <script>
-    // Override getUserMedia to prefer back camera
-    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-    navigator.mediaDevices.getUserMedia = (constraints) => {
-      if (!constraints.video.facingMode) {
-        constraints.video.facingMode = {ideal: "environment"}; // back camera
-      }
-      constraints.video.width = {ideal: 400};
-      constraints.video.height = {ideal: 400};
-      return originalGetUserMedia(constraints);
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" }, width: 400, height: 400 }
+      });
+      document.getElementById("preview").srcObject = stream;
+    }
+
+    document.getElementById("capture").onclick = async () => {
+      const video = document.getElementById("preview");
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      // draw without flipping so saved image is correct
+      ctx.drawImage(video, 0, 0);
+      const dataURL = canvas.toDataURL("image/png");
+      // send dataURL into hidden Gradio textbox
+      const hidden = document.querySelector('textarea[data-testid="textbox"]');
+      hidden.value = dataURL;
+      hidden.dispatchEvent(new Event("input"));
     };
 
-    // After capture, flip the preview horizontally
-    document.addEventListener("change", async (event) => {
-      if (event.target.type === "file" && event.target.accept.includes("image")) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-          ctx.translate(img.width, 0);
-          ctx.scale(-1, 1); // horizontal flip
-          ctx.drawImage(img, 0, 0);
-          // Replace preview with flipped image
-          event.target.parentNode.querySelector("img").src = canvas.toDataURL();
-        };
-      }
-    });
+    startCamera();
     </script>
     """
     return custom_html
+
 
 #=========================================================================================================================
 
