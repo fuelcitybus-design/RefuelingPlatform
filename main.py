@@ -73,44 +73,43 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     custom_html = """
-    <video id="preview" autoplay playsinline style="transform: scaleX(-1); width:400px; height:400px;"></video>
-    <button id="capture">Capture</button>
-    <script>
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" }, width: { exact: 400 }, height: { exact: 400 } }
-        });
-        document.getElementById("preview").srcObject = stream;
-      } catch (err) {
-        console.error("Back camera not available, falling back:", err);
-        // fallback to any camera if environment fails
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }
-        });
-        document.getElementById("preview").srcObject = stream;
-      }
+    <style>
+    /* Flip only the preview video element */
+    #cameraPreview {
+        transform: scaleX(-1);
     }
+    </style>
+    <script>
+    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
 
-    document.getElementById("capture").onclick = () => {
-      const video = document.getElementById("preview");
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      // draw unflipped so saved image is correct
-      ctx.drawImage(video, 0, 0);
-      const dataURL = canvas.toDataURL("image/png");
-      // push into hidden Gradio textbox
-      const hidden = document.querySelector('textarea[data-testid="textbox"]');
-      hidden.value = dataURL;
-      hidden.dispatchEvent(new Event("input"));
+    navigator.mediaDevices.getUserMedia = async (constraints) => {
+      // Force back camera
+      constraints.video = constraints.video || {};
+      constraints.video.facingMode = { exact: "environment" };
+      constraints.video.width = { ideal: 400 };
+      constraints.video.height = { ideal: 400 };
+
+      const stream = await originalGetUserMedia(constraints);
+
+      // Show preview in a custom <video> element
+      let preview = document.getElementById("cameraPreview");
+      if (!preview) {
+        preview = document.createElement("video");
+        preview.id = "cameraPreview";
+        preview.autoplay = true;
+        preview.playsInline = true;
+        preview.style.width = "400px";
+        preview.style.height = "400px";
+        document.body.appendChild(preview);
+      }
+      preview.srcObject = stream;
+
+      return stream;
     };
-
-    startCamera();
     </script>
     """
     return custom_html
+
 
 
 
