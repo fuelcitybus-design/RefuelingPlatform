@@ -10,7 +10,6 @@ from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
 from io import BytesIO
-import io
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
@@ -72,35 +71,23 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
-    # Inject a custom capture button that forces back camera
     custom_html = """
-    <input id="backcam" type="file" accept="image/*;capture=environment">
     <script>
-    const input = document.getElementById("backcam");
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        // send base64 string into hidden textbox
-        document.getElementById("hidden_image").value = evt.target.result;
-        document.getElementById("hidden_image").dispatchEvent(new Event("input"));
-      };
-      reader.readAsDataURL(file);
+    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+
+    navigator.mediaDevices.getUserMedia = (constraints) => {
+      if (!constraints.video.facingMode) {
+        constraints.video.facingMode = {ideal: "environment"};
+      }
+
+      constraints.video.width = {exact: 400};
+      constraints.video.height = {exact: 400};
+
+      return originalGetUserMedia(constraints);
     };
     </script>
     """
     return custom_html
-
-def decode_and_flip(base64_str):
-    if not base64_str:
-        return None
-    # decode base64 string
-    header, data = base64_str.split(",", 1)
-    image_bytes = base64.b64decode(data)
-    img = Image.open(io.BytesIO(image_bytes))
-    # flip horizontally
-    flipped = img.transpose(Image.FLIP_LEFT_RIGHT)
-    return flipped
 
 #=========================================================================================================================
 
@@ -230,22 +217,6 @@ def update_tank_dropdown(tank_id):
     tank_dropdown = tank_list.get(tank_id, ["{請選擇}"])
     return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], allow_custom_value=False, filterable=False, interactive=True)
 
-def toggle_ui_components(location, car, tank):
-    active_tabs = tab_list_S.get(location, [])
-    
-    # Check if all selections are valid
-    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        tab_updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
-        save_btn_update = gr.update(visible=True)
-    else:
-        # Hide everything if not valid
-        tab_updates = [gr.update(visible=False) for _ in tab_names]
-        save_btn_update = gr.update(visible=False)
-        
-    # Return everything as a single flat list or tuple
-    return tab_updates + [save_btn_update]
-
-
 def toggle_tabs(location, car, tank):
     info_msg = []
     active_tabs = tab_list_S.get(location, [])
@@ -256,7 +227,7 @@ def toggle_tabs(location, car, tank):
         # Hide all tabs if not valid
         updates = [gr.update(visible=False) for _ in tab_names]
         info_msg = "Please select"
-    return updates
+    return 
 
 def toggle_save(location, car, tank):
     # Show save button only if all dropdowns are not placeholders
@@ -293,9 +264,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 raw_gps.change(nearest, raw_gps, location_dropdown)
 
                 location_dropdown.change(fn=update_tank_dropdown, inputs=location_dropdown, outputs=tank_dropdown)
-            
-            hidden_image = gr.Textbox(visible=False, elem_id="hidden_image")
-            
+
             with gr.Tabs() as img_tabs:
                 image_inputs = []
                 tab_list = []
@@ -310,13 +279,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                         image_inputs.append(img_input)
                         tab_list.append(tab)
 
-            for img_input in image_inputs:
-                hidden_image.change(
-                    fn=decode_and_flip,
-                    inputs=hidden_image,
-                    outputs=img_input
-                )
-                
             save_btn = gr.Button("儲存所有照片", variant="primary", size="lg",visible=False)
 
             output_text = gr.Textbox(label="狀態", lines=6)
@@ -328,26 +290,21 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             )
 
             confirm_btn.click(
-                fn=toggle_ui_components,
+                fn=toggle_tabs,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                outputs=tab_list + [save_btn]  # Combine the lists of outputs
+                outputs=tab_list
             )
 
-
-
-            
-            # Raw HTML input for back camera
-            gr.HTML(prefer_back_camera())
             #Toggle tabs avaliable based on depot selection
             #location_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
             #car_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
             #tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
 
             #Toggle save button
-            #location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            #car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            #tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-                
+            location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+            car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+            tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+
             #Clear uploaded images when changing information values
             #location_dropdown.change(clear_images, location_dropdown, image_inputs)
             #car_dropdown.change(clear_images, location_dropdown, image_inputs)
