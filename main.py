@@ -72,46 +72,29 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
-    custom_html = """
-    <style>
-    /* Flip only the preview video element */
-    #cameraPreview {
-        transform: scaleX(-1);
-    }
-    </style>
-    <script>
-    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-
-    navigator.mediaDevices.getUserMedia = async (constraints) => {
-      // Force back camera
-      constraints.video = constraints.video || {};
-      constraints.video.facingMode = { exact: "environment" };
-      constraints.video.width = { ideal: 400 };
-      constraints.video.height = { ideal: 400 };
-
-      const stream = await originalGetUserMedia(constraints);
-
-      // Show preview in a custom <video> element
-      let preview = document.getElementById("cameraPreview");
-      if (!preview) {
-        preview = document.createElement("video");
-        preview.id = "cameraPreview";
-        preview.autoplay = true;
-        preview.playsInline = true;
-        preview.style.width = "400px";
-        preview.style.height = "400px";
-        document.body.appendChild(preview);
-      }
-      preview.srcObject = stream;
-
-      return stream;
-    };
-    </script>
-    """
-    return custom_html
-
-
-
+        const custom_html = `
+        <script>
+        const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+        
+        navigator.mediaDevices.getUserMedia = (constraints) => {
+          if (!constraints.video.facingMode) {
+            constraints.video.facingMode = { ideal: "environment" };
+          }
+        
+          constraints.video.width = { exact: 400 };
+          constraints.video.height = { exact: 400 };
+        
+          return originalGetUserMedia(constraints);
+        };
+        </script>
+        <!-- Add this CSS to flip the video preview horizontally -->
+        <style>
+          video {
+            transform: scaleX(-1);
+          }
+        </style>
+        `;
+        return custom_html;
 
 #=========================================================================================================================
 
