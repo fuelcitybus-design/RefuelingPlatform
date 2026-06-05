@@ -566,7 +566,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                                                 type="pil",
                                                 label=f"Upload {tab_name} photo",
                                                 height=400,
-                                                elem_id="camera_input"
+                                                elem_id="camera_input",
+                                                mirror_webcam=False
                                             )
                         image_inputs.append(img_input)
                         tab_list.append(tab)
