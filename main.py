@@ -87,14 +87,17 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
     </script>
-    <!-- Add CSS to flip the video preview horizontally -->
+    <!-- CSS to flip video and images horizontally -->
     <style>
-      video {
+      /* Flips the video preview if you use a video element with a specific ID */
+      #camera_input {
         transform: scaleX(-1);
+        object-fit: cover; /* optional, to maintain aspect ratio */
       }
     </style>
     """
     return custom_html
+        
 #=========================================================================================================================
 
 ### Module 1: Uploader function
