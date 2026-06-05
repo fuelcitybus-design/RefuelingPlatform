@@ -85,6 +85,21 @@ def prefer_back_camera():
 
       return originalGetUserMedia(constraints);
     };
+
+    // Wire the custom button to open camera
+    document.getElementById("openCamera").onclick = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: "environment" }, width: { ideal: 400 }, height: { ideal: 400 } }
+        });
+        document.getElementById("preview").srcObject = stream;
+      } catch (err) {
+        console.error("Back camera not available, falling back:", err);
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        document.getElementById("preview").srcObject = stream;
+      }
+    };
+    
     </script>
     """
     return custom_html
