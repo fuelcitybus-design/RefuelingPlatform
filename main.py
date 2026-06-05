@@ -73,6 +73,12 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     custom_html = """
+    <style>
+    /* Flip any <video> element horizontally */
+    video {
+        transform: scaleX(-1);
+    }
+    </style>
     <script>
     const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
 
