@@ -73,25 +73,39 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     custom_html = """
-    <style>
-    /* Flip any <video> element horizontally */
-    video {
-        transform: scaleX(-1);
-    }
-    </style>
     <script>
+    // Override getUserMedia to prefer back camera
     const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-
     navigator.mediaDevices.getUserMedia = (constraints) => {
       if (!constraints.video.facingMode) {
-        constraints.video.facingMode = {ideal: "environment"};
+        constraints.video.facingMode = {ideal: "environment"}; // back camera
       }
-
-      constraints.video.width = {exact: 400};
-      constraints.video.height = {exact: 400};
-
+      constraints.video.width = {ideal: 400};
+      constraints.video.height = {ideal: 400};
       return originalGetUserMedia(constraints);
     };
+
+    // After capture, flip the preview horizontally
+    document.addEventListener("change", async (event) => {
+      if (event.target.type === "file" && event.target.accept.includes("image")) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.translate(img.width, 0);
+          ctx.scale(-1, 1); // horizontal flip
+          ctx.drawImage(img, 0, 0);
+          // Replace preview with flipped image
+          event.target.parentNode.querySelector("img").src = canvas.toDataURL();
+        };
+      }
+    });
     </script>
     """
     return custom_html
