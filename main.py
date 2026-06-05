@@ -77,22 +77,31 @@ def prefer_back_camera():
     <button id="capture">Capture</button>
     <script>
     async function startCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: "environment" }, width: 400, height: 400 }
-      });
-      document.getElementById("preview").srcObject = stream;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: "environment" }, width: { exact: 400 }, height: { exact: 400 } }
+        });
+        document.getElementById("preview").srcObject = stream;
+      } catch (err) {
+        console.error("Back camera not available, falling back:", err);
+        // fallback to any camera if environment fails
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" }
+        });
+        document.getElementById("preview").srcObject = stream;
+      }
     }
 
-    document.getElementById("capture").onclick = async () => {
+    document.getElementById("capture").onclick = () => {
       const video = document.getElementById("preview");
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
-      // draw without flipping so saved image is correct
+      // draw unflipped so saved image is correct
       ctx.drawImage(video, 0, 0);
       const dataURL = canvas.toDataURL("image/png");
-      // send dataURL into hidden Gradio textbox
+      // push into hidden Gradio textbox
       const hidden = document.querySelector('textarea[data-testid="textbox"]');
       hidden.value = dataURL;
       hidden.dispatchEvent(new Event("input"));
@@ -102,6 +111,7 @@ def prefer_back_camera():
     </script>
     """
     return custom_html
+
 
 
 #=========================================================================================================================
