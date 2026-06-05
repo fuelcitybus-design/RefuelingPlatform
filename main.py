@@ -72,33 +72,18 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     custom_html = """
-    <button id="openCamera">拍照 (後置鏡頭)</button>
-    <video id="preview" autoplay playsinline style="transform: scaleX(-1); width:400px; height:400px;"></video>
     <script>
-    // Keep your original override logic
     const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
 
     navigator.mediaDevices.getUserMedia = (constraints) => {
       if (!constraints.video.facingMode) {
-        constraints.video.facingMode = { ideal: "environment" }; // prefer back camera
+        constraints.video.facingMode = { ideal: "environment" };
       }
+
       constraints.video.width = { exact: 400 };
       constraints.video.height = { exact: 400 };
-      return originalGetUserMedia(constraints);
-    };
 
-    // Wire the custom button to open camera
-    document.getElementById("openCamera").onclick = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: "environment" }, width: { ideal: 400 }, height: { ideal: 400 } }
-        });
-        document.getElementById("preview").srcObject = stream;
-      } catch (err) {
-        console.error("Back camera not available, falling back:", err);
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        document.getElementById("preview").srcObject = stream;
-      }
+      return originalGetUserMedia(constraints);
     };
     </script>
     """
