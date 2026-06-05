@@ -534,6 +534,7 @@ def assign_tanks(date, location, id):
 
 #============================================================================================================================================================
 
+###Hosting with Gradio
 with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
     gr.Markdown("落油記錄工具")
 
@@ -546,8 +547,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
                 tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False)
                 confirm_btn = gr.Button("確認選擇")
-
-                
 
                 raw_gps = gr.Textbox(visible=False)
                 demo.load(None, None, raw_gps, js="""() => new Promise(r => navigator.geolocation.getCurrentPosition(
@@ -671,11 +670,11 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             car_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
                                 [gallery1, tank_label1, gallery2, tank_label2,
                                 gallery3, tank_label3, gallery4, tank_label4, tank_message])
+            
     demo.css = """
     #camera_input button {
         transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
     }
     """
-
 
 app = gr.mount_gradio_app(app, demo, path="/")
