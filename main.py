@@ -72,30 +72,29 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
-        const custom_html = `
-        <script>
-        const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-        
-        navigator.mediaDevices.getUserMedia = (constraints) => {
-          if (!constraints.video.facingMode) {
-            constraints.video.facingMode = { ideal: "environment" };
-          }
-        
-          constraints.video.width = { exact: 400 };
-          constraints.video.height = { exact: 400 };
-        
-          return originalGetUserMedia(constraints);
-        };
-        </script>
-        <!-- Add this CSS to flip the video preview horizontally -->
-        <style>
-          video {
-            transform: scaleX(-1);
-          }
-        </style>
-        `;
-        return custom_html;
+    custom_html = """
+    <script>
+    const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
 
+    navigator.mediaDevices.getUserMedia = (constraints) => {
+      if (!constraints.video.facingMode) {
+        constraints.video.facingMode = { ideal: "environment" };
+      }
+
+      constraints.video.width = { exact: 400 };
+      constraints.video.height = { exact: 400 };
+
+      return originalGetUserMedia(constraints);
+    };
+    </script>
+    <!-- Add CSS to flip the video preview horizontally -->
+    <style>
+      video {
+        transform: scaleX(-1);
+      }
+    </style>
+    """
+    return custom_html
 #=========================================================================================================================
 
 ### Module 1: Uploader function
