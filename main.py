@@ -10,7 +10,7 @@ from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
 from io import BytesIO
-import cv2
+import paddleocr
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
