@@ -87,14 +87,6 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
     </script>
-    <!-- CSS to flip video and images horizontally -->
-    <style>
-      /* Flips the video preview if you use a video element with a specific ID */
-      #camera_input {
-        transform: scaleX(-1);
-        object-fit: cover; /* optional, to maintain aspect ratio */
-      }
-    </style>
     """
     return custom_html
         
