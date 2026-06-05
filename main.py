@@ -72,17 +72,18 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     custom_html = """
+    <button id="openCamera">拍照 (後置鏡頭)</button>
+    <video id="preview" autoplay playsinline style="transform: scaleX(-1); width:400px; height:400px;"></video>
     <script>
+    // Keep your original override logic
     const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
 
     navigator.mediaDevices.getUserMedia = (constraints) => {
       if (!constraints.video.facingMode) {
-        constraints.video.facingMode = { ideal: "environment" };
+        constraints.video.facingMode = { ideal: "environment" }; // prefer back camera
       }
-
       constraints.video.width = { exact: 400 };
       constraints.video.height = { exact: 400 };
-
       return originalGetUserMedia(constraints);
     };
 
@@ -99,10 +100,10 @@ def prefer_back_camera():
         document.getElementById("preview").srcObject = stream;
       }
     };
-    
     </script>
     """
     return custom_html
+
 
 #=========================================================================================================================
 
