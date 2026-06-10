@@ -226,15 +226,19 @@ def toggle_ui_components(location, car, tank):
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
+
+        first_idx = 0 if active_tabs else None
+        tabs_update = gr.update(selected=first_idx)
     else:
         # Hide everything if not valid
         tab_updates = [gr.update(visible=False) for _ in tab_names]
         save_btn_update = gr.update(visible=False)
         prev_btn_update = gr.update(visible=False)
         next_btn_update = gr.update(visible=False)
+        tabs_update = gr.update(selected=None)
         
     # Return everything as a single flat list or tuple
-    return tab_updates + [save_btn_update]+[prev_btn_update]+[next_btn_update]
+    return tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
 
 
 def toggle_tabs(location, car, tank):
@@ -586,7 +590,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             
             
             with gr.Row():
-                with gr.Tabs() as img_tabs:
+                with gr.Tabs(selected=None) as img_tabs:
                     image_inputs = []
                     tab_list = []
                     for i, tab_name in enumerate(tab_names):
@@ -620,7 +624,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             confirm_btn.click(
                 fn=toggle_ui_components,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                outputs=tab_list + [save_btn]+[prev_btn]+[next_btn]  # Combine the lists of outputs
+                outputs=tab_list + [save_btn, prev_btn, next_btn, img_tabs]  # include img_tabs for selected update
             )
            
             # Raw HTML input for back camera
