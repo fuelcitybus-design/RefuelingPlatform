@@ -576,8 +576,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             
             # --- Tabs with arrow navigation ---
             with gr.Row():
-                prev_btn = gr.Button("⬅️",visible=False)
-                next_btn = gr.Button("➡️",visible=False)
+                prev_btn = gr.Button("⬅️",visible=False, scale=1, min_width=30)
+                next_btn = gr.Button("➡️",visible=False, scale=1, min_width=30)
                 
             
             # Track current tab index
