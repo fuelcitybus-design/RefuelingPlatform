@@ -573,7 +573,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 raw_gps.change(nearest, raw_gps, location_dropdown)
 
                 location_dropdown.change(fn=update_tank_dropdown, inputs=location_dropdown, outputs=tank_dropdown)
-            
+
+            gr.Markdown("---")
+                
             # --- Tabs with arrow navigation ---
             with gr.Row(equal_height=True):
                 prev_btn = gr.Button("⬅️",visible=False, scale=1, min_width=30)
