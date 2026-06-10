@@ -576,8 +576,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             
             # --- Tabs with arrow navigation ---
             with gr.Row(equal_height=True):
-                prev_btn = gr.Button("⬅️",visible=False, scale=1)
-                next_btn = gr.Button("➡️",visible=False, scale=1)
+                prev_btn = gr.Button("⬅️",visible=False, scale=1, min_width=30)
+                next_btn = gr.Button("➡️",visible=False, scale=1, min_width=30)
                 
             
             # Track current tab index
@@ -591,7 +591,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                         with gr.Tab(tab_name, id =i, visible=False) as tab:
                             img_input = gr.Image(
                                 type="pil",
-                                label=f"Upload {tab_name} photo",
+                                label=f"上傳「{tab_name}」相片",
                                 height=400,
                                 elem_id="camera_input",
                                 mirror_webcam=False,
@@ -602,7 +602,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
             
                 
-            save_btn = gr.Button("儲存所有照片", variant="primary", size="lg", visible=False)
+            save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
 
             output_text = gr.Textbox(label="狀態", lines=6)
 
