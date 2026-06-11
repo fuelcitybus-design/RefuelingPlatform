@@ -714,6 +714,13 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
     #camera_input button {
         transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
     }
+    
+    #camera_input .wrap .label {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    }
+    
     """
-
+        
 app = gr.mount_gradio_app(app, demo, path="/")
