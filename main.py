@@ -714,10 +714,24 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             #camera_input button {
                 transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
             }
-                    
+
+            .gradio-container,
+            body,
+            div,
+            span,
+            p,
+            label,
+            button,
+            h1, h2, h3, h4, h5, h6,
+            textarea,
+            input,
+            select {
+                font-size: 20px !important;
+            }
+
             /* Or more specific: by elem_id */
             #camera_input label {
-                font-size: 30px !important;
+                font-size: 25px !important;
             }
                         
             """
