@@ -726,12 +726,12 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             textarea,
             input,
             select {
-                font-size: 20px !important;
+                font-size: 16px !important;
             }
 
             /* Or more specific: by elem_id */
             #camera_input label {
-                font-size: 25px !important;
+                font-size: 20px !important;
             }
                         
             """
