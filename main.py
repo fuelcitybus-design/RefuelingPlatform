@@ -553,20 +553,8 @@ def assign_tanks(date, location, id):
 
 #============================================================================================================================================================
 
-demo.css = """
-#camera_input button {
-    transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
-    }
-    
-/* Or more specific: by elem_id */
-#camera_input .label {
-    font-size: 30px !important;
-    }
-        
-"""
-
 ###Hosting with Gradio
-with gr.Blocks(head=prefer_back_camera(), css=demo_css) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
+with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
@@ -721,5 +709,17 @@ with gr.Blocks(head=prefer_back_camera(), css=demo_css) as demo: # DeprecationWa
             car_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
                                 [gallery1, tank_label1, gallery2, tank_label2,
                                 gallery3, tank_label3, gallery4, tank_label4, tank_message])
+
+            demo.css = """
+            #camera_input button {
+                transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
+            }
+                    
+            /* Or more specific: by elem_id */
+            #camera_input label {
+                font-size: 30px !important;
+            }
+                        
+            """
         
 app = gr.mount_gradio_app(app, demo, path="/")
