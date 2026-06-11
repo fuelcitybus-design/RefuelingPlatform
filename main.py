@@ -716,7 +716,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
     }
     
     #camera_input .wrap .label {
-    font-size: 20px;
+    font-size: 100px;
     font-weight: bold;
     color: #333;
     }
