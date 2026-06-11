@@ -734,7 +734,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 font-size: 20px !important;
             }
 
-            #camera_input .device-selector {
+            #camera_input device-selector {
                 display: none !important;
             }
                         
