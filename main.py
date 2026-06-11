@@ -554,7 +554,7 @@ def assign_tanks(date, location, id):
 #============================================================================================================================================================
 
 ###Hosting with Gradio
-with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
+with gr.Blocks(head=prefer_back_camera(), css=demo_css) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
@@ -716,7 +716,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
     }
     
     /* Or more specific: by elem_id */
-    #camera_input + .label {
+    #camera_input .label {
         font-size: 30px !important;
     }
         
