@@ -741,6 +741,10 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             #camera_input .select-wrap {
                 display: none !important;
             }
+
+            #camera_input button.icon {
+                display: none !important;
+            }
                         
             """
         
