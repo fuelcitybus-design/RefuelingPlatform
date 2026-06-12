@@ -742,7 +742,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 display: none !important;
             }
 
-            #camera_input button.icon {
+            #camera_input button-wrap.button.icon {
                 display: none !important;
             }
                         
