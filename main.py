@@ -249,14 +249,14 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
 # =====================================================================
 # Display Functions
 def show_img(abnormal_list):
-    # abnormal_list is a list of [pos, number, image]
     outputs = []
     for i in range(10):
         if i < len(abnormal_list):
-            outputs.append(abnormal_list[i][2])  # the NumPy/PIL image
+            outputs.append(abnormal_list[i][2])  # the image array/PIL object
         else:
-            outputs.append(None)  # keep slot empty
-    return outputs  # length = 10
+            outputs.append(None)
+    return outputs
+
 
 
 def show_txt(abnormal_list):
@@ -265,8 +265,8 @@ def show_txt(abnormal_list):
         if i < len(abnormal_list):
             outputs.append(f"{abnormal_list[i][0]}_{abnormal_list[i][1]}")
         else:
-            outputs.append("")  # empty textbox
-    return outputs  # length = 10
+            outputs.append("")
+    return outputs
 
 # =====================================================================
 # Correction Function
