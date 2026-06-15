@@ -160,14 +160,17 @@ def ocr_from_kudu(file_url):
 def kudu_list_files(root_url, pattern="油車前.jpg"):
     resp = requests.get(root_url, auth=auth)
     resp.raise_for_status()
-    items = resp.json()["Files"]
+    items = resp.json()   # this is already a list, not a dict
+    
     matches = []
     for item in items:
         if item["mime"] == "inode/directory":
-            matches.extend(kudu_list_files(root_url + "/" + item["name"], pattern))
+            # recurse into subfolder
+            sub_url = root_url.rstrip("/") + "/" + item["name"] + "/"
+            matches.extend(kudu_list_files(sub_url, pattern))
         else:
             if item["name"].lower() == pattern.lower() or pattern == "*.jpg":
-                matches.append(root_url + "/" + item["name"])
+                matches.append(root_url.rstrip("/") + "/" + item["name"])
     return matches
 
 def kudu_rename(file_url, new_name):
