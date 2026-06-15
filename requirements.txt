@@ -54,3 +54,5 @@ paddleocr==3.6.0
 opencv-python-headless==4.9.0.80
 openpyxl==3.1.5
 paddlepaddle
+libgl1-mesa-glx
+libglib2.0-0
