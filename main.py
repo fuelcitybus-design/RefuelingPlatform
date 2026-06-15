@@ -198,6 +198,17 @@ def kudu_rename(file_url, new_name):
 
     return new_url
 
+def download_from_kudu(file_url):
+    # Authenticated GET from Kudu
+    resp = requests.get(file_url, auth=auth)
+    resp.raise_for_status()
+    # Save to a temp file
+    suffix = os.path.splitext(file_url)[-1]
+    fd, path = tempfile.mkstemp(suffix=suffix)
+    with os.fdopen(fd, "wb") as f:
+        f.write(resp.content)
+    return path
+
 # =====================================================================
 # Analysis & Abnormal Extraction
 def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
@@ -219,13 +230,14 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
         kudu_rename(file_url, new_name)
         num_analysis += 1
 
-    # Collect abnormal entries
+    # Collect abnormal entries and download them
     pattern = re.compile(r'^X_(油車前|油車後)_(.+)\.jpg$', re.IGNORECASE)
     for file_url in kudu_list_files(root_folder, "*.jpg"):
         fname = file_url.split("/")[-1]
         match = pattern.match(fname)
         if match:
-            abnormal_list.append([match.group(1), match.group(2), file_url])
+            local_path = download_from_kudu(file_url)
+            abnormal_list.append([match.group(1), match.group(2), local_path])
 
     abnormal_list_10 = abnormal_list[:10]
     global abnormal_count
