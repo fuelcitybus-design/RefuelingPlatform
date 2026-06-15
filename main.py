@@ -200,15 +200,11 @@ def kudu_rename(file_url, new_name):
     return new_url
 
 def download_from_kudu(file_url):
-    # Authenticated GET from Kudu
     resp = requests.get(file_url, auth=auth)
     resp.raise_for_status()
-    # Save to a temp file
-    suffix = os.path.splitext(file_url)[-1]
-    fd, path = tempfile.mkstemp(suffix=suffix)
-    with os.fdopen(fd, "wb") as f:
-        f.write(resp.content)
-    return path
+    # Convert bytes to PIL.Image
+    img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+    return img
 
 # =====================================================================
 # Analysis & Abnormal Extraction
@@ -237,8 +233,8 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
         fname = file_url.split("/")[-1]
         match = pattern.match(fname)
         if match:
-            local_path = download_from_kudu(file_url)
-            abnormal_list.append([match.group(1), match.group(2), local_path])
+            pil_img = download_from_kudu(file_url)
+            abnormal_list.append([match.group(1), match.group(2), pil_img])
 
     abnormal_list_10 = abnormal_list[:10]
     global abnormal_count
