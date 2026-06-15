@@ -203,9 +203,9 @@ def kudu_rename(file_url, new_name):
 def download_from_kudu(file_url):
     resp = requests.get(file_url, auth=auth)
     resp.raise_for_status()
-    # Convert bytes to PIL.Image
-    img = Image.open(io.BytesIO(resp.content)).convert("RGB")
-    return img
+    file_bytes = np.frombuffer(resp.content, np.uint8)
+    image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    return image
 
 # =====================================================================
 # Analysis & Abnormal Extraction
@@ -234,8 +234,8 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
         fname = file_url.split("/")[-1]
         match = pattern.match(fname)
         if match:
-            pil_img = download_from_kudu(file_url)
-            abnormal_list.append([match.group(1), match.group(2), pil_img])
+            cv_img = download_from_kudu(file_url)
+            abnormal_list.append([match.group(1), match.group(2), cv_img])
 
     abnormal_list_10 = abnormal_list[:10]
     global abnormal_count
