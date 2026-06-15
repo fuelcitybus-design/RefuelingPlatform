@@ -179,9 +179,9 @@ def kudu_rename(file_url, new_name):
     content = resp.content
     folder_url = "/".join(file_url.split("/")[:-1])
     new_url = folder_url + "/" + new_name
-    put_resp = requests.put(new_url, data=content)
+    put_resp = requests.put(new_url, data=content, auth=auth)
     put_resp.raise_for_status()
-    del_resp = requests.delete(file_url)
+    del_resp = requests.delete(file_url, auth=auth)
     del_resp.raise_for_status()
     return new_url
 
