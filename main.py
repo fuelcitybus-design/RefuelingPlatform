@@ -184,7 +184,8 @@ def kudu_rename(file_url, new_name):
 
 # =====================================================================
 # Analysis & Abnormal Extraction
-def analysis_rename(request: gr.Request, root_folder=ROOT_FOLDER):
+def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
+    root_folder = f"{root_folder_O}/"
     abnormal_list = []
     num_analysis = 0
 
