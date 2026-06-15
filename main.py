@@ -249,16 +249,24 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
 # =====================================================================
 # Display Functions
 def show_img(abnormal_list):
-    updates = [gr.update(visible=False)] * 20
-    for i in range(len(abnormal_list)):
-        updates[i] = gr.update(visible=True, value=abnormal_list[i][2])  # Kudu URL
-    return updates
+    # abnormal_list is a list of [pos, number, image]
+    outputs = []
+    for i in range(10):
+        if i < len(abnormal_list):
+            outputs.append(abnormal_list[i][2])  # the NumPy/PIL image
+        else:
+            outputs.append(None)  # keep slot empty
+    return outputs  # length = 10
+
 
 def show_txt(abnormal_list):
-    updates = [gr.update(visible=False)] * 20
-    for i in range(len(abnormal_list)):
-        updates[i] = gr.update(visible=True, value=abnormal_list[i][1])  # OCR number
-    return updates
+    outputs = []
+    for i in range(10):
+        if i < len(abnormal_list):
+            outputs.append(f"{abnormal_list[i][0]}_{abnormal_list[i][1]}")
+        else:
+            outputs.append("")  # empty textbox
+    return outputs  # length = 10
 
 # =====================================================================
 # Correction Function
