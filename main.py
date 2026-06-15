@@ -249,24 +249,17 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
 # =====================================================================
 # Display Functions
 def show_img(abnormal_list):
-    outputs = []
-    for i in range(10):
-        if i < len(abnormal_list):
-            outputs.append(abnormal_list[i][2])  # the image array/PIL object
-        else:
-            outputs.append(None)
-    return outputs
-
-
+    return [
+        abnormal_list[i][2] if i < len(abnormal_list) else None
+        for i in range(10)
+    ]
 
 def show_txt(abnormal_list):
-    outputs = []
-    for i in range(10):
-        if i < len(abnormal_list):
-            outputs.append(f"{abnormal_list[i][0]}_{abnormal_list[i][1]}")
-        else:
-            outputs.append("")
-    return outputs
+    return [
+        f"{abnormal_list[i][0]}_{abnormal_list[i][1]}" if i < len(abnormal_list) else ""
+        for i in range(10)
+    ]
+
 
 # =====================================================================
 # Correction Function
@@ -324,6 +317,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
+
 
             collect_btn = gr.Button("儲存所有修改")
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts, outputs=[state, abnormal_list])
