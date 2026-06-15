@@ -14,6 +14,7 @@ import re
 import numpy as np
 import cv2
 from paddleocr import PaddleOCR
+import tempfile
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
