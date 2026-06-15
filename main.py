@@ -126,7 +126,7 @@ def area(bbox):
 # =====================================================================
 # OCR from Kudu
 def ocr_from_kudu(file_url):
-    resp = requests.get(file_url)
+    resp = requests.get(file_url, auth=auth)
     resp.raise_for_status()
     file_bytes = np.frombuffer(resp.content, np.uint8)
     image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
@@ -174,7 +174,7 @@ def kudu_list_files(root_url, pattern="油車前.jpg"):
     return matches
 
 def kudu_rename(file_url, new_name):
-    resp = requests.get(file_url)
+    resp = requests.get(file_url, auth=auth)
     resp.raise_for_status()
     content = resp.content
     folder_url = "/".join(file_url.split("/")[:-1])
