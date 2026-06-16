@@ -241,10 +241,18 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
     global abnormal_count
     abnormal_count = len(abnormal_list)
 
+    imgs = [abnormal_list_10[i][2] if i < len(abnormal_list_10) else None for i in range(10)]
+    txts = [
+        f"{abnormal_list_10[i][0]}_{abnormal_list_10[i][1]}" if i < len(abnormal_list_10) else ""
+        for i in range(10)
+    ]
+
     if len(abnormal_list) <= 10:
-        return abnormal_list_10, f"{len(abnormal_list)}張照片需要檢查"
+        msg = f"{len(abnormal_list)}張照片需要檢查"
     else:
-        return abnormal_list_10, f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首10張，然後再按一次分析繼續"
+        msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首10張，然後再按一次分析繼續"
+
+    return abnormal_list_10, msg, *imgs, *txts
 
 # =====================================================================
 # Display Functions
@@ -289,7 +297,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
         kudu_rename(file_url, new_name)
 
     if abnormal_count > 10:
-        result = analysis_rename(request, root_folder=ROOT_FOLDER)
+        result = analysis_rename(request, root_folder_O=ROOT_FOLDER)
         return result[1], result[0]
     else:
         return "儲存成功", []
@@ -305,7 +313,11 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             state = gr.Textbox(label="狀態", lines=5)
 
             run_btn = gr.Button("運行AI")
-            run_btn.click(fn=analysis_rename, inputs=[], outputs=[abnormal_list, state])
+            run_btn.click(
+                fn=analysis_rename,
+                inputs=[],
+                outputs=[abnormal_list, state] + imgs + txts
+            )
 
             txts, imgs = [], []
             for i in range(10):
