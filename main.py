@@ -228,22 +228,46 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
         kudu_rename(file_url, new_name)
         num_analysis += 1
 
-    # Collect abnormal entries (but do not expand into images/text here)
+    # Collect abnormal entries
     pattern = re.compile(r'^X_(油車前|油車後)_(.+)\.jpg$', re.IGNORECASE)
     for file_url in kudu_list_files(root_folder, "*.jpg"):
         fname = file_url.split("/")[-1]
         match = pattern.match(fname)
         if match:
-            abnormal_list.append({"prefix": match.group(1),"ocr": match.group(2),"url": file_url})
+            # Store: [prefix, ocr_number, file_url]
+            abnormal_list.append([match.group(1), match.group(2), file_url])
 
     abnormal_list_10 = abnormal_list[:10]
     global abnormal_count
     abnormal_count = len(abnormal_list)
 
+    # Build images (numpy arrays) for gr.Image
+    imgs = []
+    for i in range(10):
+        if i < len(abnormal_list_10):
+            file_url = abnormal_list_10[i][2]
+            cv_img = download_from_kudu(file_url)
+            if cv_img is None:
+                # Placeholder for failed images
+                cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
+            imgs.append(cv_img)
+        else:
+            imgs.append(None)
+
+    # Build text labels for gr.Textbox
+    txts = [
+        f"{abnormal_list_10[i][0]}_{abnormal_list_10[i][1]}" if i < len(abnormal_list_10) else ""
+        for i in range(10)
+    ]
+
+    # Status message
     if len(abnormal_list) <= 10:
-        return abnormal_list_10, f"{len(abnormal_list)}張照片需要檢查"
+        msg = f"{len(abnormal_list)}張照片需要檢查"
     else:
-        return abnormal_list_10, f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首10張，然後再按一次分析繼續"
+        msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
+
+    # Return: state, status, 10 images, 10 texts
+    return abnormal_list_10, msg, *imgs, *txts
 
 # =====================================================================
 # Display Functions
@@ -321,8 +345,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     txt = gr.Textbox(value=None, label=i, visible=False)
                     txts.append(txt)
 
-            abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
-            abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
+            #abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
+           # abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
 
 
 
