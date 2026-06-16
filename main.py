@@ -228,31 +228,22 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
         kudu_rename(file_url, new_name)
         num_analysis += 1
 
-    # Collect abnormal entries and download them
+    # Collect abnormal entries (but do not expand into images/text here)
     pattern = re.compile(r'^X_(油車前|油車後)_(.+)\.jpg$', re.IGNORECASE)
     for file_url in kudu_list_files(root_folder, "*.jpg"):
         fname = file_url.split("/")[-1]
         match = pattern.match(fname)
         if match:
-            cv_img = download_from_kudu(file_url)
-            abnormal_list.append([match.group(1), match.group(2), cv_img])
+            abnormal_list.append([match.group(1), match.group(2), file_url])
 
     abnormal_list_10 = abnormal_list[:10]
     global abnormal_count
     abnormal_count = len(abnormal_list)
 
-    imgs = [abnormal_list_10[i][2] if i < len(abnormal_list_10) else None for i in range(10)]
-    txts = [
-        f"{abnormal_list_10[i][0]}_{abnormal_list_10[i][1]}" if i < len(abnormal_list_10) else ""
-        for i in range(10)
-    ]
-
     if len(abnormal_list) <= 10:
-        msg = f"{len(abnormal_list)}張照片需要檢查"
+        return abnormal_list_10, f"{len(abnormal_list)}張照片需要檢查"
     else:
-        msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首10張，然後再按一次分析繼續"
-
-    return abnormal_list_10, msg, *imgs, *txts
+        return abnormal_list_10, f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首10張，然後再按一次分析繼續"
 
 # =====================================================================
 # Display Functions
@@ -267,7 +258,6 @@ def show_txt(abnormal_list):
         f"{abnormal_list[i][0]}_{abnormal_list[i][1]}" if i < len(abnormal_list) else ""
         for i in range(10)
     ]
-
 
 # =====================================================================
 # Correction Function
@@ -330,6 +320,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
+
 
 
             collect_btn = gr.Button("儲存所有修改")
