@@ -311,7 +311,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
         with gr.Tab("AI處理"):
             abnormal_list = gr.State([])
             state = gr.Textbox(label="狀態", lines=5)
-
+            
+            txts, imgs = [], []
             run_btn = gr.Button("運行AI")
             run_btn.click(
                 fn=analysis_rename,
@@ -319,7 +320,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 outputs=[abnormal_list, state] + imgs + txts
             )
 
-            txts, imgs = [], []
+
             for i in range(10):
                 with gr.Row():
                     img = gr.Image(None, label=i, visible=False, width=150, interactive=False)
