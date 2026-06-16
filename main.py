@@ -258,7 +258,7 @@ def show_img(abnormal_list):
 
 def show_txt(abnormal_list):
     return [
-        f"{abnormal_list[i]['prefix']}_{abnormal_list[i]['ocr']}" if i < len(abnormal_list) else ""
+        f"{abnormal_list[i][0]}_{abnormal_list[i][1]}" if i < len(abnormal_list) else ""
         for i in range(10)
     ]
 
