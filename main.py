@@ -234,7 +234,7 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
         fname = file_url.split("/")[-1]
         match = pattern.match(fname)
         if match:
-            abnormal_list.append([match.group(1), match.group(2), file_url])
+            abnormal_list.append({"prefix": match.group(1),"ocr": match.group(2),"url": file_url})
 
     abnormal_list_10 = abnormal_list[:10]
     global abnormal_count
@@ -255,10 +255,10 @@ def show_img(abnormal_list):
         else:
             imgs.append(None)
     return imgs
-
+    
 def show_txt(abnormal_list):
     return [
-        f"{abnormal_list[i][0]}_{abnormal_list[i][1]}" if i < len(abnormal_list) else ""
+        f"{abnormal_list[i]['prefix']}_{abnormal_list[i]['ocr']}" if i < len(abnormal_list) else ""
         for i in range(10)
     ]
 
@@ -282,10 +282,10 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
 
     num_update = 0
     for i in range(len(abnormal_list)):
-        file_url = abnormal_list[i][2]
-        prefix = abnormal_list[i][0]
+        file_url = abnormal_list[i]["url"]
+        prefix = abnormal_list[i]["prefix"]
         new_name = f"{prefix}_{text_list[i]}.jpg"
-        if int(abnormal_list[i][1]) != int(text_list[i]):
+        if int(abnormal_list[i]["ocr"]) != int(text_list[i]):
             num_update += 1
         kudu_rename(file_url, new_name)
 
