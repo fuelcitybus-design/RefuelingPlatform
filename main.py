@@ -178,8 +178,6 @@ def kudu_list_files(root_url, pattern="油車前.jpg"):
 def kudu_rename(file_url, new_name):
     # Download the file
     resp = requests.get(file_url, auth=auth)
-    resp.raise_for_status()
-    content = resp.content
 
     # Construct new URL
     folder_url = "/".join(file_url.split("/")[:-1])
@@ -188,14 +186,13 @@ def kudu_rename(file_url, new_name):
     # Upload with overwrite (If-Match: *)
     put_resp = requests.put(
         new_url,
-        data=content,
+        data=resp.content,
         auth=auth,
         headers={"If-Match": "*"}
     )
-    put_resp.raise_for_status()
 
     # Delete old file
-    
+    del_resp = requests.delete(file_url, auth=auth, headers={"If-Match": "*"})
 
     return new_url
 
