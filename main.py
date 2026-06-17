@@ -272,7 +272,7 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
 # =====================================================================
 # Display Functions
 def show_img(abnormal_list):
-    updates = [gr.update(visible=False)] * 20
+    updates = [gr.update(visible=False)] * 10
     for i in range(len(abnormal_list)):
         file_url = abnormal_list[i][2]
         cv_img = download_from_kudu(file_url)
@@ -282,7 +282,7 @@ def show_img(abnormal_list):
     return updates
 
 def show_txt(abnormal_list):
-    updates = [gr.update(visible=False)] * 20
+    updates = [gr.update(visible=False)] * 10
     for i in range(len(abnormal_list)):
         updates[i] = gr.update(
             visible=True,
