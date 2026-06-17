@@ -195,8 +195,7 @@ def kudu_rename(file_url, new_name):
     put_resp.raise_for_status()
 
     # Delete old file
-    del_resp = requests.delete(file_url, auth=auth, headers={"If-Match": "*"})
-    del_resp.raise_for_status()
+    
 
     return new_url
 
