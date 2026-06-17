@@ -181,8 +181,11 @@ def kudu_rename(file_url, new_name):
     resp.raise_for_status()
     content = resp.content
 
-    # Construct new URL
-    folder_url = "/".join(file_url.split("/")[:-1])
+    # ✅ FIXED: Proper URL construction
+    parts = file_url.split("/")
+    folder_url = parts[:-1]  # Remove filename
+    folder_url = "/".join(folder_url)  # Rejoin with slashes
+    
     new_url = folder_url + "/" + new_name
 
     # Upload with overwrite (If-Match: *)
