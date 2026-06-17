@@ -317,9 +317,9 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
         ocr_original = abnormal_list[i][1]   # was ["ocr"]
         
         new_name = f"{prefix}_{text_list[i]}.jpg"
-        if int(ocr_original) != int(text_list[i]):
-            num_update += 1
-            kudu_rename(file_url, new_name)
+        #if int(ocr_original) != int(text_list[i]): {!!!Considering if the numbers are actually correctly under threshold}
+        num_update += 1
+        kudu_rename(file_url, new_name)
     
     if abnormal_count > 10:
         result = analysis_rename(request, root_folder_O=ROOT_FOLDER)
@@ -348,9 +348,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             
             for i in range(10):
                 with gr.Row():
-                    img = gr.Image(None, label=i, visible=False, width=150, interactive=False)
+                    img = gr.Image(None, label=f"圖{i+1}", visible=False, width=150, interactive=False)
                     imgs.append(img)
-                    txt = gr.Textbox(value=None, label=i, visible=False)
+                    txt = gr.Textbox(value=None, label=f"待修改/認證{i+1}", visible=False)
                     txts.append(txt)
                     
                     # Create State to hold the index i
