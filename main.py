@@ -277,7 +277,10 @@ def show_img(abnormal_list):
         if i < len(abnormal_list):
             # List structure: [prefix, ocr_number, file_url]
             file_url = abnormal_list[i][2]
-            imgs.append(download_from_kudu(file_url))
+            cv_img = download_from_kudu(file_url)
+            if cv_img is None:
+                cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
+            imgs.append(cv_img)
         else:
             imgs.append(None)
     return imgs
@@ -302,19 +305,22 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
             text_list.append(num)
         except ValueError:
             return f"警告：第{idx+1}張照片非數字輸入", abnormal_list
-
+    
     if len(text_list) < len(abnormal_list):
         return "警告：缺少輸入", abnormal_list
-
+    
     num_update = 0
     for i in range(len(abnormal_list)):
-        file_url = abnormal_list[i]["url"]
-        prefix = abnormal_list[i]["prefix"]
+        # ✅ Fix these lines to use list indices
+        file_url = abnormal_list[i][2]      # was ["url"]
+        prefix = abnormal_list[i][0]         # was ["prefix"]
+        ocr_original = abnormal_list[i][1]   # was ["ocr"]
+        
         new_name = f"{prefix}_{text_list[i]}.jpg"
-        if int(abnormal_list[i]["ocr"]) != int(text_list[i]):
+        if int(ocr_original) != int(text_list[i]):
             num_update += 1
-        kudu_rename(file_url, new_name)
-
+            kudu_rename(file_url, new_name)
+    
     if abnormal_count > 10:
         result = analysis_rename(request, root_folder_O=ROOT_FOLDER)
         return result[1], result[0]
