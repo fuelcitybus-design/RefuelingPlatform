@@ -275,14 +275,16 @@ def show_img(abnormal_list):
     imgs = []
     for i in range(10):
         if i < len(abnormal_list):
-            imgs.append(download_from_kudu(abnormal_list[i]["url"]))
+            # List structure: [prefix, ocr_number, file_url]
+            file_url = abnormal_list[i][2]
+            imgs.append(download_from_kudu(file_url))
         else:
             imgs.append(None)
     return imgs
-    
+
 def show_txt(abnormal_list):
     return [
-        f"{abnormal_list[i]['prefix']}_{abnormal_list[i]['ocr']}" if i < len(abnormal_list) else ""
+        f"{abnormal_list[i][0]}_{abnormal_list[i][1]}" if i < len(abnormal_list) else ""
         for i in range(10)
     ]
 
