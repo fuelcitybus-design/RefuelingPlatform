@@ -267,7 +267,7 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
         msg = f"剩餘{len(abnormal_list)}張照片需要檢查，，然後按一次儲存繼續每次最多檢查 10 張"
 
     # Return: state, status, 10 images, 10 texts
-    return abnormal_list_10, msg, *imgs, *txts
+    return abnormal_list_10, msg
 
 # =====================================================================
 # Display Functions
@@ -340,7 +340,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             run_btn.click(
                 fn=analysis_rename,
                 inputs=[],
-                outputs=[abnormal_list, state] + imgs + txts
+                outputs=[abnormal_list, state]
             )
 
             for i in range(10):
