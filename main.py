@@ -345,9 +345,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             for i in range(10):
                 with gr.Row():
-                    img = gr.Image(None, label=i, visible=False, width=150, interactive=False)
+                    img = gr.Image(None, label=i+1, visible=False, width=150, interactive=False)
                     imgs.append(img)
-                    txt = gr.Textbox(value="", label=i, visible=False)
+                    txt = gr.Textbox(value="", label=f"待認證/修改{i+1}", visible=False)
                     txts.append(txt)
 
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
