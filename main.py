@@ -344,7 +344,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 with gr.Row():
                     img = gr.Image(None, label=i, visible=True, width=150, interactive=False)
                     imgs.append(img)
-                    txt = gr.Textbox(value=None, label=i, visible=False)
+                    txt = gr.Textbox(value=None, label=i, visible=True)
                     txts.append(txt)
 
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
