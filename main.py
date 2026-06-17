@@ -176,44 +176,29 @@ def kudu_list_files(root_url, pattern="油車前.jpg"):
     return matches
 
 def kudu_rename(file_url, new_name):
-    try:
-        # Download the file
-        resp = requests.get(file_url, auth=auth)
-        resp.raise_for_status()
-        content = resp.content
+    # Download the file
+    resp = requests.get(file_url, auth=auth)
+    resp.raise_for_status()
+    content = resp.content
 
-        last_slash = file_url.rfind("/")
-        if last_slash == -1:
-            raise ValueError(f"Invalid file_url: {file_url}")
-        
-        folder_url = file_url[:last_slash]
-        new_url = folder_url + "/" + new_name
+    # Construct new URL
+    folder_url = "/".join(file_url.split("/")[:-1])
+    new_url = folder_url + "/" + new_name
 
-        print(f"Renaming:")
-        print(f"  From: {file_url}")
-        print(f"  To:   {new_url}")
+    # Upload with overwrite (If-Match: *)
+    put_resp = requests.put(
+        new_url,
+        data=content,
+        auth=auth,
+        headers={"If-Match": "*"}
+    )
+    put_resp.raise_for_status()
 
-        # Upload with overwrite
-        put_resp = requests.put(
-            new_url,
-            data=content,
-            auth=auth,
-            headers={"If-Match": "*"}
-        )
-        
-        if put_resp.status_code != 200:
-            raise Exception(f"PUT failed: {put_resp.status_code} - {put_resp.text}")
+    # Delete old file
+    del_resp = requests.delete(file_url, auth=auth, headers={"If-Match": "*"})
+    del_resp.raise_for_status()
 
-        # Delete old file
-        del_resp = requests.delete(file_url, auth=auth, headers={"If-Match": "*"})
-        
-        if del_resp.status_code not in [200, 204]:
-            raise Exception(f"DELETE failed: {del_resp.status_code} - {del_resp.text}")
-
-        return new_url
-    except Exception as e:
-        print(f"kudu_rename error: {e}")
-        raise e
+    return new_url
 
 def download_from_kudu(file_url):
     resp = requests.get(file_url, auth=auth)
@@ -309,8 +294,6 @@ def show_txt(abnormal_list):
 def collect_all_texts(request: gr.Request, abnormal_list, *texts):
     text_list = []
     n = min(len(abnormal_list), len(texts))
-    
-    # Validate inputs first
     for idx in range(n):
         txt = texts[idx]
         if txt is None or txt.strip() == "":
@@ -325,35 +308,23 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
         return "警告：缺少輸入", abnormal_list
     
     num_update = 0
-    rename_errors = []
-    
-    # Add error handling for rename operations
     for i in range(len(abnormal_list)):
-        file_url = abnormal_list[i][2]
-        prefix = abnormal_list[i][0]
-        ocr_original = abnormal_list[i][1]
+        # ✅ Fix these lines to use list indices
+        file_url = abnormal_list[i][2]      # was ["url"]
+        prefix = abnormal_list[i][0]         # was ["prefix"]
+        ocr_original = abnormal_list[i][1]   # was ["ocr"]
         
         new_name = f"{prefix}_{text_list[i]}.jpg"
-        
         if int(ocr_original) != int(text_list[i]):
-            try:
-                kudu_rename(file_url, new_name)
-                num_update += 1
-            except Exception as e:
-                rename_errors.append(f"第{i+1}張照片rename失敗: {str(e)}")
-                print(f"Rename error: {e}")
-    
-    # Report errors if any occurred
-    if rename_errors:
-        error_msg = "儲存成功但部分重命名失敗:\n" + "\n".join(rename_errors)
-    else:
-        error_msg = "儲存成功"
+            num_update += 1
+            kudu_rename(file_url, new_name)
     
     if abnormal_count > 10:
         result = analysis_rename(request, root_folder_O=ROOT_FOLDER)
         return result[1], result[0]
     else:
-        return error_msg, []
+        return "儲存成功", []
+        
 # =====================================================================
 # Gradio Hosting
 with gr.Blocks(head=prefer_back_camera()) as demo:
