@@ -272,24 +272,24 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
 # =====================================================================
 # Display Functions
 def show_img(abnormal_list):
-    imgs = []
-    for i in range(10):
-        if i < len(abnormal_list):
-            # List structure: [prefix, ocr_number, file_url]
-            file_url = abnormal_list[i][2]
-            cv_img = download_from_kudu(file_url)
-            if cv_img is None:
-                cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
-            imgs.append(cv_img)
-        else:
-            imgs.append(None)
-    return imgs
+    updates = [gr.update(visible=False)] * 20
+    for i in range(len(abnormal_list)):
+        file_url = abnormal_list[i][2]
+        cv_img = download_from_kudu(file_url)
+        if cv_img is None:
+            cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        updates[i] = gr.update(visible=True, value=cv_img)
+    return updates
 
 def show_txt(abnormal_list):
-    return [
-        f"{abnormal_list[i][0]}_{abnormal_list[i][1]}" if i < len(abnormal_list) else ""
-        for i in range(10)
-    ]
+    updates = [gr.update(visible=False)] * 20
+    for i in range(len(abnormal_list)):
+        updates[i] = gr.update(
+            visible=True,
+            value="",
+            label=f"{abnormal_list[i][0]}_{abnormal_list[i][1]}"
+        )
+    return updates
 
 # =====================================================================
 # Correction Function
