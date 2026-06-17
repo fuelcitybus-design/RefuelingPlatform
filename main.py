@@ -2,7 +2,7 @@ from fastapi import FastAPI
 app = FastAPI()
 
 #========================================================================================================
-
+#
 import os
 import base64
 import requests
@@ -267,29 +267,29 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
         msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
 
     # Return: state, status, 10 images, 10 texts
-    return abnormal_list_10, msg, *imgs, *txts
+    return abnormal_list_10, msg
 
 # =====================================================================
 # Display Functions
 def show_img(abnormal_list):
-    imgs = []
-    for i in range(10):
-        if i < len(abnormal_list):
-            # List structure: [prefix, ocr_number, file_url]
-            file_url = abnormal_list[i][2]
-            cv_img = download_from_kudu(file_url)
-            if cv_img is None:
-                cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
-            imgs.append(cv_img)
-        else:
-            imgs.append(None)
-    return imgs
+    updates = [gr.update(visible=False)] * 20
+    for i in range(len(abnormal_list)):
+        file_url = abnormal_list[i][2]
+        cv_img = download_from_kudu(file_url)
+        if cv_img is None:
+            cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        updates[i] = gr.update(visible=True, value=cv_img)
+    return updates
 
 def show_txt(abnormal_list):
-    return [
-        f"{abnormal_list[i][0]}_{abnormal_list[i][1]}" if i < len(abnormal_list) else ""
-        for i in range(10)
-    ]
+    updates = [gr.update(visible=False)] * 20
+    for i in range(len(abnormal_list)):
+        updates[i] = gr.update(
+            visible=True,
+            value="",
+            label=f"{abnormal_list[i][0]}_{abnormal_list[i][1]}"
+        )
+    return updates
 
 # =====================================================================
 # Correction Function
@@ -337,18 +337,13 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             abnormal_list = gr.State([])
             state = gr.Textbox(label="狀態", lines=5)
             txts, imgs = [], []
-            img_idx_states, txt_idx_states = [], []
-            
-            # Add visibility states
-            img_visibles = [gr.State(False) for _ in range(10)]
-            txt_visibles = [gr.State(False) for _ in range(10)]
+            img_idx_states, txt_idx_states = [], []  # Store index states
             
             run_btn = gr.Button("運行 AI")
-            # Keep original output structure: abnormal_list, state, 10 imgs, 10 txts
             run_btn.click(
                 fn=analysis_rename,
                 inputs=[],
-                outputs=[abnormal_list, state] + imgs + txts
+                outputs=[abnormal_list, state]
             )
             
             for i in range(10):
@@ -358,43 +353,17 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     txt = gr.Textbox(value=None, label=i, visible=False)
                     txts.append(txt)
                     
+                    # Create State to hold the index i
                     img_idx_state = gr.State(i)
                     txt_idx_state = gr.State(i)
                     img_idx_states.append(img_idx_state)
                     txt_idx_states.append(txt_idx_state)
             
-            # Update functions that return just the value (not Gradio component with visible)
-            def make_img_update(idx, abnormal_list):
-                if idx < len(abnormal_list):
-                    file_url = abnormal_list[idx][2]
-                    cv_img = download_from_kudu(file_url)
-                    if cv_img is None:
-                        cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
-                    return cv_img
-                else:
-                    return None
             
-            def make_txt_update(idx, abnormal_list):
-                if idx < len(abnormal_list):
-                    return f"{abnormal_list[idx][0]}_{abnormal_list[idx][1]}"
-                else:
-                    return ""
             
-            def make_img_visible_update(idx, abnormal_list):
-                return idx < len(abnormal_list)
-            
-            def make_txt_visible_update(idx, abnormal_list):
-                return idx < len(abnormal_list)
-            
-            # Add individual change handlers
-            for i in range(10):
-                abnormal_list.change(fn=make_img_update, inputs=[img_idx_states[i], abnormal_list], outputs=imgs[i])
-                abnormal_list.change(fn=make_txt_update, inputs=[txt_idx_states[i], abnormal_list], outputs=txts[i])
-                abnormal_list.change(fn=make_img_visible_update, inputs=[img_idx_states[i], abnormal_list], outputs=img_visibles[i])
-                abnormal_list.change(fn=make_txt_visible_update, inputs=[txt_idx_states[i], abnormal_list], outputs=txt_visibles[i])
-            
-            # Now use JS to update actual visibility from the State values
-            # Or use gr.update() syntax - but that requires different approach
+            # Add individual change handlers for each img/txt
+            abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
+            abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
             
             collect_btn = gr.Button("儲存所有修改")
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts, outputs=[state, abnormal_list])
