@@ -333,30 +333,36 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
-        with gr.Tab("AI處理"):
+        with gr.Tab("AI 處理"):
             abnormal_list = gr.State([])
             state = gr.Textbox(label="狀態", lines=5)
-            
             txts, imgs = [], []
-            run_btn = gr.Button("運行AI")
+            img_idx_states, txt_idx_states = [], []  # Store index states
+            
+            run_btn = gr.Button("運行 AI")
             run_btn.click(
                 fn=analysis_rename,
                 inputs=[],
                 outputs=[abnormal_list, state] + imgs + txts
             )
-
-
+            
             for i in range(10):
                 with gr.Row():
                     img = gr.Image(None, label=i, visible=False, width=150, interactive=False)
                     imgs.append(img)
                     txt = gr.Textbox(value=None, label=i, visible=False)
                     txts.append(txt)
+                    
+                    # Create State to hold the index i
+                    img_idx_state = gr.State(i)
+                    txt_idx_state = gr.State(i)
+                    img_idx_states.append(img_idx_state)
+                    txt_idx_states.append(txt_idx_state)
             
-            # Create individual update functions
-            def make_img_update(i, abnormal_list):
-                if i < len(abnormal_list):
-                    file_url = abnormal_list[i][2]
+            # Define update functions
+            def make_img_update(idx, abnormal_list):
+                if idx < len(abnormal_list):
+                    file_url = abnormal_list[idx][2]
                     cv_img = download_from_kudu(file_url)
                     if cv_img is None:
                         cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
@@ -364,19 +370,18 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 else:
                     return gr.Image(None, visible=False)
             
-            def make_txt_update(i, abnormal_list):
-                if i < len(abnormal_list):
-                    txt = f"{abnormal_list[i][0]}_{abnormal_list[i][1]}"
+            def make_txt_update(idx, abnormal_list):
+                if idx < len(abnormal_list):
+                    txt = f"{abnormal_list[idx][0]}_{abnormal_list[idx][1]}"
                     return gr.Textbox(txt, visible=True)
                 else:
                     return gr.Textbox("", visible=False)
             
             # Add individual change handlers for each img/txt
             for i in range(10):
-                abnormal_list.change(fn=make_img_update, inputs=[i, abnormal_list], outputs=imgs[i])
-                abnormal_list.change(fn=make_txt_update, inputs=[i, abnormal_list], outputs=txts[i])
-
-
+                abnormal_list.change(fn=make_img_update, inputs=[img_idx_states[i], abnormal_list], outputs=imgs[i])
+                abnormal_list.change(fn=make_txt_update, inputs=[txt_idx_states[i], abnormal_list], outputs=txts[i])
+            
             collect_btn = gr.Button("儲存所有修改")
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts, outputs=[state, abnormal_list])
 
