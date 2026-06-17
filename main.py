@@ -178,23 +178,30 @@ def kudu_list_files(root_url, pattern="油車前.jpg"):
 def kudu_rename(file_url, new_name):
     # Download the file
     resp = requests.get(file_url, auth=auth)
+    resp.raise_for_status()
 
-    # Construct new URL
+    # Construct new URL (must include /api/vfs/)
     folder_url = "/".join(file_url.split("/")[:-1])
     new_url = folder_url + "/" + new_name
 
-    # Upload with overwrite (If-Match: *)
+    # Upload with overwrite
     put_resp = requests.put(
         new_url,
         data=resp.content,
         auth=auth,
-        headers={"If-Match": "*"}
+        headers={
+            "Content-Type": "application/octet-stream",
+            "If-Match": "*"
+        }
     )
+    put_resp.raise_for_status()  # <-- force error if upload fails
 
     # Delete old file
     del_resp = requests.delete(file_url, auth=auth, headers={"If-Match": "*"})
+    del_resp.raise_for_status()
 
     return new_url
+
 
 def download_from_kudu(file_url):
     resp = requests.get(file_url, auth=auth)
