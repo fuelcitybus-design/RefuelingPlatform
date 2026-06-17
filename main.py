@@ -181,12 +181,16 @@ def kudu_rename(file_url, new_name):
     resp.raise_for_status()
     content = resp.content
 
-    # ✅ FIXED: Proper URL construction
-    parts = file_url.split("/")
-    folder_url = parts[:-1]  # Remove filename
-    folder_url = "/".join(folder_url)  # Rejoin with slashes
+    # ✅ FIXED: Use rfind to get folder path correctly
+    # file_url = "https://host/filemanager/data/2026-06-10/folder/subfolder/file.jpg"
+    last_slash = file_url.rfind("/")  # Find last "/"
+    folder_url = file_url[:last_slash]  # Everything before it
     
     new_url = folder_url + "/" + new_name
+
+    print(f"Renaming:")
+    print(f"  From: {file_url}")
+    print(f"  To:   {new_url}")
 
     # Upload with overwrite (If-Match: *)
     put_resp = requests.put(
@@ -348,7 +352,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             for i in range(10):
                 with gr.Row():
-                    img = gr.Image(None, label=i+1, visible=False, width=150, interactive=False)
+                    img = gr.Image(None, label=f"圖{i+1}", visible=False, width=150, interactive=False)
                     imgs.append(img)
                     txt = gr.Textbox(value="", label=f"待認證/修改{i+1}", visible=False)
                     txts.append(txt)
