@@ -264,7 +264,7 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
     if len(abnormal_list) <= 10:
         msg = f"{len(abnormal_list)}張照片需要檢查"
     else:
-        msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
+        msg = f"剩餘{len(abnormal_list)}張照片需要檢查，，然後按一次儲存繼續每次最多檢查 10 張"
 
     # Return: state, status, 10 images, 10 texts
     return abnormal_list_10, msg, *imgs, *txts
@@ -348,7 +348,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             for i in range(10):
                 with gr.Row():
-                    img = gr.Image(None, label=i, visible=True, width=150, interactive=False, height=10)
+                    img = gr.Image(None, label=i, visible=True, width=150, interactive=False)
                     imgs.append(img)
                     txt = gr.Textbox(value=None, label=i, visible=True)
                     txts.append(txt)
