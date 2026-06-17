@@ -345,7 +345,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 outputs=[abnormal_list, state] + imgs + txts
             )
 
-
             for i in range(10):
                 with gr.Row():
                     img = gr.Image(None, label=i, visible=True, width=150, interactive=False)
