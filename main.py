@@ -348,7 +348,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             for i in range(10):
                 with gr.Row():
-                    img = gr.Image(None, label=i, visible=True, width=150, interactive=False, min_height=10)
+                    img = gr.Image(None, label=i, visible=True, width=150, interactive=False, height=10)
                     imgs.append(img)
                     txt = gr.Textbox(value=None, label=i, visible=True, min_height=10)
                     txts.append(txt)
