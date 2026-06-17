@@ -2,7 +2,7 @@ from fastapi import FastAPI
 app = FastAPI()
 
 #========================================================================================================
-
+#
 import os
 import base64
 import requests
@@ -179,29 +179,26 @@ def kudu_rename(file_url, new_name):
     # Download the file
     resp = requests.get(file_url, auth=auth)
     resp.raise_for_status()
+    content = resp.content
 
-    # Construct new URL (must include /api/vfs/)
+    # Construct new URL
     folder_url = "/".join(file_url.split("/")[:-1])
     new_url = folder_url + "/" + new_name
 
-    # Upload with overwrite
+    # Upload with overwrite (If-Match: *)
     put_resp = requests.put(
         new_url,
-        data=resp.content,
+        data=content,
         auth=auth,
-        headers={
-            "Content-Type": "application/octet-stream",
-            "If-Match": "*"
-        }
+        headers={"If-Match": "*"}
     )
-    put_resp.raise_for_status()  # <-- force error if upload fails
+    put_resp.raise_for_status()
 
     # Delete old file
     del_resp = requests.delete(file_url, auth=auth, headers={"If-Match": "*"})
     del_resp.raise_for_status()
 
     return new_url
-
 
 def download_from_kudu(file_url):
     resp = requests.get(file_url, auth=auth)
@@ -267,30 +264,32 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
     if len(abnormal_list) <= 10:
         msg = f"{len(abnormal_list)}張照片需要檢查"
     else:
-        msg = f"剩餘{len(abnormal_list)}張照片需要檢查，，然後按一次儲存繼續每次最多檢查 10 張"
+        msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
 
     # Return: state, status, 10 images, 10 texts
-    return abnormal_list_10, msg
+    return abnormal_list_10, msg, *imgs, *txts
 
 # =====================================================================
 # Display Functions
 def show_img(abnormal_list):
-    updates = [gr.update(visible=False) for _ in range(10)]  # ✅ 10 items, not 20
-    for i in range(len(abnormal_list)):
-        if i < 10:  # Only update first 10
+    imgs = []
+    for i in range(10):
+        if i < len(abnormal_list):
+            # List structure: [prefix, ocr_number, file_url]
             file_url = abnormal_list[i][2]
             cv_img = download_from_kudu(file_url)
             if cv_img is None:
                 cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
-            updates[i] = gr.update(visible=True, value=cv_img)
-    return updates
+            imgs.append(cv_img)
+        else:
+            imgs.append(None)
+    return imgs
 
 def show_txt(abnormal_list):
-    updates = [gr.update(visible=False) for _ in range(10)]  # ✅ 10 items, not 20
-    for i in range(len(abnormal_list)):
-        if i < 10:  # Only update first 10
-            updates[i] = gr.update(visible=True, value=abnormal_list[i][1])
-    return updates
+    return [
+        f"{abnormal_list[i][0]}_{abnormal_list[i][1]}" if i < len(abnormal_list) else ""
+        for i in range(10)
+    ]
 
 # =====================================================================
 # Correction Function
@@ -327,7 +326,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
         return result[1], result[0]
     else:
         return "儲存成功", []
-        
+
 # =====================================================================
 # Gradio Hosting
 with gr.Blocks(head=prefer_back_camera()) as demo:
@@ -343,18 +342,21 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             run_btn.click(
                 fn=analysis_rename,
                 inputs=[],
-                outputs=[abnormal_list, state]
+                outputs=[abnormal_list, state] + imgs + txts
             )
+
 
             for i in range(10):
                 with gr.Row():
-                    img = gr.Image(None, label=f"圖{i+1}", visible=False, width=150, interactive=False)
+                    img = gr.Image(None, label=i, visible=False, width=150, interactive=False)
                     imgs.append(img)
-                    txt = gr.Textbox(value="", label=f"待認證/修改{i+1}", visible=False)
+                    txt = gr.Textbox(value=None, label=i, visible=False)
                     txts.append(txt)
 
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
+
+
 
             collect_btn = gr.Button("儲存所有修改")
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts, outputs=[state, abnormal_list])
