@@ -352,10 +352,29 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     imgs.append(img)
                     txt = gr.Textbox(value=None, label=i, visible=False)
                     txts.append(txt)
-
-            abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
-            abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
-
+            
+            # Create individual update functions
+            def make_img_update(i, abnormal_list):
+                if i < len(abnormal_list):
+                    file_url = abnormal_list[i][2]
+                    cv_img = download_from_kudu(file_url)
+                    if cv_img is None:
+                        cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
+                    return gr.Image(cv_img, visible=True)
+                else:
+                    return gr.Image(None, visible=False)
+            
+            def make_txt_update(i, abnormal_list):
+                if i < len(abnormal_list):
+                    txt = f"{abnormal_list[i][0]}_{abnormal_list[i][1]}"
+                    return gr.Textbox(txt, visible=True)
+                else:
+                    return gr.Textbox("", visible=False)
+            
+            # Add individual change handlers for each img/txt
+            for i in range(10):
+                abnormal_list.change(fn=make_img_update, inputs=[i, abnormal_list], outputs=imgs[i])
+                abnormal_list.change(fn=make_txt_update, inputs=[i, abnormal_list], outputs=txts[i])
 
 
             collect_btn = gr.Button("儲存所有修改")
