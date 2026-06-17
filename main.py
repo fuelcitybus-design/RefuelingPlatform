@@ -272,23 +272,21 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
 # =====================================================================
 # Display Functions
 def show_img(abnormal_list):
-    updates = [gr.update(visible=False)] * 10
+    updates = [gr.update(visible=False) for _ in range(10)]  # ✅ 10 items, not 20
     for i in range(len(abnormal_list)):
-        file_url = abnormal_list[i][2]
-        cv_img = download_from_kudu(file_url)
-        if cv_img is None:
-            cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
-        updates[i] = gr.update(visible=True, value=cv_img)
+        if i < 10:  # Only update first 10
+            file_url = abnormal_list[i][2]
+            cv_img = download_from_kudu(file_url)
+            if cv_img is None:
+                cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
+            updates[i] = gr.update(visible=True, value=cv_img)
     return updates
 
 def show_txt(abnormal_list):
-    updates = [gr.update(visible=False)] * 10
+    updates = [gr.update(visible=False) for _ in range(10)]  # ✅ 10 items, not 20
     for i in range(len(abnormal_list)):
-        updates[i] = gr.update(
-            visible=True,
-            value="",
-            label=f"{abnormal_list[i][0]}_{abnormal_list[i][1]}"
-        )
+        if i < 10:  # Only update first 10
+            updates[i] = gr.update(visible=True, value=abnormal_list[i][1])
     return updates
 
 # =====================================================================
@@ -347,9 +345,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             for i in range(10):
                 with gr.Row():
-                    img = gr.Image(None, label=i, visible=True, width=150, interactive=False)
+                    img = gr.Image(None, label=i, visible=False, width=150, interactive=False)
                     imgs.append(img)
-                    txt = gr.Textbox(value=None, label=i, visible=True)
+                    txt = gr.Textbox(value=None, label=i, visible=False)
                     txts.append(txt)
 
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
