@@ -517,7 +517,7 @@ def show_txt(abnormal_list):
 
 
 # Correction Function
-def collect_all_texts(request: gr.Request, abnormal_list, *texts):
+def collect_all_texts(request: gr.Request, abnormal_list, texts):
     text_list = []
     n = min(len(abnormal_list), len(texts))
 
