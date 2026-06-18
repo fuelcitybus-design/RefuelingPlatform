@@ -520,6 +520,8 @@ def show_txt(abnormal_list):
 def collect_all_texts(request: gr.Request, abnormal_list, *texts):
     text_list = []
     n = min(len(abnormal_list), len(texts))
+
+    # ✅ Validate inputs
     for idx in range(n):
         txt = texts[idx]
         if txt is None or txt.strip() == "":
@@ -529,27 +531,34 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
             text_list.append(num)
         except ValueError:
             return f"警告：第{idx+1}張照片非數字輸入", abnormal_list
-    
+
     if len(text_list) < len(abnormal_list):
         return "警告：缺少輸入", abnormal_list
-    
+
     num_update = 0
     for i in range(len(abnormal_list)):
-        # ✅ Fix these lines to use list indices
-        file_url = abnormal_list[i][2]      # was ["url"]
-        prefix = abnormal_list[i][0]         # was ["prefix"]
-        ocr_original = abnormal_list[i][1]   # was ["ocr"]
-        
+        file_url = abnormal_list[i][2]      # url
+        prefix = abnormal_list[i][0]        # prefix
+        ocr_original = abnormal_list[i][1]  # ocr
+
         new_name = f"{prefix}_{text_list[i]}.jpg"
-        #if int(ocr_original) != int(text_list[i]): {!!!Considering if the numbers are actually correctly under threshold}
-        num_update += 1
-        kudu_rename(file_url, new_name)
-    
+
+        # ✅ Only count update if correction differs
+        if str(ocr_original).isdigit() and int(ocr_original) != text_list[i]:
+            num_update += 1
+
+        # ✅ Handle rename errors
+        success = kudu_rename(file_url, new_name)
+        if not success:
+            return f"警告：檔案 {file_url} 重命名失敗", abnormal_list
+
+    # ✅ Decide next step
     if abnormal_count > 10:
         result = analysis_rename(request, root_folder_O=ROOT_FOLDER)
         return result[1], result[0]
     else:
-        return "儲存成功", []
+        return f"儲存成功，共更新 {num_update} 張照片", []
+
 
 #=========================================================================================================================
 
