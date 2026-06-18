@@ -277,9 +277,18 @@ def set_current(idx):
 def next_tab(current, location):
     active_tabs = tab_list_S.get(location, [])
     if not active_tabs:
-        return gr.Tabs(selected=None), current  # nothing to show
+        return gr.Tabs(selected=None), current
 
-    nxt = (current + 1) % len(active_tabs)
+    # Map active tab names to their indices in tab_names
+    active_indices = [tab_names.index(tab) for tab in active_tabs]
+
+    # Find current position in active list
+    try:
+        pos = active_indices.index(current)
+    except ValueError:
+        pos = 0  # fallback if current not in active list
+
+    nxt = active_indices[(pos + 1) % len(active_indices)]
     return gr.Tabs(selected=nxt), nxt
 
 def prev_tab(current, location):
@@ -287,8 +296,16 @@ def prev_tab(current, location):
     if not active_tabs:
         return gr.Tabs(selected=None), current
 
-    nxt = (current - 1) % len(active_tabs)
+    active_indices = [tab_names.index(tab) for tab in active_tabs]
+
+    try:
+        pos = active_indices.index(current)
+    except ValueError:
+        pos = 0
+
+    nxt = active_indices[(pos - 1) % len(active_indices)]
     return gr.Tabs(selected=nxt), nxt
+
 
 #========================================================================================================
 
@@ -872,6 +889,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                     inputs=[current, location_dropdown],
                     outputs=[img_tabs, current]
                 )
+
 
 
             save_btn.click(
