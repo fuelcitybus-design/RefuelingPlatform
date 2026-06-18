@@ -382,6 +382,48 @@ def ocr_from_kudu(file_url):
         return str(0)
 
 
+# Kudu Helpers
+def kudu_list_files(root_url, pattern="油車前.jpg"):
+    resp = requests.get(root_url, auth=auth)
+    resp.raise_for_status()
+    items = resp.json()   # this is already a list, not a dict
+    
+    matches = []
+    for item in items:
+        if item["mime"] == "inode/directory":
+            # recurse into subfolder
+            sub_url = root_url.rstrip("/") + "/" + item["name"] + "/"
+            matches.extend(kudu_list_files(sub_url, pattern))
+        else:
+            if item["name"].lower() == pattern.lower() or pattern == "*.jpg":
+                matches.append(root_url.rstrip("/") + "/" + item["name"])
+    return matches
+
+def kudu_rename(file_url, new_name):
+    # Download the file
+    resp = requests.get(file_url, auth=auth)
+    resp.raise_for_status()
+    content = resp.content
+
+    # Construct new URL
+    folder_url = "/".join(file_url.split("/")[:-1])
+    new_url = folder_url + "/" + new_name
+
+    # Upload with overwrite (If-Match: *)
+    put_resp = requests.put(
+        new_url,
+        data=content,
+        auth=auth,
+        headers={"If-Match": "*"}
+    )
+    put_resp.raise_for_status()
+
+    # Delete old file
+    del_resp = requests.delete(file_url, auth=auth, headers={"If-Match": "*"})
+    del_resp.raise_for_status()
+
+    return new_url
+
 def download_from_kudu(file_url):
     resp = requests.get(file_url, auth=auth)
     resp.raise_for_status()
@@ -389,69 +431,103 @@ def download_from_kudu(file_url):
     image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     return image
 
-def kudu_list_files(root_url, pattern="*.jpg"):
-    resp = requests.get(root_url, auth=auth)
-    resp.raise_for_status()
-    items = resp.json()
-    matches = []
-    for item in items:
-        if item["mime"] == "inode/directory":
-            sub_url = root_url.rstrip("/") + "/" + item["name"] + "/"
-            matches.extend(kudu_list_files(sub_url, pattern))
-        else:
-            if pattern == "*.jpg" or item["name"].lower() == pattern.lower():
-                matches.append(root_url.rstrip("/") + "/" + item["name"])
-    return matches
 
-def kudu_rename(file_url, new_name):
-    resp = requests.get(file_url, auth=auth)
-    resp.raise_for_status()
-    content = resp.content
-    folder_url = "/".join(file_url.split("/")[:-1])
-    new_url = folder_url + "/" + new_name
-    put_resp = requests.put(new_url, data=content, auth=auth, headers={"If-Match":"*"})
-    put_resp.raise_for_status()
-    del_resp = requests.delete(file_url, auth=auth, headers={"If-Match":"*"})
-    del_resp.raise_for_status()
-    return True
-
-# --- Analysis ---
+# Analysis & Abnormal Extraction
 def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
     root_folder = f"{root_folder_O}/"
     abnormal_list = []
+    num_analysis = 0
 
-    # Collect abnormal entries (dummy example)
+    # 油車前
+    for file_url in kudu_list_files(root_folder, "油車前.jpg"):
+        ocr_number = ocr_from_kudu(file_url)
+        new_name = f"X_油車前_{ocr_number}.jpg" if int(ocr_number) != 0 else f"油車前_{ocr_number}.jpg"
+        kudu_rename(file_url, new_name)
+        num_analysis += 1
+
+    # 油車後
+    for file_url in kudu_list_files(root_folder, "油車後.jpg"):
+        ocr_number = ocr_from_kudu(file_url)
+        new_name = f"X_油車後_{ocr_number}.jpg" if int(ocr_number) < 6000 else f"油車後_{ocr_number}.jpg"
+        kudu_rename(file_url, new_name)
+        num_analysis += 1
+
+    # Collect abnormal entries
+    pattern = re.compile(r'^X_(油車前|油車後)_(.+)\.jpg$', re.IGNORECASE)
     for file_url in kudu_list_files(root_folder, "*.jpg"):
         fname = file_url.split("/")[-1]
-        if fname.startswith("X_"):
-            prefix, ocr_number = fname.split("_")[1:3]
-            abnormal_list.append([prefix, ocr_number, file_url])
+        match = pattern.match(fname)
+        if match:
+            # Store: [prefix, ocr_number, file_url]
+            abnormal_list.append([match.group(1), match.group(2), file_url])
 
     abnormal_list_10 = abnormal_list[:10]
-    msg = f"{len(abnormal_list)}張照片需要檢查"
+    global abnormal_count
+    abnormal_count = len(abnormal_list)
 
-    # Build updates for images and textboxes
-    img_updates, txt_updates = [], []
+    # Build images (numpy arrays) for gr.Image
+    imgs = []
     for i in range(10):
         if i < len(abnormal_list_10):
-            cv_img = download_from_kudu(abnormal_list_10[i][2])
+            file_url = abnormal_list_10[i][2]
+            cv_img = download_from_kudu(file_url)
             if cv_img is None:
-                cv_img = np.zeros((100,100,3),dtype=np.uint8)
-            img_updates.append(gr.update(visible=True, value=cv_img))
-            txt_updates.append(gr.update(
+                # Placeholder for failed images
+                cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
+            imgs.append(cv_img)
+        else:
+            imgs.append(None)
+
+    # Build text labels for gr.Textbox
+    txts = [
+        f"{abnormal_list_10[i][0]}_{abnormal_list_10[i][1]}" if i < len(abnormal_list_10) else ""
+        for i in range(10)
+    ]
+
+    # Status message
+    if len(abnormal_list) <= 10:
+        msg = f"{len(abnormal_list)}張照片需要檢查"
+    else:
+        msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
+
+    # Return: state, status, 10 images, 10 texts
+    return abnormal_list_10, msg, imgs, txts
+
+
+# Display Functions
+def show_img(abnormal_list):
+    updates = []
+    for i in range(10):
+        if i < len(abnormal_list):
+            file_url = abnormal_list[i][2]
+            cv_img = download_from_kudu(file_url)
+            if cv_img is None:
+                cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
+            updates.append(gr.update(visible=True, value=cv_img))
+        else:
+            # ✅ Clear old values
+            updates.append(gr.update(visible=False, value=None))
+    return updates
+
+def show_txt(abnormal_list):
+    updates = []
+    for i in range(10):
+        if i < len(abnormal_list):
+            updates.append(gr.update(
                 visible=True,
-                value=f"{abnormal_list_10[i][1]}"
+                value=f"{abnormal_list[i][1]}"
             ))
         else:
-            img_updates.append(gr.update(visible=False, value=None))
-            txt_updates.append(gr.update(visible=False, value=""))
+            # ✅ Clear old values
+            updates.append(gr.update(visible=False, value=""))
+    return updates
 
-    return abnormal_list_10, msg, *img_updates, *txt_updates
-
-# --- Correction ---
+# Correction Function
 def collect_all_texts(request: gr.Request, abnormal_list, *texts):
     text_list = []
     n = min(len(abnormal_list), len(texts))
+
+    # ✅ Validate inputs
     for id in range(n):
         txt = texts[id]
         if txt is None or txt.strip() == "":
@@ -467,17 +543,27 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
 
     num_update = 0
     for i in range(len(abnormal_list)):
-        file_url = abnormal_list[i][2]
-        prefix = abnormal_list[i][0]
-        ocr_original = abnormal_list[i][1]
+        file_url = abnormal_list[i][2]      # url
+        prefix = abnormal_list[i][0]        # prefix
+        ocr_original = abnormal_list[i][1]  # ocr
+
         new_name = f"{prefix}_{text_list[i]}.jpg"
+
+        # ✅ Only count update if correction differs
         if str(ocr_original).isdigit() and int(ocr_original) != text_list[i]:
             num_update += 1
+
+        # ✅ Handle rename errors
         success = kudu_rename(file_url, new_name)
         if not success:
             return f"警告：檔案 {file_url} 重命名失敗", abnormal_list
 
-    return f"儲存成功，共更新 {num_update} 張照片", []
+    # ✅ Decide next step
+    if abnormal_count > 10:
+        result = analysis_rename(request, root_folder_O=ROOT_FOLDER)
+        return result[1], result[0]
+    else:
+        return f"儲存成功，共更新 {num_update} 張照片", []
 
 #=========================================================================================================================
 
@@ -867,40 +953,41 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
         # Module 2
         with gr.Tab("AI 處理"):
-            abnormal_state = gr.State([])
-            status_box = gr.Textbox(label="狀態", lines=5)
-
-            imgs, txts = [], []
-
-                # Group each image + textbox into a row
+            abnormal_list = gr.State([])
+            state = gr.Textbox(label="狀態", lines=5)
+            txts, imgs = [], []
+            img_idx_states, txt_idx_states = [], []  # Store index states
+            
+            run_btn = gr.Button("運行AI")
+            run_btn.click(
+                    fn=analysis_rename,
+                    inputs=[],
+                    outputs=[abnormal_list, state] + imgs + txts
+                )
+            
             for i in range(10):
                 with gr.Row():
-                    img = gr.Image(
-                        label=f"圖{i+1}",
-                        visible=False,
-                        width=150,
-                        interactive=False
-                    )
-                    txt = gr.Textbox(
-                        label=f"待修改/認證{i+1}",
-                        visible=False
-                    )
+                    img = gr.Image(None, label=f"圖{i+1}", visible=False, width=150, interactive=False)
                     imgs.append(img)
+                    txt = gr.Textbox(value=None, label=f"待修改/認證{i+1}", visible=False)
                     txts.append(txt)
-
-            run_btn = gr.Button("運行 AI")
-            run_btn.click(
-                fn=analysis_rename,
-                inputs=[],
-                outputs=[abnormal_state, status_box] + imgs + txts
-            )
-
+                    
+                    # Create State to hold the index i
+                    img_idx_state = gr.State(i)
+                    txt_idx_state = gr.State(i)
+                    img_idx_states.append(img_idx_state)
+                    txt_idx_states.append(txt_idx_state)
+            
+            # Add individual change handlers for each img/txt
+            abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
+            abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
+            
             collect_btn = gr.Button("儲存所有修改")
             collect_btn.click(
-                fn=collect_all_texts,
-                inputs=[abnormal_state] + txts,
-                outputs=[status_box, abnormal_state]
-            )
+                    fn=collect_all_texts,
+                    inputs=[abnormal_list] + txts,
+                    outputs=[state, abnormal_list]
+                ) 
 
         # Module 3
         with gr.Tab("下載"):
