@@ -525,12 +525,12 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
     for id in range(n):
         txt = texts[id]
         if txt is None or txt.strip() == "":
-            return f"警告：第{idx+1}張照片缺少輸入", abnormal_list
+            return f"警告：第{id+1}張照片缺少輸入", abnormal_list
         try:
             num = int(txt.strip())
             text_list.append(num)
         except ValueError:
-            return f"警告：第{idx+1}張照片非數字輸入", abnormal_list
+            return f"警告：第{id+1}張照片非數字輸入", abnormal_list
 
     if len(text_list) < len(abnormal_list):
         return "警告：缺少輸入", abnormal_list
