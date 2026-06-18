@@ -496,25 +496,32 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
 
 # Display Functions
 def show_img(abnormal_list):
-    updates = [gr.update(visible=False)] * 10
-    for i in range(len(abnormal_list)):
-        file_url = abnormal_list[i][2]
-        cv_img = download_from_kudu(file_url)
-        if cv_img is None:
-            cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
-        updates[i] = gr.update(visible=True, value=cv_img)
+    updates = []
+    for i in range(10):
+        if i < len(abnormal_list):
+            file_url = abnormal_list[i][2]
+            cv_img = download_from_kudu(file_url)
+            if cv_img is None:
+                cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
+            updates.append(gr.update(visible=True, value=cv_img))
+        else:
+            # ✅ Clear old values
+            updates.append(gr.update(visible=False, value=None))
     return updates
 
 def show_txt(abnormal_list):
-    updates = [gr.update(visible=False)] * 10
-    for i in range(len(abnormal_list)):
-        updates[i] = gr.update(
-            visible=True,
-            value="",
-            label=f"{abnormal_list[i][0]}_{abnormal_list[i][1]}"
-        )
+    updates = []
+    for i in range(10):
+        if i < len(abnormal_list):
+            updates.append(gr.update(
+                visible=True,
+                value="",   # start empty for user input
+                label=f"{abnormal_list[i][0]}_{abnormal_list[i][1]}"
+            ))
+        else:
+            # ✅ Clear old values
+            updates.append(gr.update(visible=False, value=""))
     return updates
-
 
 # Correction Function
 def collect_all_texts(request: gr.Request, abnormal_list, *texts):
