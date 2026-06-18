@@ -951,7 +951,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             state = gr.Textbox(label="狀態", lines=5)
             txts, imgs = [], []
             img_idx_states, txt_idx_states = [], []  # Store index states
-            
+
+            run_btn = gr.Button("運行AI")
             run_btn.click(
                     fn=analysis_rename,
                     inputs=[],
