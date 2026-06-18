@@ -229,26 +229,28 @@ def update_tank_dropdown(tank_id):
 
 def toggle_ui_components(location, car, tank):
     active_tabs = tab_list_S.get(location, [])
-    
-    # Check if all selections are valid
+
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        tab_updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
+        tab_updates = [
+            gr.update(visible=(tab in active_tabs) or (i == 0))  # force first tab visible
+            for i, tab in enumerate(tab_names)
+        ]
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
 
-        first_idx = 0 if active_tabs else None
+        # Always start at the first visible tab
+        first_idx = tab_names.index(tab_names[0])
         tabs_update = gr.update(selected=first_idx)
     else:
-        # Hide everything if not valid
         tab_updates = [gr.update(visible=False) for _ in tab_names]
         save_btn_update = gr.update(visible=False)
         prev_btn_update = gr.update(visible=False)
         next_btn_update = gr.update(visible=False)
         tabs_update = gr.update(selected=None)
-        
-    # Return everything as a single flat list or tuple
+
     return tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
+
 
 def toggle_tabs(location, car, tank):
     info_msg = []
