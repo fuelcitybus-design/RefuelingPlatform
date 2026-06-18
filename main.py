@@ -59,11 +59,11 @@ tank_list = {"CFD創富": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4
         "WCD黃竹坑": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸"],
         "WKD西九": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸"]}
 
-tab_names = ["油錶前", "油尺前", "封條1", "封條2", "油車前", "油車後", "油錶後", "油尺後", "收據"]
+tab_names = ["車牌","油錶前", "油尺前", "封條1", "封條2", "油車前", "油車後", "油錶後", "油尺後", "收據"]
 tab_list_S = {
         "{請選擇}": [],
         "CFD創富": ["油錶前", "油尺前", "封條1", "封條2", "油車前", "油車後", "油錶後", "油尺後", "收據"],
-        "CWD柴灣": ["油錶前",  "封條1", "封條2", "油車前", "油車後", "油錶後", "收據"],
+        "CWD柴灣": ["車牌", "油錶前",  "封條1", "封條2", "油車前", "油車後", "油錶後", "收據"],
         "SHD小蠔灣": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
         "SWD上環": ["油錶前",  "封條1", "封條2", "油車前", "油車後", "油錶後", "收據"],
         "TCD東涌": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
@@ -134,6 +134,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 info_log = f"Error: Missing images for required tabs: {', '.join(missing)}"
                 return info_msg
 
+        
         #Setup connection to base directory
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
@@ -192,6 +193,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
 
         #Completion message
         if saved_paths:
+            required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in required_tabs if tab not in detected_tabs_exist]
 
             #Reminder message for if any required images are missing
