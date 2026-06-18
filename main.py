@@ -870,8 +870,23 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             abnormal_state = gr.State([])
             status_box = gr.Textbox(label="狀態", lines=5)
 
-            imgs = [gr.Image(label=f"圖{i+1}", visible=False, width=150, interactive=False) for i in range(10)]
-            txts = [gr.Textbox(label=f"待修改/認證{i+1}", visible=False) for i in range(10)]
+            imgs, txts = [], []
+
+                # Group each image + textbox into a row
+            for i in range(10):
+                with gr.Row():
+                   img = gr.Image(
+                        label=f"圖{i+1}",
+                        visible=False,
+                        width=150,
+                        interactive=False
+                    )
+                    txt = gr.Textbox(
+                        label=f"待修改/認證{i+1}",
+                        visible=False
+                    )
+                    imgs.append(img)
+                    txts.append(txt)
 
             run_btn = gr.Button("運行 AI")
             run_btn.click(
