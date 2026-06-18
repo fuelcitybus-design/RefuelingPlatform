@@ -517,13 +517,13 @@ def show_txt(abnormal_list):
 
 
 # Correction Function
-def collect_all_texts(request: gr.Request, abnormal_list, texts):
+def collect_all_texts(request: gr.Request, abnormal_list, *texts):
     text_list = []
     n = min(len(abnormal_list), len(texts))
 
     # ✅ Validate inputs
-    for idx in range(n):
-        txt = texts[idx]
+    for id in range(n):
+        txt = texts[id]
         if txt is None or txt.strip() == "":
             return f"警告：第{idx+1}張照片缺少輸入", abnormal_list
         try:
