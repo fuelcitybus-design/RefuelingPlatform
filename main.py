@@ -875,7 +875,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 # Group each image + textbox into a row
             for i in range(10):
                 with gr.Row():
-                   img = gr.Image(
+                    img = gr.Image(
                         label=f"圖{i+1}",
                         visible=False,
                         width=150,
