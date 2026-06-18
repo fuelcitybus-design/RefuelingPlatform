@@ -515,8 +515,7 @@ def show_txt(abnormal_list):
         if i < len(abnormal_list):
             updates.append(gr.update(
                 visible=True,
-                value="",   # start empty for user input
-                label=f"{abnormal_list[i][0]}_{abnormal_list[i][1]}"
+                value=f"{abnormal_list[i][1]}"
             ))
         else:
             # ✅ Clear old values
