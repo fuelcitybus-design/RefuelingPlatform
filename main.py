@@ -1,8 +1,10 @@
+#***Setup environment for running Gradio interface
 from fastapi import FastAPI
 app = FastAPI()
 
 #========================================================================================================
 
+#Library imports
 import os
 import base64
 import requests
@@ -22,9 +24,6 @@ from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
 from openpyxl.drawing.image import Image as XLImage
 from datetime import datetime
-
-
-
 
 #========================================================================================================
 
@@ -125,7 +124,6 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         prefix = f"{location}/{car_id}_{tank_id}"
         #Auto-select today's date
         today = datetime.now().strftime("%Y-%m-%d")
-
 
         # --- Warning checkpoint 1: Check required tabs if any necessary images to be uploaded are missing (Forced batch uploading)---
         if required_tabs and forced_check:
@@ -250,7 +248,6 @@ def toggle_ui_components(location, car, tank):
     # Return everything as a single flat list or tuple
     return tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
 
-
 def toggle_tabs(location, car, tank):
     info_msg = []
     active_tabs = tab_list_S.get(location, [])
@@ -277,12 +274,20 @@ def toggle_save(location, car, tank):
 def set_current(idx):
     return idx
 
-def next_tab(current):
-    nxt = (current - 1) % len(tab_names)
+def next_tab(current, location):
+    active_tabs = tab_list_S.get(location, [])
+    if not active_tabs:
+        return gr.Tabs(selected=None), current  # nothing to show
+
+    nxt = (current + 1) % len(active_tabs)
     return gr.Tabs(selected=nxt), nxt
 
-def prev_tab(current):
-    nxt = (current + 1) % len(tab_names)
+def prev_tab(current, location):
+    active_tabs = tab_list_S.get(location, [])
+    if not active_tabs:
+        return gr.Tabs(selected=None), current
+
+    nxt = (current - 1) % len(active_tabs)
     return gr.Tabs(selected=nxt), nxt
 
 #========================================================================================================
@@ -856,8 +861,18 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
             output_text = gr.Textbox(label="狀態", lines=6)
 
-            next_btn.click(fn = prev_tab, inputs=current, outputs=[img_tabs, current])
-            prev_btn.click(fn = next_tab, inputs=current, outputs=[img_tabs, current])
+            next_btn.click(
+                    fn=next_tab,
+                    inputs=[current, location_dropdown],
+                    outputs=[img_tabs, current]
+                )
+                
+            prev_btn.click(
+                    fn=prev_tab,
+                    inputs=[current, location_dropdown],
+                    outputs=[img_tabs, current]
+                )
+
 
             save_btn.click(
                 fn=save_images,
