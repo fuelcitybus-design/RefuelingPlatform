@@ -846,9 +846,13 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 demo.load(None, None, raw_gps, js="""() => new Promise(r => navigator.geolocation.getCurrentPosition(
                     p => r(`[${p.coords.latitude}, ${p.coords.longitude}]`),
                     () => r("[Tap Allow Location]"), {enableHighAccuracy:true}))""")
-                raw_gps.change(nearest, raw_gps, location_dropdown)
-
-                location_dropdown.change(fn=update_tank_dropdown, inputs=location_dropdown, outputs=tank_dropdown)
+                # GPS sets location
+                raw_gps.change(fn=nearest, inputs=raw_gps, outputs=location_dropdown)
+                
+                # Location change updates tanks
+                location_dropdown.change(fn=update_tank_dropdown,
+                                         inputs=location_dropdown,
+                                         outputs=tank_dropdown)
 
             gr.Markdown("---")
                 
