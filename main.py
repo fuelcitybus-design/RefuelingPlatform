@@ -231,16 +231,20 @@ def toggle_ui_components(location, car, tank):
     active_tabs = tab_list_S.get(location, [])
 
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        tab_updates = [
-            gr.update(visible=(tab in active_tabs) or (i == 0))  # force first tab visible
-            for i, tab in enumerate(tab_names)
-        ]
+        tab_updates = []
+        for i, tab in enumerate(tab_names):
+            # Always show the first tab of the active list
+            if active_tabs and tab == active_tabs[0]:
+                tab_updates.append(gr.update(visible=True))
+            else:
+                tab_updates.append(gr.update(visible=(tab in active_tabs)))
+
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
 
-        # Always start at the first visible tab
-        first_idx = tab_names.index(tab_names[0])
+        # Select the first active tab index
+        first_idx = tab_names.index(active_tabs[0]) if active_tabs else None
         tabs_update = gr.update(selected=first_idx)
     else:
         tab_updates = [gr.update(visible=False) for _ in tab_names]
@@ -250,6 +254,7 @@ def toggle_ui_components(location, car, tank):
         tabs_update = gr.update(selected=None)
 
     return tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
+
 
 
 def toggle_tabs(location, car, tank):
