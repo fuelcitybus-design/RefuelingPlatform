@@ -866,27 +866,26 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             #tank_dropdown.change(clear_images, location_dropdown, image_inputs)
 
         # Module 2
-        with gr.Blocks() as demo:
-            with gr.Tab("AI 處理"):
-                abnormal_state = gr.State([])
-                status_box = gr.Textbox(label="狀態", lines=5)
-        
-                imgs = [gr.Image(label=f"圖{i+1}", visible=False, width=150, interactive=False) for i in range(10)]
-                txts = [gr.Textbox(label=f"待修改/認證{i+1}", visible=False) for i in range(10)]
-        
-                run_btn = gr.Button("運行 AI")
-                run_btn.click(
-                    fn=analysis_rename,
-                    inputs=[],
-                    outputs=[abnormal_state, status_box] + imgs + txts
-                )
-        
-                collect_btn = gr.Button("儲存所有修改")
-                collect_btn.click(
-                    fn=collect_all_texts,
-                    inputs=[abnormal_state] + txts,
-                    outputs=[status_box, abnormal_state]
-                )
+        with gr.Tab("AI 處理"):
+            abnormal_state = gr.State([])
+            status_box = gr.Textbox(label="狀態", lines=5)
+
+            imgs = [gr.Image(label=f"圖{i+1}", visible=False, width=150, interactive=False) for i in range(10)]
+            txts = [gr.Textbox(label=f"待修改/認證{i+1}", visible=False) for i in range(10)]
+
+            run_btn = gr.Button("運行 AI")
+            run_btn.click(
+                fn=analysis_rename,
+                inputs=[],
+                outputs=[abnormal_state, status_box] + imgs + txts
+            )
+
+            collect_btn = gr.Button("儲存所有修改")
+            collect_btn.click(
+                fn=collect_all_texts,
+                inputs=[abnormal_state] + txts,
+                outputs=[status_box, abnormal_state]
+            )
 
         # Module 3
         with gr.Tab("下載"):
