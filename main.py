@@ -674,6 +674,9 @@ def export(request: gr.Request, location, date):
     if wbp.status_code in [200, 201]:
         return local_path, "✅ 導出成功，已上傳"
     else:
+        del_resp = requests.delete(save_url, auth=auth, headers={"If-Match": "*"})
+        with open(local_path, "rb") as f:
+                wbp = requests.put(save_url, data=f, auth=auth)
         return local_path, f" 導出成功，只能從上下載最新版本: {wbp.status_code} {wbp.text}"
 
 #============================================================================================================================================================
@@ -828,11 +831,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             # --- Tabs with arrow navigation ---
             with gr.Row(equal_height=True):
                 prev_btn = gr.Button("⬅️",visible=False, scale=1, min_width=30)
-                next_btn = gr.Button("➡️",visible=False, scale=1, min_width=30)
-                
+                next_btn = gr.Button("➡️",visible=False, scale=1, min_width=30      
             
             # Track current tab index
-            
             
             with gr.Row():
                 with gr.Tabs(selected=None) as img_tabs:
@@ -849,9 +850,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                                 sources=['webcam','upload']
                             )
                             image_inputs.append(img_input)
-                            tab_list.append(tab)
-
-            
+                            tab_list.append(tab)            
                 
             save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
 
@@ -915,8 +914,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                     txt_idx_state = gr.State(i)
                     img_idx_states.append(img_idx_state)
                     txt_idx_states.append(txt_idx_state)
-            
-            
             
             # Add individual change handlers for each img/txt
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
