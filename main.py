@@ -491,7 +491,7 @@ def analysis_rename(request: gr.Request, root_folder_O=ROOT_FOLDER):
         msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
 
     # Return: state, status, 10 images, 10 texts
-    return abnormal_list_10, msg
+    return abnormal_list_10, msg, imgs, txts
 
 
 # Display Functions
@@ -952,12 +952,11 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             txts, imgs = [], []
             img_idx_states, txt_idx_states = [], []  # Store index states
             
-            run_btn = gr.Button("運行 AI")
             run_btn.click(
-                fn=analysis_rename,
-                inputs=[],
-                outputs=[abnormal_list, state]
-            )
+                    fn=analysis_rename,
+                    inputs=[],
+                    outputs=[abnormal_list, state] + imgs + txts
+                )
             
             for i in range(10):
                 with gr.Row():
@@ -977,7 +976,11 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
             
             collect_btn = gr.Button("儲存所有修改")
-            collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts, outputs=[state, abnormal_list])    
+            collect_btn.click(
+                    fn=collect_all_texts,
+                    inputs=[abnormal_list] + txts,
+                    outputs=[state, abnormal_list]
+                ) 
 
         # Module 3
         with gr.Tab("下載"):
