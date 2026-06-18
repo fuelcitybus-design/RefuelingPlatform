@@ -707,8 +707,11 @@ def export(request: gr.Request, location, date):
     else:
         del_resp = requests.delete(save_url, auth=auth, headers={"If-Match": "*"})
         with open(local_path, "rb") as f:
-                wbp = requests.put(save_url, data=f, auth=auth)
-        return local_path, f" 導出成功，只能從上下載最新版本: {wbp.status_code} {wbp.text}"
+            wbp = requests.put(save_url, data=f, auth=auth)
+        if wbp.status_code in [200, 201]:
+            return local_path, "✅ 導出成功，已更新存檔"
+        else
+            return local_path, f" 導出成功，只能從上下載最新版本: {wbp.status_code} {wbp.text}"
 
 #============================================================================================================================================================
 
