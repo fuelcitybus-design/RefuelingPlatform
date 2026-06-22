@@ -358,8 +358,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     img_idx_states.append(img_idx_state)
                     txt_idx_states.append(txt_idx_state)
             
-            
-            
             # Add individual change handlers for each img/txt
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
