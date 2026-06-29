@@ -228,6 +228,12 @@ def assign_tanks(date, location, id):
         msg
     )
 
+def clear_tanks():
+    return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "請先選取有效車號"
+
+
+
+
 #============================================================================================================================================================
 
 ###Hosting with Gradio
@@ -272,8 +278,10 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 return g1, l1, g2, l2, g3, l3, g4, l4, msg
 
             # Refresh car dropdown when date/location changes
-            date_picker.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
-            location_dropdown2.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
+            date_picker.change(clear_tanks, [], [gallery1, tank_label1, gallery2, tank_label2,
+                                     gallery3, tank_label3, gallery4, tank_label4, tank_message])
+            location_dropdown2.change(clear_tanks, [], [gallery1, tank_label1, gallery2, tank_label2,
+                                            gallery3, tank_label3, gallery4, tank_label4, tank_message])
         
             # Only update tanks when car changes
             car_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
