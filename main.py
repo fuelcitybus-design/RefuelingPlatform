@@ -1080,17 +1080,13 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 font-size: 20px !important;
             }
 
-            
-            #camera_input svg.dropdown-arrow {
-                display: none !important;
-            }
-
             #camera_input .select-wrap {
                 display: none !important;
             }
 
-            #camera_input .icon {
+            #camera_input button.icon {
                 display: none !important;
+                pointer-events: none !important;
             }
             
          
