@@ -765,10 +765,12 @@ def get_car_ids(date, location):
             
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
-    if car_ids:
-        return gr.update(choices=car_ids, value=car_ids[0])
-    else:
-        return gr.update(choices=[], value=None)
+
+    # Always include a placeholder at the top
+    choices = ["請選擇"] + car_ids if car_ids else ["沒有記錄"]
+
+    # Start with the placeholder selected
+    return gr.update(choices=choices, value=choices[0])
 
 # Function to get tank names
 def get_tank_names(date, location, id):
