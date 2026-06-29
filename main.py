@@ -122,12 +122,10 @@ def get_car_ids(date, location):
             
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
-
-    # Always include a placeholder at the top
-    choices = ["Please select"] + car_ids if car_ids else ["No car avaliable"]
-
-    # Start with the placeholder selected
-    return gr.update(choices=choices, value=choices[0])
+    if car_ids:
+        return gr.update(choices=car_ids, value=car_ids[0])
+    else:
+        return gr.update(choices=[], value=None)
 
     #if car_ids:
         # ✅ choices updated, value cleared
