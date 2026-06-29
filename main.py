@@ -765,9 +765,12 @@ def get_car_ids(date, location):
             
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
-
+    choices = None        
     # Always include a placeholder at the top
-    choices = ["請選擇"] + car_ids if car_ids else ["沒有記錄"]
+    if car_ids:
+        choices = ["請選擇"] + car_ids  
+    else 
+        choices = ["沒有記錄"]
 
     # Start with the placeholder selected
     return gr.update(choices=choices, value=choices[0])
