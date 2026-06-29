@@ -766,11 +766,19 @@ def get_car_ids(date, location):
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
 
-    # Always include a placeholder at the top
-    choices = ["Please select"] + car_ids if car_ids else ["No car avaliable"]
+    if car_ids:
+        choices = ["請選擇"] + car_ids
+        default_value = "請選擇"
+    else:
+        choices = ["沒有記錄"]
+        default_value = "沒有記錄"
 
-    # Start with the placeholder selected
-    return gr.update(choices=choices, value=choices[0])
+    # Return two updates: first clears, then sets
+    return [
+        gr.update(value=None),                 # clear
+        gr.update(choices=choices, value=default_value)  # repopulate
+    ]
+
 
 # Function to get tank names
 def get_tank_names(date, location, id):
@@ -1058,7 +1066,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
             # Refresh car dropdown whenever date or location changes
             date_picker.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
-            location_dropdown2.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
+            location_dropdown2.change(fn=update_car_dropdown,inputs=[date_picker, location_dropdown2],outputs=[car_dropdown2, car_dropdown2])
 
             # Update tanks whenever any input changes
             date_picker.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
