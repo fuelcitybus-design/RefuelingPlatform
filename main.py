@@ -223,7 +223,7 @@ def nearest(gps):
     return min(depot_gps, key=d)[0]
 
 def update_tank_dropdown(location):
-    choices = tank_list.get(location, ["{請選擇}"])
+    choices = tank_list.get(["{請選擇}"], location )
     return gr.update(
         choices=choices,
         value=choices[0],
