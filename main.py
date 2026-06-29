@@ -769,7 +769,7 @@ def update_car_dropdown(date, location):
     # Always include a placeholder at the top
     if car_ids:
         choices = ["請選擇"] + car_ids  
-    else 
+    else:
         choices = ["沒有記錄"]
 
     # Start with the placeholder selected
