@@ -1086,7 +1086,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
             #camera_input button.icon {
                 display: none !important;
-                pointer-events: none !important;
             }
             
          
