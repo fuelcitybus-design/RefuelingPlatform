@@ -98,135 +98,220 @@ def prefer_back_camera():
     """
     return custom_html
 
-#============================================================================================================================================================
+#=========================================================================================================================
 
-### Module 4: History functions
-# Function to get car ID list
-def get_car_ids(date, location):
-    # Convert timestamp to YYYY-MM-DD
-    date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}/"
-    # Find all subfolders that look like carID folders
-    candidates = requests.get(BASE_URL, auth=auth)
-    car_id = []
-    if candidates.status_code == 200:
-        items = candidates.json()
-        for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    parts = folder_name.split("_")  # split into two parts only
-                    car_id.append(parts[0])  # keep the first part
-        return sorted(set(car_id))
-    else:
-        return []
-            
-def update_car_dropdown(date, location):
-    car_ids = get_car_ids(date, location)
-    if car_ids:
-        choices = ["請選擇"] + car_ids
-        return gr.update(choices=choices, value="請選擇")
-    else:
-        return gr.update(choices=["沒有記錄"], value="沒有記錄")
-
-
-    #if car_ids:
-        # ✅ choices updated, value cleared
-        #return gr.update(choices=car_ids, value=None)
-    #else:
-        # ✅ placeholder, no selection
-        #return gr.update(choices=["No car available"], value=None)
-
-
-# Function to get tank names
-def get_tank_names(date, location, id):
-    date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    BASE_URL = f"{ROOT_FOLDER}/{date}/{location}/"
-    candidates = requests.get(BASE_URL, auth=auth)
-    tank = []
-    if candidates.status_code == 200:
-        items = candidates.json()
-        for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    parts = folder_name.split("_")  # split into two parts only
-                    if id == parts[0]:
-                        tank.append(parts[1])  # keep the second part
-        return tank
-    else:
-        return []
-    
-
-# Function to fetch images for a given tank
-def find_jpg_images(date, location, id, tank):
-    date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-    url = f"{ROOT_FOLDER}/{date}/{location}/{id}_{tank}/"
-    gallery_items = []
-
+### Module 1: Uploader function
+def save_images(location, car_id, tank_id, request: gr.Request, *images):
     try:
-        response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=30)
-        if response.status_code != 200:
-            return [], f"❌ Failed to fetch directory contents: HTTP {response.status_code}"
+        # logging
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        client_ip = request.client.host if request else "unknown"
+        username = request.username if request and hasattr(request, "username") else "anonymous"
+        uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
+        num_images = len(uploaded_tabs)
 
-        files_json = response.json()
-        os.makedirs("kudu_cache", exist_ok=True)
+        #Warning for not selecting depot, tank car and tank info
+        if (
+            not location or location == "{請選擇}"
+            or not car_id or car_id == "{請選擇}"
+            or not tank_id or tank_id == "{請選擇}"
+           ):
+            info_msg = "警告：確保已輸入地點，車號，缸號"
+            info_log = "Error: Please select Location, Car ID, and Tank ID."
+            return info_msg
 
-        for item in files_json:
-            if item.get("mime") == "inode/directory":
+        #File path and name format for the images
+        prefix = f"{location}/{car_id}_{tank_id}"
+        #Auto-select today's date
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        # --- Warning checkpoint 1: Check required tabs if any necessary images to be uploaded are missing (Forced batch uploading)---
+        if required_tabs and forced_check:
+            tab_dict = dict(zip(tab_names, images))
+            missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
+            if missing:
+                info_msg = f"警告：確保已輸入以下照片 {', '.join(missing)}"
+                info_log = f"Error: Missing images for required tabs: {', '.join(missing)}"
+                return info_msg
+
+        
+        #Setup connection to base directory
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
+
+        # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
+        detected_tabs_exist = []
+        baser = requests.get(base_url, auth=auth)
+        if baser.status_code in [200,201]:
+            # Check if any file of any image type to be uploaded exists in the folder
+            items = baser.json()
+            existing_files = [item["name"] for item in items if item.get("mime") != "inode/directory"]
+            for f in existing_files:
+                # Always add the raw filename (without extension)
+                name, ext = os.path.splitext(f)
+                detected_tabs_exist.append(name)
+
+                # Special handling: detect 'before' or 'after' anywhere in the filename
+                if "油車前" in name.lower() and "油車前" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車前")
+                if "油車後" in name.lower() and "油車後" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車後")
+
+        else:
+            #Create image folder
+            response = requests.put(base_url, auth=auth)
+            if not(response.status_code in [200, 201]):
+                info_msg = "❌Folder creation failed." 
+                return info_msg
+
+        #Saving the images
+        return_msg = []
+        saved_paths = []
+        for i, img in enumerate(images):
+            if img is None:
+                continue
+            if tab_names[i] in detected_tabs_exist:
+                info_msg = f"跳過已上傳照片 {tab_names[i]}"
+                info_log = f"Skipped uploaded image {tab_names[i]}"
+                return_msg.append(info_msg)
                 continue
 
-            filename = item.get("name", "")
-            file_url = url + filename   # <-- fix: build full file URL
+            original_width, original_height = img.size
+            new_width = int(original_width * (400 / original_height))
+            img = img.resize((new_width, 400))
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG")
+            buffer.seek(0)
+            tab_name = tab_names[i]
+            filename = f"{tab_name}.jpg"
+            filepath = f"{base_url}{filename}"
+            # Upload directly from buffer
+            response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
+            if response.status_code not in [200, 201]:
+                return f"❌{tab_name} save failed."
+            saved_paths.append(tab_name)
+            detected_tabs_exist.append(tab_name)
 
-            file_response = requests.get(file_url, auth=auth, timeout=15)
-            if file_response.status_code == 200:
-                local_cache_path = os.path.join("kudu_cache", filename)
-                with open(local_cache_path, "wb") as f:
-                    f.write(file_response.content)
+        #Completion message
+        if saved_paths:
+            location_required_tabs = tab_list_S.get(location, [])
+            missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
 
-                gallery_items.append((local_cache_path, filename))
-
-        if not gallery_items:
-            return [], "ℹ️ Connection successful, but no files were found in this tank folder."
-
-        return gallery_items, f"🖼️ Loaded {len(gallery_items)} files successfully from Kudu storage."
+            #Reminder message for if any required images are missing
+            if missing:
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片\n請上傳{', '.join(missing)}."
+              info_log = f"Uploaded {len(saved_paths)} new images \nPlease upload{', '.join(missing)}."
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
+            else:
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片"
+              info_log = f"Uploaded {len(saved_paths)} new images"
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
+        else:
+            info_msg = "警告：沒有新照片"
+            info_log = "Warning: No new image"
+            return_msg.append(info_msg)
+            return '\n'.join(return_msg)
 
     except Exception as e:
-        return [], f"💥 Error accessing file structures: {str(e)}"
+        return f"未知錯誤: {str(e)}"
 
+def nearest(gps):
+    if "Allow" in gps:
+        return "{請選擇}"
+    lat, lon = map(float, gps.strip("[]").split(","))
+    d = lambda c: (lat-c[1])**2 + (lon-c[2])**2
+    return min(depot_gps, key=d)[0]
 
-def assign_tanks(date, location, id):
-    if not id or id == "請選擇" or id == "沒有記錄":
-        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "請先選取有效車號"
-    
-    tanks = get_tank_names(date, location, id)
+def update_tank_dropdown(tank_id):
+    tank_dropdown = tank_list.get(tank_id, ["{請選擇}"])
+    return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], allow_custom_value=False, filterable=False, interactive=True)
 
-    if not tanks:
-        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "注意：沒有相關紀錄"
-        
-    if isinstance(tanks, str):  # error message
-        return [], "錯誤信號", [], "錯誤信號", [], "錯誤信號", [], "錯誤信號", tanks
-    
-    galleries_data = []
-    labels = []
-    
-    for i in range(4):
-        if i < len(tanks):
-            tank_name = tanks[i]
-            gallery_items, msg = find_jpg_images(date, location, id, tank_name)
-            galleries_data.append(gallery_items)   # only keep the list of images
-            labels.append(f"Tank: {tank_name}")
-        else:
-            galleries_data.append([])              # empty list for missing tanks
-            labels.append("No Tank")
-    
-    msg = f"找到 {len(tanks)} 組紀錄: {', '.join(tanks)}"
-    return (
-        galleries_data[0], labels[0],
-        galleries_data[1], labels[1],
-        galleries_data[2], labels[2],
-        galleries_data[3], labels[3],
-        msg
-    )
+def toggle_ui_components(location, car, tank):
+    active_tabs = tab_list_S.get(location, [])
+
+    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+        tab_updates = []
+        for i, tab in enumerate(tab_names):
+            # Always show the first tab of the active list
+            if active_tabs and tab == active_tabs[0]:
+                tab_updates.append(gr.update(visible=True))
+            else:
+                tab_updates.append(gr.update(visible=(tab in active_tabs)))
+
+        save_btn_update = gr.update(visible=True)
+        prev_btn_update = gr.update(visible=True)
+        next_btn_update = gr.update(visible=True)
+
+        # Select the first active tab index
+        first_idx = tab_names.index(active_tabs[0]) if active_tabs else None
+        tabs_update = gr.update(selected=first_idx)
+    else:
+        tab_updates = [gr.update(visible=False) for _ in tab_names]
+        save_btn_update = gr.update(visible=False)
+        prev_btn_update = gr.update(visible=False)
+        next_btn_update = gr.update(visible=False)
+        tabs_update = gr.update(selected=None)
+
+    return tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
+
+def toggle_tabs(location, car, tank):
+    info_msg = []
+    active_tabs = tab_list_S.get(location, [])
+    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+        updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
+        info_msg = "Start uploading images"
+    else:
+        # Hide all tabs if not valid
+        updates = [gr.update(visible=False) for _ in tab_names]
+        info_msg = "Please select"
+    return updates
+
+def toggle_save(location, car, tank):
+    # Show save button only if all dropdowns are not placeholders
+    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+        return gr.update(visible=True)
+    else:
+        return gr.update(visible=False)
+
+#def clear_images(selection):
+    # Reset all images when depot changes
+    #return [gr.update(value=None) for _ in tab_names]
+
+def set_current(idx):
+    return idx
+
+def next_tab(current, location):
+    active_tabs = tab_list_S.get(location, [])
+    if not active_tabs:
+        return gr.Tabs(selected=None), current
+
+    # Map active tab names to their indices in tab_names
+    active_indices = [tab_names.index(tab) for tab in active_tabs]
+
+    # Find current position in active list
+    try:
+        pos = active_indices.index(current)
+    except ValueError:
+        pos = 0  # fallback if current not in active list
+
+    nxt = active_indices[(pos + 1) % len(active_indices)]
+    return gr.Tabs(selected=nxt), nxt
+
+def prev_tab(current, location):
+    active_tabs = tab_list_S.get(location, [])
+    if not active_tabs:
+        return gr.Tabs(selected=None), current
+
+    active_indices = [tab_names.index(tab) for tab in active_tabs]
+
+    try:
+        pos = active_indices.index(current)
+    except ValueError:
+        pos = 0
+
+    nxt = active_indices[(pos - 1) % len(active_indices)]
+    return gr.Tabs(selected=nxt), nxt
 
 #============================================================================================================================================================
 
@@ -236,49 +321,138 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
     with gr.Tabs():
 
-        # Module 4
-        with gr.Tab("記錄"):
+        # Module 1
+        with gr.Tab("拍照"):
+            
+            current = gr.State(0)
+
             with gr.Row():
-                date_picker = gr.DateTime(
-                    label="日期", include_time=False,
-                    value=datetime.now().date().isoformat()
+                location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
+                car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
+                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False)
+                confirm_btn = gr.Button("確認選擇")
+
+                raw_gps = gr.Textbox(visible=False)
+                demo.load(None, None, raw_gps, js="""() => new Promise(r => navigator.geolocation.getCurrentPosition(
+                    p => r(`[${p.coords.latitude}, ${p.coords.longitude}]`),
+                    () => r("[Tap Allow Location]"), {enableHighAccuracy:true}))""")
+                # GPS sets location
+                #raw_gps.change(fn=nearest, inputs=raw_gps, outputs=location_dropdown)
+                
+                # Location change updates tanks
+                location_dropdown.change(fn=update_tank_dropdown,
+                                         inputs=location_dropdown,
+                                         outputs=tank_dropdown)
+
+            gr.Markdown("---")
+                
+            # --- Tabs with arrow navigation ---
+            with gr.Row(equal_height=True):
+                prev_btn = gr.Button("⬅️",visible=False, scale=1, min_width=30)
+                next_btn = gr.Button("➡️",visible=False, scale=1, min_width=30)      
+            
+            # Track current tab index
+            
+            with gr.Row():
+                with gr.Tabs(selected=None) as img_tabs:
+                    image_inputs = []
+                    tab_list = []
+                    for i, tab_name in enumerate(tab_names):
+                        with gr.Tab(tab_name, id =i, visible=False) as tab:
+                            img_input = gr.Image(
+                                type="pil",
+                                label=f"上傳「{tab_name}」相片",
+                                height=400,
+                                elem_id="camera_input",
+                                mirror_webcam=False,
+                                sources=['webcam','upload']
+                            )
+                            image_inputs.append(img_input)
+                            tab_list.append(tab)            
+                
+            save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
+
+            output_text = gr.Textbox(label="狀態", lines=6)
+
+            next_btn.click(
+                    fn=next_tab,
+                    inputs=[current, location_dropdown],
+                    outputs=[img_tabs, current]
                 )
-                location_dropdown2 = gr.Dropdown(
-                    choices=locations, label="地點", value=locations[0]
+                
+            prev_btn.click(
+                    fn=prev_tab,
+                    inputs=[current, location_dropdown],
+                    outputs=[img_tabs, current]
                 )
-                car_dropdown2 = gr.Dropdown(
-                    choices=[], label="車號", value=None
-                )
 
-            # Overall status message
-            tank_message = gr.Textbox(label="Tank Summary", interactive=False,lines=2)
 
-            # Tank labels + galleries
-            tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
-            gallery1 = gr.Gallery(columns=4)
 
-            tank_label2 = gr.Textbox(label="Tank Info 2", interactive=False)
-            gallery2 = gr.Gallery(columns=4)
+            save_btn.click(
+                fn=save_images,
+                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
+                outputs=output_text
+            )
 
-            tank_label3 = gr.Textbox(label="Tank Info 3", interactive=False)
-            gallery3 = gr.Gallery(columns=4)
+            confirm_btn.click(
+                fn=toggle_ui_components,
+                inputs=[location_dropdown, car_dropdown, tank_dropdown],
+                outputs=tab_list + [save_btn, prev_btn, next_btn, img_tabs]  # include img_tabs for selected update
+            )
+           
+            # Raw HTML input for back camera
+            gr.HTML(prefer_back_camera())
+            #Toggle tabs avaliable based on depot selection
+            #location_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
+            #car_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
+            #tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
 
-            tank_label4 = gr.Textbox(label="Tank Info 4", interactive=False)
-            gallery4 = gr.Gallery(columns=4)
+            #Toggle save button
+            #location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+            #car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+            #tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+                
+            #Clear uploaded images when changing information values
+            #location_dropdown.change(clear_images, location_dropdown, image_inputs)
+            #car_dropdown.change(clear_images, location_dropdown, image_inputs)
+            #tank_dropdown.change(clear_images, location_dropdown, image_inputs)
 
-            # Update galleries + labels + summary when inputs change
-            def update_all(date, location, car):
-                g1, l1, g2, l2, g3, l3, g4, l4, msg = assign_tanks(date, location, car)
-                return g1, l1, g2, l2, g3, l3, g4, l4, msg
+            demo.css = """
+            #camera_input button {
+                transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
+            }
 
-            # Refresh car dropdown when date/location changes
-            date_picker.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
-            location_dropdown2.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
+            .gradio-container,
+            body,
+            div,
+            span,
+            p,
+            label,
+            button,
+            h1, h2, h3, h4, h5, h6,
+            textarea,
+            input,
+            select {
+                font-size: 16px !important;
+            }
+
+            #camera_input label {
+                font-size: 20px !important;
+            }
+
+            
+            #camera_input .dropdown-arrow {
+                display: none !important;
+            }
+
+            #camera_input .select-wrap {
+                display: none !important;
+            }
+
+            #camera_input button-wrap.button.icon {
+                display: none !important;
+            }
+                        
+            """
         
-            # Only update tanks when car changes
-            car_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
-                [gallery1, tank_label1, gallery2, tank_label2,
-                 gallery3, tank_label3, gallery4, tank_label4, tank_message])
-
-
 app = gr.mount_gradio_app(app, demo, path="/")
