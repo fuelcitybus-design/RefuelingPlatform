@@ -196,7 +196,7 @@ def find_jpg_images(date, location, id, tank):
 
 def assign_tanks(date, location, id):
     if not id or id == "請選擇" or id == "沒有記錄":
-        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "請先選取有效車號""
+        return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "請先選取有效車號"
     
     tanks = get_tank_names(date, location, id)
 
