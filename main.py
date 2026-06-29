@@ -1081,7 +1081,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             }
 
             
-            #camera_input button.dropdown-arrow {
+            #camera_input svg.dropdown-arrow {
                 display: none !important;
             }
 
@@ -1089,7 +1089,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 display: none !important;
             }
 
-            #camera_input button-wrap.button.icon {
+            #camera_input .icon {
                 display: none !important;
             }
             
