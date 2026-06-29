@@ -123,14 +123,11 @@ def get_car_ids(date, location):
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
     if car_ids:
-        car_update = gr.update(choices=["請選擇"] + car_ids, value="請選擇")
+        choices = ["請選擇"] + car_ids
+        return gr.update(choices=choices, value="請選擇")
     else:
-        car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
+        return gr.update(choices=["沒有記錄"], value="沒有記錄")
 
-    # reset galleries and labels at the same time
-    tank_reset = [[], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "請先選取有效車號"]
-
-    return (car_update, *tank_reset)
 
     #if car_ids:
         # ✅ choices updated, value cleared
@@ -198,7 +195,7 @@ def find_jpg_images(date, location, id, tank):
 
 
 def assign_tanks(date, location, id):
-    if not id or id in ["請選擇", "沒有記錄"]:
+    if not id or id == "請選擇" or id == "沒有記錄":
         return [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", [], "沒有紀錄", "請先選取有效車號"
     
     tanks = get_tank_names(date, location, id)
@@ -230,13 +227,6 @@ def assign_tanks(date, location, id):
         galleries_data[3], labels[3],
         msg
     )
-
-# Clear tanks when depot/date changes
-def clear_tanks():
-    return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "請先選取有效車號"
-
-
-
 
 #============================================================================================================================================================
 
@@ -281,39 +271,14 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 g1, l1, g2, l2, g3, l3, g4, l4, msg = assign_tanks(date, location, car)
                 return g1, l1, g2, l2, g3, l3, g4, l4, msg
 
-            # --- Wiring ---
-            date_picker.change(
-                fn=update_car_dropdown,
-                inputs=[date_picker, location_dropdown2],
-                outputs=[car_dropdown2,
-                         gallery1, tank_label1,
-                         gallery2, tank_label2,
-                         gallery3, tank_label3,
-                         gallery4, tank_label4,
-                         tank_message]
-            )
+            # Refresh car dropdown when date/location changes
+            date_picker.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
+            location_dropdown2.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
         
-            location_dropdown2.change(
-                fn=update_car_dropdown,
-                inputs=[date_picker, location_dropdown2],
-                outputs=[car_dropdown2,
-                         gallery1, tank_label1,
-                         gallery2, tank_label2,
-                         gallery3, tank_label3,
-                         gallery4, tank_label4,
-                         tank_message]
-            )
-        
-            # ✅ Only update tanks when car changes
-            car_dropdown2.change(
-                fn=update_all,
-                inputs=[date_picker, location_dropdown2, car_dropdown2],
-                outputs=[gallery1, tank_label1,
-                         gallery2, tank_label2,
-                         gallery3, tank_label3,
-                         gallery4, tank_label4,
-                         tank_message]
-            )
+            # Only update tanks when car changes
+            car_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
+                [gallery1, tank_label1, gallery2, tank_label2,
+                 gallery3, tank_label3, gallery4, tank_label4, tank_message])
 
 
 app = gr.mount_gradio_app(app, demo, path="/")
