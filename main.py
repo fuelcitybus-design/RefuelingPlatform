@@ -1057,6 +1057,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                                 [gallery1, tank_label1, gallery2, tank_label2,
                                 gallery3, tank_label3, gallery4, tank_label4, tank_message])
 
+            #button.icon for camera button camera selection dropdown(.select-wrap) with its button + upload option toggle
             demo.css = """
             #camera_input button {
                 transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
@@ -1084,6 +1085,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 display: none !important;
             }
 
+            
             #camera_input button.icon {
                 display: none !important;
             }
