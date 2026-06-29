@@ -223,9 +223,17 @@ def nearest(gps):
     d = lambda c: (lat-c[1])**2 + (lon-c[2])**2
     return min(depot_gps, key=d)[0]
 
-def update_tank_dropdown(tank_id):
-    tank_dropdown = tank_list.get(tank_id, ["{請選擇}"])
-    return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], interactive=True)
+def update_tank_dropdown(location, current_tank=None):
+    tank_choices = tank_list.get(location, ["{請選擇}"])
+    value = current_tank if current_tank in tank_choices else tank_choices[0]
+    return gr.Dropdown(
+        choices=tank_choices,
+        value=value,
+        label="缸號",
+        allow_custom_value=False,
+        filterable=False,
+        interactive=True
+    )
 
 def toggle_ui_components(location, car, tank):
     active_tabs = tab_list_S.get(location, [])
