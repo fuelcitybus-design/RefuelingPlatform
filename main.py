@@ -417,7 +417,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             #car_dropdown.change(clear_images, location_dropdown, image_inputs)
             #tank_dropdown.change(clear_images, location_dropdown, image_inputs)
 
-            #button.icon for camera button camera selection dropdown(.select-wrap) with its button + upload option toggle
             demo.css = """
             #camera_input button {
                 transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
@@ -441,11 +440,16 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 font-size: 20px !important;
             }
 
+            
+            #camera_input .dropdown-arrow {
+                display: none !important;
+            }
+
             #camera_input .select-wrap {
                 display: none !important;
             }
 
-            #camera_input button.icon {
+            #camera_input button-wrap.button.icon {
                 display: none !important;
             }
                         
