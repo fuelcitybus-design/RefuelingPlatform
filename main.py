@@ -133,7 +133,6 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 info_msg = f"警告：確保已輸入以下照片 {', '.join(missing)}"
                 info_log = f"Error: Missing images for required tabs: {', '.join(missing)}"
                 return info_msg
-
         
         #Setup connection to base directory
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
@@ -223,10 +222,14 @@ def nearest(gps):
     d = lambda c: (lat-c[1])**2 + (lon-c[2])**2
     return min(depot_gps, key=d)[0]
 
-def update_tank_dropdown(tank_id):
-    tank_dropdown = tank_list.get(tank_id, ["{請選擇}"])
-    return gr.Dropdown(choices=tank_dropdown, label="缸號", value=tank_dropdown[0], allow_custom_value=False, filterable=False, interactive=True)
-
+def update_tank_dropdown(location):
+    choices = tank_list.get(location, ["{請選擇}"])
+    return gr.update(
+        choices=choices,
+        value=choices[0],
+        interactive=True
+    )
+        
 def toggle_ui_components(location, car, tank):
     active_tabs = tab_list_S.get(location, [])
 
@@ -876,9 +879,11 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 #raw_gps.change(fn=nearest, inputs=raw_gps, outputs=location_dropdown)
                 
                 # Location change updates tanks
-                location_dropdown.change(fn=update_tank_dropdown,
-                                         inputs=location_dropdown,
-                                         outputs=tank_dropdown)
+                location_dropdown.change(
+                    fn=update_tank_dropdown,
+                    inputs=location_dropdown,
+                    outputs=tank_dropdown
+                )
 
             gr.Markdown("---")
                 
@@ -921,8 +926,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                     inputs=[current, location_dropdown],
                     outputs=[img_tabs, current]
                 )
-
-
 
             save_btn.click(
                 fn=save_images,
