@@ -270,18 +270,26 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 return g1, l1, g2, l2, g3, l3, g4, l4, msg
 
             # Refresh car dropdown whenever date or location changes
-            date_picker.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
-            location_dropdown2.change(update_car_dropdown, [date_picker, location_dropdown2], car_dropdown2)
-
-            # Update tanks whenever any input changes
-            date_picker.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
-                                [gallery1, tank_label1, gallery2, tank_label2,
-                                gallery3, tank_label3, gallery4, tank_label4, tank_message])
-            location_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
-                                [gallery1, tank_label1, gallery2, tank_label2,
-                                gallery3, tank_label3, gallery4, tank_label4, tank_message])
-            car_dropdown2.change(update_all, [date_picker, location_dropdown2, car_dropdown2],
-                                [gallery1, tank_label1, gallery2, tank_label2,
-                                gallery3, tank_label3, gallery4, tank_label4, tank_message])
+            date_picker.change(
+                fn=update_car_dropdown,
+                inputs=[date_picker, location_dropdown2],
+                outputs=car_dropdown2
+            )
+            location_dropdown2.change(
+                fn=update_car_dropdown,
+                inputs=[date_picker, location_dropdown2],
+                outputs=car_dropdown2
+            )
         
+            # ✅ Only trigger tank update when car changes
+            car_dropdown2.change(
+                fn=update_all,
+                inputs=[date_picker, location_dropdown2, car_dropdown2],
+                outputs=[gallery1, tank_label1,
+                         gallery2, tank_label2,
+                         gallery3, tank_label3,
+                         gallery4, tank_label4,
+                         tank_message]
+            )
+
 app = gr.mount_gradio_app(app, demo, path="/")
