@@ -94,7 +94,7 @@ def prefer_back_camera():
 
     // Disable typing in the tank dropdown, but keep selection working
     function disableTankDropdownTyping() {
-      const tankDropdown = document.querySelector('#tank_dropdown');
+      const tankDropdown = document.querySelector('#tank_dropdown_uploader');
       if (!tankDropdown) {
         setTimeout(disableTankDropdownTyping, 200);
         return;
