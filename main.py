@@ -83,17 +83,52 @@ def prefer_back_camera():
     custom_html = """
     <script>
     const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-
     navigator.mediaDevices.getUserMedia = (constraints) => {
       if (!constraints.video.facingMode) {
         constraints.video.facingMode = { ideal: "environment" };
       }
-
       constraints.video.width = { exact: 400 };
       constraints.video.height = { exact: 400 };
-
       return originalGetUserMedia(constraints);
     };
+
+    // Disable typing in the tank dropdown, but keep selection working
+    function disableTankDropdownTyping() {
+      const tankDropdown = document.querySelector('#tank_dropdown');
+      if (!tankDropdown) {
+        setTimeout(disableTankDropdownTyping, 200);
+        return;
+      }
+
+      // The actual <input> inside the Gradio dropdown
+      const input = tankDropdown.querySelector('input[type="text"]');
+      if (input) {
+        input.addEventListener('keydown', (e) => {
+          // Allow arrow keys, Enter, and Escape for navigation / closing
+          if (
+            e.key === 'ArrowDown' ||
+            e.key === 'ArrowUp' ||
+            e.key === 'Enter' ||
+            e.key === 'Escape'
+          ) {
+            return;
+          }
+          // Block everything else (letters, numbers, backspace, etc.)
+          e.preventDefault();
+        }, { capture: true });
+
+        // Also block paste
+        input.addEventListener('paste', (e) => {
+          e.preventDefault();
+        });
+      } else {
+        setTimeout(disableTankDropdownTyping, 200);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', disableTankDropdownTyping);
+
+    
     </script>
     """
     return custom_html
@@ -467,15 +502,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
             #camera_input button-wrap.button.icon {
                 display: none !important;
-            }
-
-            /* Disable typing in the tank dropdown, but keep selection */
-            #tank_dropdown input[type="text"] {
-                pointer-events: none !important;
-                caret-color: transparent !important;
-                user-select: none !important;
-                -webkit-user-select: none !important;
-                cursor: default !important;
             }
                         
             """
