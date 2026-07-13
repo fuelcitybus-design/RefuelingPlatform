@@ -227,13 +227,16 @@ def nearest(gps):
 
 def update_tank_dropdown(location, current_tank=None):
     tank_choices = tank_list.get(location, ["{請選擇}"])
-    value = current_tank if current_tank in tank_choices else tank_choices[0]
-    return gr.Dropdown(
+    # If current_tank is None or not in the new choices, reset to placeholder
+    if current_tank is None or current_tank not in tank_choices:
+        value = tank_choices[0]
+    else:
+        value = current_tank
+
+    return gr.update(
         choices=tank_choices,
         value=value,
         label="缸號",
-        allow_custom_value=False,
-        filterable=False,
         interactive=True
     )
 
@@ -340,7 +343,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
-                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False)
+                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False, interactive = True)
                 confirm_btn = gr.Button("確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
