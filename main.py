@@ -345,7 +345,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                     p => r(`[${p.coords.latitude}, ${p.coords.longitude}]`),
                     () => r("[Tap Allow Location]"), {enableHighAccuracy:true}))""")
                 # GPS sets location
-                #raw_gps.change(fn=nearest, inputs=raw_gps, outputs=location_dropdown)
+                raw_gps.change(fn=nearest, inputs=raw_gps, outputs=location_dropdown)
                 
                 # Location change updates tanks
                 location_dropdown.change(fn=update_tank_dropdown,
