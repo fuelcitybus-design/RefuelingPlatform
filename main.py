@@ -341,7 +341,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
-                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=False, interactive = True)
+                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_uploader")
                 confirm_btn = gr.Button("確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
@@ -463,6 +463,13 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
             #camera_input button-wrap.button.icon {
                 display: none !important;
+            }
+
+            /* Disable typing in the tank dropdown, but keep selection */
+            #tank_dropdown_uploader input[type="text"] {
+                pointer-events: none;
+                caret-color: transparent;
+                user-select: none;
             }
                         
             """
