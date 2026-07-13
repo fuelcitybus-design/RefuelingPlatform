@@ -225,17 +225,12 @@ def nearest(gps):
     d = lambda c: (lat-c[1])**2 + (lon-c[2])**2
     return min(depot_gps, key=d)[0]
 
-def update_tank_dropdown(location, current_tank=None):
+def update_tank_dropdown(location):
     tank_choices = tank_list.get(location, ["{請選擇}"])
-    # If current_tank is None or not in the new choices, reset to placeholder
-    if current_tank is None or current_tank not in tank_choices:
-        value = tank_choices[0]
-    else:
-        value = current_tank
-
+    # Always reset to placeholder when location changes
     return gr.update(
         choices=tank_choices,
-        value=value,
+        value=tank_choices[0],  # "{請選擇}"
         label="缸號",
         interactive=True
     )
