@@ -99,6 +99,8 @@ def prefer_back_camera():
     return custom_html
 
 #=========================================================================================================================
+global active_tabs
+active_tabs = []
 
 ### Module 1: Uploader function
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
@@ -236,6 +238,7 @@ def update_tank_dropdown(location, current_tank=None):
     )
 
 def toggle_ui_components(location, car, tank):
+    global active_tabs  # <-- important
     active_tabs = tab_list_S.get(location, [])
 
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
