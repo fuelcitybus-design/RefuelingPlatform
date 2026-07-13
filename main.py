@@ -101,6 +101,8 @@ def prefer_back_camera():
 #=========================================================================================================================
 global active_tabs
 active_tabs = []
+global tank_choices
+tank_choices = []
 
 ### Module 1: Uploader function
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
@@ -226,6 +228,7 @@ def nearest(gps):
     return min(depot_gps, key=d)[0]
 
 def update_tank_dropdown(location):
+    global tank_choices
     tank_choices = tank_list.get(location, ["{請選擇}"])
     # Always reset to placeholder when location changes
     return gr.update(
@@ -338,7 +341,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
-                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False, interactive = True)
+                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=False, interactive = True)
                 confirm_btn = gr.Button("確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
