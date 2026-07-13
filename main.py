@@ -123,7 +123,11 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             info_msg = "警告：確保已輸入地點，車號，缸號"
             info_log = "Error: Please select Location, Car ID, and Tank ID."
             return info_msg
-
+        global tank_choices
+        if not tank_choices or tank_id not in tank_choices:
+            info_msg = f"警告：無效的缸號 \"{tank_id}\""
+            return info_msg
+            
         #File path and name format for the images
         prefix = f"{location}/{car_id}_{tank_id}"
         #Auto-select today's date
