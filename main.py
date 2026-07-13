@@ -470,10 +470,12 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             }
 
             /* Disable typing in the tank dropdown, but keep selection */
-            #tank_dropdown_uploader input[type="text"] {
-                pointer-events: none;
-                caret-color: transparent;
-                user-select: none;
+            #tank_dropdown input[type="text"] {
+                pointer-events: none !important;
+                caret-color: transparent !important;
+                user-select: none !important;
+                -webkit-user-select: none !important;
+                cursor: default !important;
             }
                         
             """
