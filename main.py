@@ -92,11 +92,8 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
 
-    function getTankInput() {
-      return document.querySelector('#tank_dropdown_uploader input[type="text"]');
-    }
-
     function isTankDropdownInput(el) {
+      // Walk up from the element to find wrapper with id="tank_dropdown_uploader"
       while (el && el !== document) {
         if (el.id === 'tank_dropdown_uploader') {
           return true;
@@ -111,6 +108,7 @@ def prefer_back_camera():
         return;
       }
 
+      // Allow navigation keys only
       const allowedKeys = [
         'ArrowDown', 'ArrowUp', 'Enter', 'Escape',
         'Tab', 'Shift', 'Control', 'Alt', 'Meta'
@@ -120,6 +118,7 @@ def prefer_back_camera():
         return;
       }
 
+      // Block all other keys
       e.preventDefault();
       e.stopPropagation();
     }
@@ -132,36 +131,6 @@ def prefer_back_camera():
       e.stopPropagation();
     }
 
-    function preventMobileKeyboardOnTankDropdown() {
-      const input = getTankInput();
-      if (!input) {
-        setTimeout(preventMobileKeyboardOnTankDropdown, 200);
-        return;
-      }
-
-      // Ensure inputmode is none so mobile keyboard doesn't show
-      input.setAttribute('inputmode', 'none');
-
-      // When the input is focused, let the dropdown open, then blur to hide keyboard
-      input.addEventListener('focus', (e) => {
-        // Force inputmode none on every focus
-        input.setAttribute('inputmode', 'none');
-
-        // Small delay to let the dropdown UI open, then remove focus
-        setTimeout(() => {
-          // Only blur if the dropdown list is now visible
-          const list = document.querySelector('#tank_dropdown_uploader [role="listbox"]');
-          if (list) {
-            input.blur();
-          }
-        }, 50);
-      }, true);
-
-      // Also block typing and paste as extra safety
-      input.addEventListener('keydown', blockTankDropdownTyping, true);
-      input.addEventListener('paste', blockTankDropdownPaste, true);
-    }
-
     function initTankDropdownBlocker() {
       if (window._tankDropdownBlockerInitialized) {
         return;
@@ -169,9 +138,22 @@ def prefer_back_camera():
       window._tankDropdownBlockerInitialized = true;
 
       document.addEventListener('keydown', blockTankDropdownTyping, true);
+      document.addEventListener('input', (e) => {
+        if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
+          // Force value back to last known good value (i.e., selected option)
+          e.target.value = e.target._lastGoodValue || '';
+        }
+      }, true);
       document.addEventListener('paste', blockTankDropdownPaste, true);
 
-      preventMobileKeyboardOnTankDropdown();
+      // Initialize _lastGoodValue and clear any typed content on load
+      setTimeout(() => {
+        const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
+        if (tankInput) {
+          tankInput._lastGoodValue = tankInput.value;
+          tankInput.value = tankInput._lastGoodValue; // ensure no stray text
+        }
+      }, 300);
     }
 
     if (document.readyState === 'loading') {
