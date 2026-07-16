@@ -93,7 +93,6 @@ def prefer_back_camera():
     };
 
     function isTankDropdownInput(el) {
-      // Walk up from the element to find wrapper with id="tank_dropdown_uploader"
       while (el && el !== document) {
         if (el.id === 'tank_dropdown_uploader') {
           return true;
@@ -108,7 +107,6 @@ def prefer_back_camera():
         return;
       }
 
-      // Allow navigation keys only
       const allowedKeys = [
         'ArrowDown', 'ArrowUp', 'Enter', 'Escape',
         'Tab', 'Shift', 'Control', 'Alt', 'Meta'
@@ -118,7 +116,6 @@ def prefer_back_camera():
         return;
       }
 
-      // Block all other keys
       e.preventDefault();
       e.stopPropagation();
     }
@@ -131,6 +128,11 @@ def prefer_back_camera():
       e.stopPropagation();
     }
 
+    function isMobileDevice() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        || ('ontouchstart' in window);
+    }
+
     function initTankDropdownBlocker() {
       if (window._tankDropdownBlockerInitialized) {
         return;
@@ -140,18 +142,23 @@ def prefer_back_camera():
       document.addEventListener('keydown', blockTankDropdownTyping, true);
       document.addEventListener('input', (e) => {
         if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
-          // Force value back to last known good value (i.e., selected option)
           e.target.value = e.target._lastGoodValue || '';
         }
       }, true);
       document.addEventListener('paste', blockTankDropdownPaste, true);
 
-      // Initialize _lastGoodValue and clear any typed content on load
+      // Make input readonly on mobile to prevent keyboard
       setTimeout(() => {
         const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
         if (tankInput) {
           tankInput._lastGoodValue = tankInput.value;
-          tankInput.value = tankInput._lastGoodValue; // ensure no stray text
+          tankInput.value = tankInput._lastGoodValue;
+
+          if (isMobileDevice()) {
+            tankInput.setAttribute('readonly', true);
+            // Optional: ensure it still feels clickable
+            tankInput.style.cursor = 'pointer';
+          }
         }
       }, 300);
     }
