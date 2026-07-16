@@ -82,6 +82,7 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 def prefer_back_camera():
     custom_html = """
     <script>
+    // Force back camera
     const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     navigator.mediaDevices.getUserMedia = (constraints) => {
       if (!constraints.video.facingMode) {
@@ -92,68 +93,54 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
 
+    // Dropdown input blocker
     function isTankDropdownInput(el) {
-      // Walk up from the element to find wrapper with id="tank_dropdown_uploader"
       while (el && el !== document) {
-        if (el.id === 'tank_dropdown_uploader') {
-          return true;
-        }
+        if (el.id === 'tank_dropdown_uploader') return true;
         el = el.parentElement;
       }
       return false;
     }
 
     function blockTankDropdownTyping(e) {
-      if (!isTankDropdownInput(e.target)) {
-        return;
+      if (!isTankDropdownInput(e.target)) return;
+      const allowedKeys = ['ArrowDown','ArrowUp','Enter','Escape','Tab','Shift','Control','Alt','Meta'];
+      if (!allowedKeys.includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
       }
-
-      // Allow navigation keys only
-      const allowedKeys = [
-        'ArrowDown', 'ArrowUp', 'Enter', 'Escape',
-        'Tab', 'Shift', 'Control', 'Alt', 'Meta'
-      ];
-
-      if (allowedKeys.includes(e.key)) {
-        return;
-      }
-
-      // Block all other keys
-      e.preventDefault();
-      e.stopPropagation();
     }
 
     function blockTankDropdownPaste(e) {
-      if (!isTankDropdownInput(e.target)) {
-        return;
+      if (isTankDropdownInput(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
       }
-      e.preventDefault();
-      e.stopPropagation();
+    }
+
+    function disableTankInputKeyboard() {
+      const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
+      if (tankInput) {
+        tankInput.setAttribute('readonly','true');   // prevent typing
+        tankInput.style.caretColor = 'transparent';  // hide cursor
+        tankInput.addEventListener('focus', e => e.target.blur()); // stop mobile keyboard
+        tankInput._lastGoodValue = tankInput.value;
+      }
     }
 
     function initTankDropdownBlocker() {
-      if (window._tankDropdownBlockerInitialized) {
-        return;
-      }
+      if (window._tankDropdownBlockerInitialized) return;
       window._tankDropdownBlockerInitialized = true;
 
       document.addEventListener('keydown', blockTankDropdownTyping, true);
+      document.addEventListener('paste', blockTankDropdownPaste, true);
       document.addEventListener('input', (e) => {
         if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
-          // Force value back to last known good value (i.e., selected option)
           e.target.value = e.target._lastGoodValue || '';
         }
       }, true);
-      document.addEventListener('paste', blockTankDropdownPaste, true);
 
-      // Initialize _lastGoodValue and clear any typed content on load
-      setTimeout(() => {
-        const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
-        if (tankInput) {
-          tankInput._lastGoodValue = tankInput.value;
-          tankInput.value = tankInput._lastGoodValue; // ensure no stray text
-        }
-      }, 300);
+      setTimeout(disableTankInputKeyboard, 300);
     }
 
     if (document.readyState === 'loading') {
@@ -164,6 +151,7 @@ def prefer_back_camera():
     </script>
     """
     return custom_html
+
 
 #=========================================================================================================================
 global active_tabs
