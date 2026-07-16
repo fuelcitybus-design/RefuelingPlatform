@@ -93,7 +93,7 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
 
-    // Dropdown input blocker
+    // Dropdown blocker
     function isTankDropdownInput(el) {
       while (el && el !== document) {
         if (el.id === 'tank_dropdown_uploader') return true;
@@ -118,24 +118,31 @@ def prefer_back_camera():
       }
     }
 
-    function disableTankInputKeyboard() {
+    function overlayTankInput() {
       const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
-      if (tankInput) {
-        // Swap type so mobile OS doesn't treat it as text
-        tankInput.setAttribute('type','button');
-        tankInput.setAttribute('readonly','true');
-        tankInput.setAttribute('inputmode','none');
-        tankInput.setAttribute('autocomplete','off');
-        tankInput.style.caretColor = 'transparent';
+      if (tankInput && !tankInput._overlayApplied) {
+        // Create transparent overlay
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.top = tankInput.offsetTop + 'px';
+        overlay.style.left = tankInput.offsetLeft + 'px';
+        overlay.style.width = tankInput.offsetWidth + 'px';
+        overlay.style.height = tankInput.offsetHeight + 'px';
+        overlay.style.background = 'transparent';
+        overlay.style.zIndex = 10;
 
-        // Preserve last good value
-        tankInput._lastGoodValue = tankInput.value;
-
-        // Ensure clicking still opens dropdown
-        tankInput.addEventListener('click', () => {
+        // Intercept taps and open dropdown
+        overlay.addEventListener('click', () => {
           const evt = new MouseEvent('mousedown', { bubbles:true });
           tankInput.dispatchEvent(evt);
         });
+
+        tankInput.parentElement.style.position = 'relative';
+        tankInput.parentElement.appendChild(overlay);
+        tankInput._overlayApplied = true;
+
+        // Keep last good value
+        tankInput._lastGoodValue = tankInput.value;
       }
     }
 
@@ -151,7 +158,7 @@ def prefer_back_camera():
         }
       }, true);
 
-      setTimeout(disableTankInputKeyboard, 300);
+      setTimeout(overlayTankInput, 300);
     }
 
     if (document.readyState === 'loading') {
@@ -162,6 +169,7 @@ def prefer_back_camera():
     </script>
     """
     return custom_html
+
 
 
 
