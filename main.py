@@ -92,119 +92,63 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
 
-    function isTankDropdownInput(el) {
-      while (el && el !== document) {
-        if (el.id === 'tank_dropdown_uploader') {
-          return true;
-        }
-        el = el.parentElement;
-      }
-      return false;
-    }
-
-    function blockTankDropdownTyping(e) {
-      if (!isTankDropdownInput(e.target)) {
-        return;
-      }
-
-      const allowedKeys = [
-        'ArrowDown', 'ArrowUp', 'Enter', 'Escape',
-        'Tab', 'Shift', 'Control', 'Alt', 'Meta'
-      ];
-
-      if (allowedKeys.includes(e.key)) {
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    function blockTankDropdownPaste(e) {
-      if (!isTankDropdownInput(e.target)) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
     function isMobileDevice() {
       return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
         || ('ontouchstart' in window);
     }
 
-    function initTankDropdownBlocker() {
-      if (window._tankDropdownBlockerInitialized) {
+    function initTankDropdownNoKeyboard() {
+      if (window._tankDropdownNoKeyboardInitialized) {
         return;
       }
-      window._tankDropdownBlockerInitialized = true;
-
-      document.addEventListener('keydown', blockTankDropdownTyping, true);
-      document.addEventListener('input', (e) => {
-        if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
-          e.target.value = e.target._lastGoodValue || '';
-        }
-      }, true);
-      document.addEventListener('paste', blockTankDropdownPaste, true);
+      window._tankDropdownNoKeyboardInitialized = true;
 
       setTimeout(() => {
-        const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
-        if (!tankInput) return;
+        const wrapper = document.getElementById('tank_dropdown_uploader');
+        if (!wrapper) return;
 
-        tankInput._lastGoodValue = tankInput.value;
-        tankInput.value = tankInput._lastGoodValue;
+        // Gradio dropdowns usually have a single text input inside
+        const input = wrapper.querySelector('input[type="text"]');
+        if (!input) return;
 
-        // Always readonly
-        tankInput.setAttribute('readonly', true);
-        tankInput.style.cursor = 'pointer';
+        // Store initial value (selected option)
+        input._lastGoodValue = input.value;
 
+        // Always readonly so no typing
+        input.setAttribute('readonly', true);
+        input.style.cursor = 'pointer';
+
+        // On mobile, prevent focus from ever triggering keyboard
         if (isMobileDevice()) {
-          // Prevent focus from ever happening on mobile
-          tankInput.addEventListener('focus', (e) => {
-            e.preventDefault();
-            tankInput.blur();
+          // Block focus
+          input.addEventListener('focus', (e) => {
+            // Let the event happen (so dropdown can open), but immediately blur
+            setTimeout(() => input.blur(), 0);
           }, true);
 
-          tankInput.addEventListener('click', (e) => {
-            e.preventDefault();
-            tankInput.blur();
-            // If Gradio’s dropdown opens on input click, this may still work;
-            // if not, we rely on clicking the wrapper instead.
+          // Also handle touchstart/click to be safe
+          input.addEventListener('touchstart', (e) => {
+            // Allow click to propagate (so dropdown opens), but we’ll blur after
           }, true);
 
-          tankInput.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            tankInput.blur();
+          input.addEventListener('click', (e) => {
+            setTimeout(() => input.blur(), 0);
           }, true);
-
-          // Optionally, let clicks on the wrapper open the dropdown without focusing input
-          const wrapper = document.getElementById('tank_dropdown_uploader');
-          if (wrapper) {
-            wrapper.addEventListener('click', (e) => {
-              // If click is directly on the input, we already handled it.
-              if (e.target === tankInput) return;
-
-              // Simulate a click on the input to open dropdown, but keep focus away
-              const rect = tankInput.getBoundingClientRect();
-              const touchEvent = new MouseEvent('click', {
-                bubbles: true,
-                cancelable: true,
-                view: window,
-                clientX: rect.left + 1,
-                clientY: rect.top + 1
-              });
-              tankInput.dispatchEvent(touchEvent);
-              tankInput.blur();
-            }, true);
-          }
         }
+
+        // Keep value locked to selected option (safety)
+        input.addEventListener('input', (e) => {
+          if (input.value !== input._lastGoodValue) {
+            input.value = input._lastGoodValue;
+          }
+        }, true);
       }, 400);
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initTankDropdownBlocker);
+      document.addEventListener('DOMContentLoaded', initTankDropdownNoKeyboard);
     } else {
-      initTankDropdownBlocker();
+      initTankDropdownNoKeyboard();
     }
     </script>
     """
