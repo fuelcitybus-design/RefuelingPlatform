@@ -95,10 +95,12 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
 
+    // Support multiple dropdown IDs
+    const TANK_DROPDOWN_IDS = ['tank_dropdown_uploader', 'tank_dropdown_history'];
+
     function isTankDropdownInput(el) {
-      // Walk up from the element to find a wrapper with class "tank_dropdown"
       while (el && el !== document) {
-        if (el.classList && el.classList.contains('tank_dropdown')) {
+        if (TANK_DROPDOWN_IDS.includes(el.id)) {
           return true;
         }
         el = el.parentElement;
@@ -149,14 +151,15 @@ def prefer_back_camera():
       }, true);
       document.addEventListener('paste', blockTankDropdownPaste, true);
 
-      // Initialize _lastGoodValue and clear any typed content on load
+      // Initialize _lastGoodValue and clear any typed content on load for all dropdowns
       setTimeout(() => {
-        // Updated selector: any input inside a .tank_dropdown wrapper
-        const tankInput = document.querySelector('.tank_dropdown input[type="text"]');
-        if (tankInput) {
-          tankInput._lastGoodValue = tankInput.value;
-          tankInput.value = tankInput._lastGoodValue; // ensure no stray text
-        }
+        TANK_DROPDOWN_IDS.forEach(id => {
+          const tankInput = document.querySelector(`#${id} input[type="text"]`);
+          if (tankInput) {
+            tankInput._lastGoodValue = tankInput.value;
+            tankInput.value = tankInput._lastGoodValue; // ensure no stray text
+          }
+        });
       }, 300);
     }
 
@@ -416,7 +419,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
-                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_uploader", elem_classes=["tank-dropdown"])
+                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_uploader")
                 confirm_btn = gr.Button("確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
