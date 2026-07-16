@@ -128,11 +128,6 @@ def prefer_back_camera():
       e.stopPropagation();
     }
 
-    function isMobileDevice() {
-      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        || ('ontouchstart' in window);
-    }
-
     function initTankDropdownBlocker() {
       if (window._tankDropdownBlockerInitialized) {
         return;
@@ -147,18 +142,16 @@ def prefer_back_camera():
       }, true);
       document.addEventListener('paste', blockTankDropdownPaste, true);
 
-      // Make input readonly on mobile to prevent keyboard
+      // Always make input readonly so keyboard never appears
       setTimeout(() => {
         const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
         if (tankInput) {
           tankInput._lastGoodValue = tankInput.value;
           tankInput.value = tankInput._lastGoodValue;
 
-          if (isMobileDevice()) {
-            tankInput.setAttribute('readonly', true);
-            // Optional: ensure it still feels clickable
-            tankInput.style.cursor = 'pointer';
-          }
+          // Core change: make it readonly on all devices
+          tankInput.setAttribute('readonly', true);
+          tankInput.style.cursor = 'pointer';
         }
       }, 300);
     }
