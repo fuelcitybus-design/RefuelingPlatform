@@ -92,63 +92,74 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
 
-    function isMobileDevice() {
-      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        || ('ontouchstart' in window);
+    function isTankDropdownInput(el) {
+      // Walk up from the element to find wrapper with id="tank_dropdown_uploader"
+      while (el && el !== document) {
+        if (el.id === 'tank_dropdown_uploader') {
+          return true;
+        }
+        el = el.parentElement;
+      }
+      return false;
     }
 
-    function initTankDropdownNoKeyboard() {
-      if (window._tankDropdownNoKeyboardInitialized) {
+    function blockTankDropdownTyping(e) {
+      if (!isTankDropdownInput(e.target)) {
         return;
       }
-      window._tankDropdownNoKeyboardInitialized = true;
 
-      setTimeout(() => {
-        const wrapper = document.getElementById('tank_dropdown_uploader');
-        if (!wrapper) return;
+      // Allow navigation keys only
+      const allowedKeys = [
+        'ArrowDown', 'ArrowUp', 'Enter', 'Escape',
+        'Tab', 'Shift', 'Control', 'Alt', 'Meta'
+      ];
 
-        // Gradio dropdowns usually have a single text input inside
-        const input = wrapper.querySelector('input[type="text"]');
-        if (!input) return;
+      if (allowedKeys.includes(e.key)) {
+        return;
+      }
 
-        // Store initial value (selected option)
-        input._lastGoodValue = input.value;
+      // Block all other keys
+      e.preventDefault();
+      e.stopPropagation();
+    }
 
-        // Always readonly so no typing
-        input.setAttribute('readonly', true);
-        input.style.cursor = 'pointer';
+    function blockTankDropdownPaste(e) {
+      if (!isTankDropdownInput(e.target)) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+    }
 
-        // On mobile, prevent focus from ever triggering keyboard
-        if (isMobileDevice()) {
-          // Block focus
-          input.addEventListener('focus', (e) => {
-            // Let the event happen (so dropdown can open), but immediately blur
-            setTimeout(() => input.blur(), 0);
-          }, true);
+    function initTankDropdownBlocker() {
+      if (window._tankDropdownBlockerInitialized) {
+        return;
+      }
+      window._tankDropdownBlockerInitialized = true;
 
-          // Also handle touchstart/click to be safe
-          input.addEventListener('touchstart', (e) => {
-            // Allow click to propagate (so dropdown opens), but we’ll blur after
-          }, true);
-
-          input.addEventListener('click', (e) => {
-            setTimeout(() => input.blur(), 0);
-          }, true);
+      document.addEventListener('keydown', blockTankDropdownTyping, true);
+      document.addEventListener('input', (e) => {
+        if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
+          // Force value back to last known good value (i.e., selected option)
+          e.target.value = e.target._lastGoodValue || '';
         }
+      }, true);
+      document.addEventListener('paste', blockTankDropdownPaste, true);
 
-        // Keep value locked to selected option (safety)
-        input.addEventListener('input', (e) => {
-          if (input.value !== input._lastGoodValue) {
-            input.value = input._lastGoodValue;
-          }
-        }, true);
-      }, 400);
+      // Initialize _lastGoodValue and clear any typed content on load
+      setTimeout(() => {
+        const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
+        if (tankInput) {
+          tankInput._lastGoodValue = tankInput.value;
+          tankInput.value = tankInput._lastGoodValue; // ensure no stray text
+        }
+      }, 300);
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initTankDropdownNoKeyboard);
+      document.addEventListener('DOMContentLoaded', initTankDropdownBlocker);
     } else {
-      initTankDropdownNoKeyboard();
+      initTankDropdownBlocker();
     }
     </script>
     """
