@@ -132,22 +132,34 @@ def prefer_back_camera():
       e.stopPropagation();
     }
 
-    function forceReadonlyOnFocus() {
+    function preventMobileKeyboardOnTankDropdown() {
       const input = getTankInput();
       if (!input) {
-        setTimeout(forceReadonlyOnFocus, 200);
+        setTimeout(preventMobileKeyboardOnTankDropdown, 200);
         return;
       }
 
-      // Every time the tank input gets focus, make it readonly immediately
-      input.addEventListener('focus', () => {
-        input.setAttribute('readonly', 'true');
+      // Ensure inputmode is none so mobile keyboard doesn't show
+      input.setAttribute('inputmode', 'none');
+
+      // When the input is focused, let the dropdown open, then blur to hide keyboard
+      input.addEventListener('focus', (e) => {
+        // Force inputmode none on every focus
+        input.setAttribute('inputmode', 'none');
+
+        // Small delay to let the dropdown UI open, then remove focus
+        setTimeout(() => {
+          // Only blur if the dropdown list is now visible
+          const list = document.querySelector('#tank_dropdown_uploader [role="listbox"]');
+          if (list) {
+            input.blur();
+          }
+        }, 50);
       }, true);
 
-      // Optional: ensure it stays readonly even if something tries to remove it
-      input.addEventListener('input', () => {
-        input.setAttribute('readonly', 'true');
-      });
+      // Also block typing and paste as extra safety
+      input.addEventListener('keydown', blockTankDropdownTyping, true);
+      input.addEventListener('paste', blockTankDropdownPaste, true);
     }
 
     function initTankDropdownBlocker() {
@@ -159,18 +171,7 @@ def prefer_back_camera():
       document.addEventListener('keydown', blockTankDropdownTyping, true);
       document.addEventListener('paste', blockTankDropdownPaste, true);
 
-      // Force readonly on focus to prevent mobile keyboard
-      forceReadonlyOnFocus();
-
-      // Initialize _lastGoodValue and clear any stray text
-      setTimeout(() => {
-        const tankInput = getTankInput();
-        if (tankInput) {
-          tankInput._lastGoodValue = tankInput.value;
-          tankInput.value = tankInput._lastGoodValue;
-          tankInput.setAttribute('readonly', 'true');
-        }
-      }, 300);
+      preventMobileKeyboardOnTankDropdown();
     }
 
     if (document.readyState === 'loading') {
