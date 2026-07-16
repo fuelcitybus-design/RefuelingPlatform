@@ -121,9 +121,19 @@ def prefer_back_camera():
     function disableTankInputKeyboard() {
       const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
       if (tankInput) {
-        tankInput.setAttribute('readonly','true');   // prevent typing
-        tankInput.style.caretColor = 'transparent';  // hide cursor
-        tankInput.addEventListener('focus', e => e.target.blur()); // stop mobile keyboard
+        // Prevent typing and suppress mobile keyboard
+        tankInput.setAttribute('readonly','true');
+        tankInput.setAttribute('inputmode','none');   // mobile browsers: no keyboard
+        tankInput.setAttribute('autocomplete','off');
+        tankInput.style.caretColor = 'transparent';
+
+        // Intercept focus before keyboard opens
+        tankInput.addEventListener('focus', (e) => {
+          e.preventDefault();
+          e.target.blur();
+        });
+
+        // Keep last good value
         tankInput._lastGoodValue = tankInput.value;
       }
     }
@@ -151,6 +161,7 @@ def prefer_back_camera():
     </script>
     """
     return custom_html
+
 
 
 #=========================================================================================================================
