@@ -331,7 +331,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                     choices=locations, label="地點", value=locations[0]
                 )
                 car_dropdown2 = gr.Dropdown(
-                    choices=[], label="車號", value=None
+                    choices=[], label="車號", value=None, allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_history"
                 )
 
             # Overall status message
