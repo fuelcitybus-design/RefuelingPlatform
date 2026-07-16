@@ -96,9 +96,9 @@ def prefer_back_camera():
     };
 
     function isTankDropdownInput(el) {
-      // Walk up from the element to find wrapper with id="tank_dropdown_uploader"
+      // Walk up from the element to find a wrapper with class "tank_dropdown"
       while (el && el !== document) {
-        if (el.id === 'tank_dropdown_uploader') {
+        if (el.classList && el.classList.contains('tank_dropdown')) {
           return true;
         }
         el = el.parentElement;
@@ -151,7 +151,8 @@ def prefer_back_camera():
 
       // Initialize _lastGoodValue and clear any typed content on load
       setTimeout(() => {
-        const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
+        // Updated selector: any input inside a .tank_dropdown wrapper
+        const tankInput = document.querySelector('.tank_dropdown input[type="text"]');
         if (tankInput) {
           tankInput._lastGoodValue = tankInput.value;
           tankInput.value = tankInput._lastGoodValue; // ensure no stray text
@@ -415,7 +416,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
-                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_uploader")
+                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_uploader", elem_classes=["tank-dropdown-class"])
                 confirm_btn = gr.Button("確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
