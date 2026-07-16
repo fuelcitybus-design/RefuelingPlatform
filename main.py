@@ -193,7 +193,33 @@ def get_car_ids(date, location):
         return sorted(set(car_id))
     else:
         return []
-            
+
+def safe_update_car_dropdown(date, location):
+    try:
+        return update_car_dropdown(date, location)
+    except Exception:
+        # Return safe defaults matching the declared outputs
+        return (
+            gr.update(choices=["錯誤"], value="錯誤"),
+            [], "錯誤",
+            [], "錯誤",
+            [], "錯誤",
+            [], "錯誤",
+            "伺服器錯誤：無法載入資料"
+        )
+
+def safe_update_all(date, location, car):
+    try:
+        return update_all(date, location, car)
+    except Exception:
+        return (
+            [], "錯誤",
+            [], "錯誤",
+            [], "錯誤",
+            [], "錯誤",
+            "伺服器錯誤：無法載入資料"
+        )
+
 def update_car_dropdown(date, location):
     car_ids = get_car_ids(date, location)
     if car_ids:
@@ -357,7 +383,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
             # --- Wiring ---
             date_picker.change(
-                fn=update_car_dropdown,
+                fn=safe_update_car_dropdown,
                 inputs=[date_picker, location_dropdown2],
                 outputs=[car_dropdown2,
                          gallery1, tank_label1,
@@ -368,7 +394,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             )
         
             location_dropdown2.change(
-                fn=update_car_dropdown,
+                fn=safe_update_car_dropdown,
                 inputs=[date_picker, location_dropdown2],
                 outputs=[car_dropdown2,
                          gallery1, tank_label1,
@@ -378,9 +404,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                          tank_message]
             )
         
-            # ✅ Only update tanks when car changes
             car_dropdown2.change(
-                fn=update_all,
+                fn=safe_update_all,
                 inputs=[date_picker, location_dropdown2, car_dropdown2],
                 outputs=[gallery1, tank_label1,
                          gallery2, tank_label2,
