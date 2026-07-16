@@ -92,8 +92,11 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
 
+    function getTankInput() {
+      return document.querySelector('#tank_dropdown_uploader input[type="text"]');
+    }
+
     function isTankDropdownInput(el) {
-      // Walk up from the element to find wrapper with id="tank_dropdown_uploader"
       while (el && el !== document) {
         if (el.id === 'tank_dropdown_uploader') {
           return true;
@@ -108,7 +111,6 @@ def prefer_back_camera():
         return;
       }
 
-      // Allow navigation keys only
       const allowedKeys = [
         'ArrowDown', 'ArrowUp', 'Enter', 'Escape',
         'Tab', 'Shift', 'Control', 'Alt', 'Meta'
@@ -118,7 +120,6 @@ def prefer_back_camera():
         return;
       }
 
-      // Block all other keys
       e.preventDefault();
       e.stopPropagation();
     }
@@ -131,6 +132,24 @@ def prefer_back_camera():
       e.stopPropagation();
     }
 
+    function forceReadonlyOnFocus() {
+      const input = getTankInput();
+      if (!input) {
+        setTimeout(forceReadonlyOnFocus, 200);
+        return;
+      }
+
+      // Every time the tank input gets focus, make it readonly immediately
+      input.addEventListener('focus', () => {
+        input.setAttribute('readonly', 'true');
+      }, true);
+
+      // Optional: ensure it stays readonly even if something tries to remove it
+      input.addEventListener('input', () => {
+        input.setAttribute('readonly', 'true');
+      });
+    }
+
     function initTankDropdownBlocker() {
       if (window._tankDropdownBlockerInitialized) {
         return;
@@ -138,20 +157,18 @@ def prefer_back_camera():
       window._tankDropdownBlockerInitialized = true;
 
       document.addEventListener('keydown', blockTankDropdownTyping, true);
-      document.addEventListener('input', (e) => {
-        if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
-          // Force value back to last known good value (i.e., selected option)
-          e.target.value = e.target._lastGoodValue || '';
-        }
-      }, true);
       document.addEventListener('paste', blockTankDropdownPaste, true);
 
-      // Initialize _lastGoodValue and clear any typed content on load
+      // Force readonly on focus to prevent mobile keyboard
+      forceReadonlyOnFocus();
+
+      // Initialize _lastGoodValue and clear any stray text
       setTimeout(() => {
-        const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
+        const tankInput = getTankInput();
         if (tankInput) {
           tankInput._lastGoodValue = tankInput.value;
-          tankInput.value = tankInput._lastGoodValue; // ensure no stray text
+          tankInput.value = tankInput._lastGoodValue;
+          tankInput.setAttribute('readonly', 'true');
         }
       }, 300);
     }
