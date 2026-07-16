@@ -82,83 +82,81 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 def prefer_back_camera():
     custom_html = """
     <script>
-    // Force back camera
     const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+
     navigator.mediaDevices.getUserMedia = (constraints) => {
       if (!constraints.video.facingMode) {
         constraints.video.facingMode = { ideal: "environment" };
       }
+
       constraints.video.width = { exact: 400 };
       constraints.video.height = { exact: 400 };
+
       return originalGetUserMedia(constraints);
     };
 
-    // Dropdown blocker
     function isTankDropdownInput(el) {
+      // Walk up from the element to find wrapper with id="tank_dropdown_uploader"
       while (el && el !== document) {
-        if (el.id === 'tank_dropdown_uploader') return true;
+        if (el.id === 'tank_dropdown_uploader') {
+          return true;
+        }
         el = el.parentElement;
       }
       return false;
     }
 
     function blockTankDropdownTyping(e) {
-      if (!isTankDropdownInput(e.target)) return;
-      const allowedKeys = ['ArrowDown','ArrowUp','Enter','Escape','Tab','Shift','Control','Alt','Meta'];
-      if (!allowedKeys.includes(e.key)) {
-        e.preventDefault();
-        e.stopPropagation();
+      if (!isTankDropdownInput(e.target)) {
+        return;
       }
+
+      // Allow navigation keys only
+      const allowedKeys = [
+        'ArrowDown', 'ArrowUp', 'Enter', 'Escape',
+        'Tab', 'Shift', 'Control', 'Alt', 'Meta'
+      ];
+
+      if (allowedKeys.includes(e.key)) {
+        return;
+      }
+
+      // Block all other keys
+      e.preventDefault();
+      e.stopPropagation();
     }
 
     function blockTankDropdownPaste(e) {
-      if (isTankDropdownInput(e.target)) {
-        e.preventDefault();
-        e.stopPropagation();
+      if (!isTankDropdownInput(e.target)) {
+        return;
       }
-    }
-
-    function overlayTankInput() {
-      const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
-      if (tankInput && !tankInput._overlayApplied) {
-        // Create transparent overlay
-        const overlay = document.createElement('div');
-        overlay.style.position = 'absolute';
-        overlay.style.top = tankInput.offsetTop + 'px';
-        overlay.style.left = tankInput.offsetLeft + 'px';
-        overlay.style.width = tankInput.offsetWidth + 'px';
-        overlay.style.height = tankInput.offsetHeight + 'px';
-        overlay.style.background = 'transparent';
-        overlay.style.zIndex = 10;
-
-        // Intercept taps and open dropdown
-        overlay.addEventListener('click', () => {
-          const evt = new MouseEvent('mousedown', { bubbles:true });
-          tankInput.dispatchEvent(evt);
-        });
-
-        tankInput.parentElement.style.position = 'relative';
-        tankInput.parentElement.appendChild(overlay);
-        tankInput._overlayApplied = true;
-
-        // Keep last good value
-        tankInput._lastGoodValue = tankInput.value;
-      }
+      e.preventDefault();
+      e.stopPropagation();
     }
 
     function initTankDropdownBlocker() {
-      if (window._tankDropdownBlockerInitialized) return;
+      if (window._tankDropdownBlockerInitialized) {
+        return;
+      }
       window._tankDropdownBlockerInitialized = true;
 
       document.addEventListener('keydown', blockTankDropdownTyping, true);
-      document.addEventListener('paste', blockTankDropdownPaste, true);
       document.addEventListener('input', (e) => {
         if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
+          // Force value back to last known good value (i.e., selected option)
           e.target.value = e.target._lastGoodValue || '';
         }
       }, true);
+      document.addEventListener('paste', blockTankDropdownPaste, true);
 
-      setTimeout(overlayTankInput, 300);
+      // Initialize _lastGoodValue and clear any typed content on load
+      setTimeout(() => {
+        const tankInput = document.querySelector('#tank_dropdown_uploader input[type="text"]');
+        if (tankInput) {
+          tankInput._lastGoodValue = tankInput.value;
+          tankInput.value = tankInput._lastGoodValue; // ensure no stray text
+        }
+      }, 300);
     }
 
     if (document.readyState === 'loading') {
@@ -169,10 +167,6 @@ def prefer_back_camera():
     </script>
     """
     return custom_html
-
-
-
-
 
 #=========================================================================================================================
 global active_tabs
@@ -421,7 +415,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
-                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False, interactive=True, elem_id="tank_dropdown_uploader")
+                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_uploader")
                 confirm_btn = gr.Button("確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
