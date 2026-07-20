@@ -418,13 +418,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 ]
             )
 
-            demo.css = """
-            #gallery1 img, #gallery2 img, #gallery3 img, #gallery4 img {
-                max-height: 200px !important;
-                object-fit: contain;
-            }
-                        
-            """
 
 # IMPORTANT: mount under a subpath to avoid "response already started" errors
 app = gr.mount_gradio_app(app, demo, path="/")
