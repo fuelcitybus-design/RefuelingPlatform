@@ -198,6 +198,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             info_log = "Error: Please select Location, Car ID, and Tank ID."
             return info_msg
         global tank_choices
+        tank_choices = tank_list.get(location, [])
         if not tank_choices or tank_id not in tank_choices:
             info_msg = f"警告：無效的缸號 \"{tank_id}\""
             return info_msg
