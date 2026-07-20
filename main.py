@@ -173,6 +173,8 @@ def prefer_back_camera():
     return custom_html
 
 #=========================================================================================================================
+global REQUEST_TIMEOUT
+REQUEST_TIMEOUT = (5, 30)
 global active_tabs
 active_tabs = []
 global tank_choices
@@ -180,7 +182,8 @@ tank_choices = []
 
 ### Module 1: Uploader function
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
-    try:
+        global REQUEST_TIMEOUT 
+        try:
         # logging
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         client_ip = request.client.host if request else "unknown"
@@ -223,7 +226,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
 
         # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
         detected_tabs_exist = []
-        baser = requests.get(base_url, auth=auth)
+        baser = requests.get(base_url, auth=auth,timeout=REQUEST_TIMEOUT)
         if baser.status_code in [200,201]:
             # Check if any file of any image type to be uploaded exists in the folder
             items = baser.json()
@@ -241,7 +244,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
 
         else:
             #Create image folder
-            response = requests.put(base_url, auth=auth)
+            response = requests.put(base_url, auth=auth,timeout=REQUEST_TIMEOUT)
             if not(response.status_code in [200, 201]):
                 info_msg = "❌Folder creation failed." 
                 return info_msg
@@ -268,7 +271,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             filename = f"{tab_name}.jpg"
             filepath = f"{base_url}{filename}"
             # Upload directly from buffer
-            response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
+            response = requests.put(filepath, data=buffer.getvalue(), auth=auth,timeout=REQUEST_TIMEOUT)
             if response.status_code not in [200, 201]:
                 return f"❌{tab_name} save failed."
             saved_paths.append(tab_name)
@@ -521,7 +524,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             #camera_input label {
                 font-size: 20px !important;
             }
-
             
             #camera_input .dropdown-arrow {
                 display: none !important;
