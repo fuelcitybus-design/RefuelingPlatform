@@ -475,20 +475,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
            
             # Raw HTML input for back camera
             gr.HTML(prefer_back_camera())
-            #Toggle tabs avaliable based on depot selection
-            #location_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-            #car_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-            #tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-
-            #Toggle save button
-            #location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            #car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            #tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-                
-            #Clear uploaded images when changing information values
-            #location_dropdown.change(clear_images, location_dropdown, image_inputs)
-            #car_dropdown.change(clear_images, location_dropdown, image_inputs)
-            #tank_dropdown.change(clear_images, location_dropdown, image_inputs)
 
             demo.css = """
             #camera_input button {
