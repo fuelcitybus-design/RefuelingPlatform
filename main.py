@@ -422,4 +422,4 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             )
 
 # IMPORTANT: mount under a subpath to avoid "response already started" errors
-app = gr.mount_gradio_app(app, demo, path="/gradio")
+app = gr.mount_gradio_app(app, demo, path="")
