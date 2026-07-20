@@ -692,7 +692,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                     value=datetime.now().date().isoformat()
                 )
                 location_dropdown2 = gr.Dropdown(
-                    choices=locations, label="地點", value=locations[0]
+                    choices=locations, label="地點", value=locations[0], allow_custom_value=False, filterable=False
                 )
                 car_dropdown2 = gr.Dropdown(
                     choices=[], label="車號", value=None,
