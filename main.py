@@ -471,7 +471,14 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
                 outputs=tab_list + [save_btn, prev_btn, next_btn, img_tabs]  # include img_tabs for selected update
             )
-           
+
+
+            # Sync tab clicks with current state
+            img_tabs.select(
+                fn=set_current,
+                inputs=None,
+                outputs=current
+            )
             # Raw HTML input for back camera
             gr.HTML(prefer_back_camera())
 
