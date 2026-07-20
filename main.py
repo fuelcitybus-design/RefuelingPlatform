@@ -499,7 +499,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 font-size: 20px !important;
             }
 
-            
             #camera_input .dropdown-arrow {
                 display: none !important;
             }
