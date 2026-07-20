@@ -78,7 +78,7 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 #=========================================================================================================================
 
-# Module 1/O: Uploader camera forced setting
+###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     custom_html = """
     <script>
@@ -113,6 +113,7 @@ def prefer_back_camera():
         return;
       }
 
+      // Allow navigation keys only
       const allowedKeys = [
         'ArrowDown', 'ArrowUp', 'Enter', 'Escape',
         'Tab', 'Shift', 'Control', 'Alt', 'Meta'
@@ -122,6 +123,7 @@ def prefer_back_camera():
         return;
       }
 
+      // Block all other keys
       e.preventDefault();
       e.stopPropagation();
     }
@@ -143,17 +145,19 @@ def prefer_back_camera():
       document.addEventListener('keydown', blockTankDropdownTyping, true);
       document.addEventListener('input', (e) => {
         if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
+          // Force value back to last known good value (i.e., selected option)
           e.target.value = e.target._lastGoodValue || '';
         }
       }, true);
       document.addEventListener('paste', blockTankDropdownPaste, true);
 
+      // Initialize _lastGoodValue and clear any typed content on load for all dropdowns
       setTimeout(() => {
         TANK_DROPDOWN_IDS.forEach(id => {
           const tankInput = document.querySelector(`#${id} input[type="text"]`);
           if (tankInput) {
             tankInput._lastGoodValue = tankInput.value;
-            tankInput.value = tankInput._lastGoodValue;
+            tankInput.value = tankInput._lastGoodValue; // ensure no stray text
           }
         });
       }, 300);
@@ -360,6 +364,10 @@ def toggle_save(location, car, tank):
     else:
         return gr.update(visible=False)
 
+#def clear_images(selection):
+    # Reset all images when depot changes
+    #return [gr.update(value=None) for _ in tab_names]
+
 def set_current(idx):
     return idx
 
@@ -394,187 +402,6 @@ def prev_tab(current, location):
 
     nxt = active_indices[(pos - 1) % len(active_indices)]
     return gr.Tabs(selected=nxt), nxt
-
-#============================================================================================================================================================
-# Module 4: History functions
-
-def get_car_ids(date, location):
-    try:
-        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER}/{date_str}/{location}/"
-        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
-        car_id = []
-        if candidates.status_code == 200:
-            items = candidates.json()
-            for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    parts = folder_name.split("_")
-                    if len(parts) >= 1:
-                        car_id.append(parts[0])
-            return sorted(set(car_id))
-        else:
-            return []
-    except Exception:
-        return []
-
-
-def get_tank_names(date, location, id):
-    try:
-        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER}/{date_str}/{location}/"
-        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
-        tank = []
-        if candidates.status_code == 200:
-            items = candidates.json()
-            for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    parts = folder_name.split("_")
-                    if len(parts) >= 2 and id == parts[0]:
-                        tank.append(parts[1])
-            return tank
-        else:
-            return []
-    except Exception:
-        return []
-
-def find_jpg_images(date, location, id, tank):
-    try:
-        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        url = f"{ROOT_FOLDER}/{date_str}/{location}/{id}_{tank}/"
-        gallery_items = []
-
-        response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
-        if response.status_code != 200:
-            return [], f"❌ Failed to fetch directory contents: HTTP {response.status_code}"
-
-        files_json = response.json()
-        os.makedirs("kudu_cache", exist_ok=True)
-
-        for item in files_json:
-            if item.get("mime") == "inode/directory":
-                continue
-
-            filename = item.get("name", "")
-            file_url = url + filename
-
-            file_response = requests.get(file_url, auth=auth, timeout=10)
-            if file_response.status_code == 200:
-                local_cache_path = os.path.join("kudu_cache", filename)
-                with open(local_cache_path, "wb") as f:
-                    f.write(file_response.content)
-                gallery_items.append((local_cache_path, filename))
-
-        if not gallery_items:
-            return [], "ℹ️ Connection successful, but no files were found in this tank folder."
-
-        return gallery_items, f"🖼️ Loaded {len(gallery_items)} files successfully from Kudu storage."
-
-    except Exception as e:
-        return [], f"💥 Error accessing file structures: {str(e)}"
-
-
-def assign_tanks(date, location, id):
-    # Validate inputs early
-    if not id or id in ["請選擇", "沒有記錄"]:
-        return (
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            "請先選取有效車號"
-        )
-
-    tanks = get_tank_names(date, location, id)
-
-    if isinstance(tanks, str):
-        return (
-            [], "錯誤信號",
-            [], "錯誤信號",
-            [], "錯誤信號",
-            [], "錯誤信號",
-            tanks
-        )
-
-    if not tanks:
-        # No tanks found: return empty galleries immediately
-        return (
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            "注意：沒有相關紀錄"
-        )
-
-    galleries_data = []
-    labels = []
-
-    for i in range(4):
-        if i < len(tanks):
-            tank_name = tanks[i]
-            gallery_items, msg = find_jpg_images(date, location, id, tank_name)
-            galleries_data.append(gallery_items)
-            labels.append(f"Tank: {tank_name}")
-        else:
-            galleries_data.append([])
-            labels.append("沒有紀錄")
-
-    tank_names_str = ", ".join(tanks)
-    msg = f"找到 {len(tanks)} 組紀錄: {tank_names_str}"
-
-    return (
-        galleries_data[0], labels[0],
-        galleries_data[1], labels[1],
-        galleries_data[2], labels[2],
-        galleries_data[3], labels[3],
-        msg
-    )
-
-
-def update_car_dropdown(date, location):
-    try:
-        car_ids_list = get_car_ids(date, location)
-        if car_ids_list:
-            car_update = gr.update(choices=["請選擇"] + car_ids_list, value="請選擇")
-        else:
-            car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
-
-        tank_reset = [
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            "請先選取有效車號"
-        ]
-
-        return (car_update, *tank_reset)
-    except Exception:
-        return (
-            gr.update(choices=["錯誤"], value="錯誤"),
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            "伺服器錯誤：無法載入資料"
-        )
-
-
-def update_all(date, location, car):
-    try:
-        g1, l1, g2, l2, g3, l3, g4, l4, msg = assign_tanks(date, location, car)
-        return g1, l1, g2, l2, g3, l3, g4, l4, msg
-    except Exception:
-        return (
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            "伺服器錯誤：無法載入資料"
-        )
-
-def clear_tanks():
-    return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "請先選取有效車號"
 
 #============================================================================================================================================================
 
@@ -663,79 +490,21 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
            
             # Raw HTML input for back camera
             gr.HTML(prefer_back_camera())
+            #Toggle tabs avaliable based on depot selection
+            #location_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
+            #car_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
+            #tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
+
+            #Toggle save button
+            #location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+            #car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
+            #tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
                 
+            #Clear uploaded images when changing information values
+            #location_dropdown.change(clear_images, location_dropdown, image_inputs)
+            #car_dropdown.change(clear_images, location_dropdown, image_inputs)
+            #tank_dropdown.change(clear_images, location_dropdown, image_inputs)
 
-        # Module 4
-        with gr.Tab("記錄"):
-            with gr.Row():
-                date_picker = gr.DateTime(
-                    label="日期", include_time=False,
-                    value=datetime.now().date().isoformat(),
-                    elem_id = "date_history"
-                )
-                location_dropdown2 = gr.Dropdown(
-                    choices=locations, label="地點", value=locations[0], allow_custom_value=False, filterable=False
-                )
-                car_dropdown2 = gr.Dropdown(
-                    choices=[], label="車號", value=None,
-                    allow_custom_value=True, filterable=True,
-                    interactive=True, elem_id="tank_dropdown_history"
-                )
-                confirm_btn2 = gr.Button("確認選擇")
-
-            tank_message = gr.Textbox(label="Tank Summary", interactive=False, lines=2)
-
-            tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
-            gallery1 = gr.Gallery(columns=4, elem_id = "gallery1")
-
-            tank_label2 = gr.Textbox(label="Tank Info 2", interactive=False)
-            gallery2 = gr.Gallery(columns=4, elem_id = "gallery2")
-
-            tank_label3 = gr.Textbox(label="Tank Info 3", interactive=False)
-            gallery3 = gr.Gallery(columns=4, elem_id = "gallery3")
-
-            tank_label4 = gr.Textbox(label="Tank Info 4", interactive=False)
-            gallery4 = gr.Gallery(columns=4, elem_id = "gallery4")
-
-            # Wire events
-            date_picker.change(
-                fn=update_car_dropdown,
-                inputs=[date_picker, location_dropdown2],
-                outputs=[
-                    car_dropdown2,
-                    gallery1, tank_label1,
-                    gallery2, tank_label2,
-                    gallery3, tank_label3,
-                    gallery4, tank_label4,
-                    tank_message
-                ]
-            )
-
-            location_dropdown2.change(
-                fn=update_car_dropdown,
-                inputs=[date_picker, location_dropdown2],
-                outputs=[
-                    car_dropdown2,
-                    gallery1, tank_label1,
-                    gallery2, tank_label2,
-                    gallery3, tank_label3,
-                    gallery4, tank_label4,
-                    tank_message
-                ]
-            )
-
-            confirm_btn2.click(
-                fn=update_all,
-                inputs=[date_picker, location_dropdown2, car_dropdown2],
-                outputs=[
-                    gallery1, tank_label1,
-                    gallery2, tank_label2,
-                    gallery3, tank_label3,
-                    gallery4, tank_label4,
-                    tank_message
-                ]
-            )
-        
             demo.css = """
             #camera_input button {
                 transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
@@ -773,5 +542,5 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             }
                         
             """
-
+        
 app = gr.mount_gradio_app(app, demo, path="/")
