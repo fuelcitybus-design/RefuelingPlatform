@@ -681,7 +681,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                     allow_custom_value=True, filterable=True,
                     interactive=True, elem_id="tank_dropdown_history"
                 )
-                confirm_btn = gr.Button("確認選擇")
+                confirm_btn2 = gr.Button("確認選擇")
 
             tank_message = gr.Textbox(label="Tank Summary", interactive=False, lines=2)
 
@@ -724,7 +724,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 ]
             )
 
-            confirm_btn.click(
+            confirm_btn2.click(
                 fn=update_all,
                 inputs=[date_picker, location_dropdown2, car_dropdown2],
                 outputs=[
