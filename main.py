@@ -689,7 +689,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             with gr.Row():
                 date_picker = gr.DateTime(
                     label="日期", include_time=False,
-                    value=datetime.now().date().isoformat()
+                    value=datetime.now().date().isoformat(),
+                    allow_custom_value=False
                 )
                 location_dropdown2 = gr.Dropdown(
                     choices=locations, label="地點", value=locations[0], allow_custom_value=False, filterable=False
