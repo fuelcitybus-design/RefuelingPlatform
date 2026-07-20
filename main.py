@@ -368,16 +368,16 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             tank_message = gr.Textbox(label="Tank Summary", interactive=False, lines=2)
 
             tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
-            gallery1 = gr.Gallery(columns=4, height="200px", object_fit="contain")
+            gallery1 = gr.Gallery(columns=4, elem_id = "gallery1")
 
             tank_label2 = gr.Textbox(label="Tank Info 2", interactive=False)
-            gallery2 = gr.Gallery(columns=4, height="200px", object_fit="contain")
+            gallery2 = gr.Gallery(columns=4, elem_id = "gallery2")
 
             tank_label3 = gr.Textbox(label="Tank Info 3", interactive=False)
-            gallery3 = gr.Gallery(columns=4, height="200px", object_fit="contain")
+            gallery3 = gr.Gallery(columns=4, elem_id = "gallery3")
 
             tank_label4 = gr.Textbox(label="Tank Info 4", interactive=False)
-            gallery4 = gr.Gallery(columns=4, height="200px", object_fit="contain")
+            gallery4 = gr.Gallery(columns=4, elem_id = "gallery4")
 
             # Wire events
             date_picker.change(
@@ -417,6 +417,14 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     tank_message
                 ]
             )
+
+            demo.css = """
+            #gallery1 img, #gallery2 img, #gallery3 img, #gallery4 img {
+                max-height: 200px !important;
+                object-fit: contain;
+            }
+                        
+            """
 
 # IMPORTANT: mount under a subpath to avoid "response already started" errors
 app = gr.mount_gradio_app(app, demo, path="/")
