@@ -181,7 +181,7 @@ tank_choices = []
 ### Module 1: Uploader function
 REQUEST_TIMEOUT = (5, 30)  # (connect timeout, read timeout)
 
-def saveimages(location, carid, tankid, request: gr.Request, *images):
+def save_images(location, carid, tankid, request: gr.Request, *images):
     try:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         clientip = request.client.host if request and request.client else "unknown"
