@@ -179,7 +179,6 @@ global tank_choices
 tank_choices = []
 
 ### Module 1: Uploader function
-python
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
     try:
         # logging
