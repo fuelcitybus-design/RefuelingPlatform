@@ -182,8 +182,8 @@ tank_choices = []
 
 ### Module 1: Uploader function
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
-        global REQUEST_TIMEOUT 
-        try:
+    global REQUEST_TIMEOUT 
+    try:
         # logging
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         client_ip = request.client.host if request else "unknown"
