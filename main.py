@@ -791,7 +791,5 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             }
                         
             """
-        
-        
-        
+
 app = gr.mount_gradio_app(app, demo, path="/")
