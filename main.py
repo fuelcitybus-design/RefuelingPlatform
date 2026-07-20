@@ -367,16 +367,16 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             tank_message = gr.Textbox(label="Tank Summary", interactive=False, lines=2)
 
             tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
-            gallery1 = gr.Gallery(columns=4)
+            gallery1 = gr.Gallery(columns=4, height="400px", object_fit="contain")
 
             tank_label2 = gr.Textbox(label="Tank Info 2", interactive=False)
-            gallery2 = gr.Gallery(columns=4)
+            gallery2 = gr.Gallery(columns=4, height="400px", object_fit="contain")
 
             tank_label3 = gr.Textbox(label="Tank Info 3", interactive=False)
-            gallery3 = gr.Gallery(columns=4)
+            gallery3 = gr.Gallery(columns=4, height="400px", object_fit="contain")
 
             tank_label4 = gr.Textbox(label="Tank Info 4", interactive=False)
-            gallery4 = gr.Gallery(columns=4)
+            gallery4 = gr.Gallery(columns=4, height="400px", object_fit="contain")
 
             # Wire events
             date_picker.change(
