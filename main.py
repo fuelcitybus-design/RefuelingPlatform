@@ -459,11 +459,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                             )
                             image_inputs.append(img_input)
                             tab_list.append(tab)
-                img_tabs.select(
-                    fn=set_current,
-                    inputs=None,
-                    outputs=current
-                )
+
                 
             save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
 
