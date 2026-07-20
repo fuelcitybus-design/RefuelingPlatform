@@ -513,7 +513,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             """
                 
 # Enable queue so SSE job IDs are valid each run
-demo.queue()
+demo.queue(concurrency_count=3, max_size=20)
 
 # --- FastAPI integration ---
 app = FastAPI()
