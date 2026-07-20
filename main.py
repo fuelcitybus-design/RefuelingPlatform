@@ -179,144 +179,125 @@ global tank_choices
 tank_choices = []
 
 ### Module 1: Uploader function
-REQUEST_TIMEOUT = (5, 30)  # (connect timeout, read timeout)
-
-def save_images(location, carid, tankid, request: gr.Request, *images):
+def save_images(location, car_id, tank_id, request: gr.Request, *images):
     try:
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        clientip = request.client.host if request and request.client else "unknown"
+        # logging
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        client_ip = request.client.host if request else "unknown"
         username = request.username if request and hasattr(request, "username") else "anonymous"
+        uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
+        num_images = len(uploaded_tabs)
 
-        uploadedtabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
-        numimages = len(uploadedtabs)
-
-        # Warning for not selecting depot, tank car and tank info
-        if not location or location == "{請選擇}" or not carid or carid == "{請選擇}" or not tankid or tankid == "{請選擇}":
-            infomsg = "Please select Location, Car ID, and Tank ID."
-            print(f"[{timestamp}] ERROR {infomsg} | ip={clientip} user={username}")
-            return infomsg
-
-        global tankchoices
-        tankchoices = tank_list.get(location, [])
-        if not tankchoices or tankid not in tankchoices:
-            infomsg = f"Invalid tank selection: {tankid}"
-            print(f"[{timestamp}] ERROR {infomsg} | ip={clientip} user={username}")
-            return infomsg
-
-        prefix = f"{location}_{carid}_{tankid}"
+        #Warning for not selecting depot, tank car and tank info
+        if (
+            not location or location == "{請選擇}"
+            or not car_id or car_id == "{請選擇}"
+            or not tank_id or tank_id == "{請選擇}"
+           ):
+            info_msg = "警告：確保已輸入地點，車號，缸號"
+            info_log = "Error: Please select Location, Car ID, and Tank ID."
+            return info_msg
+        global tank_choices
+        tank_choices = tank_list.get(location, [])
+        if not tank_choices or tank_id not in tank_choices:
+            info_msg = f"警告：無效的缸號 \"{tank_id}\""
+            return info_msg
+            
+        #File path and name format for the images
+        prefix = f"{location}/{car_id}_{tank_id}"
+        #Auto-select today's date
         today = datetime.now().strftime("%Y-%m-%d")
 
-        # Setup connection to base directory
-        baseurl = f"{ROOT_FOLDER}/{today}/{prefix}"
+        # --- Warning checkpoint 1: Check required tabs if any necessary images to be uploaded are missing (Forced batch uploading)---
+        if required_tabs and forced_check:
+            tab_dict = dict(zip(tab_names, images))
+            missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
+            if missing:
+                info_msg = f"警告：確保已輸入以下照片 {', '.join(missing)}"
+                info_log = f"Error: Missing images for required tabs: {', '.join(missing)}"
+                return info_msg
 
-        # Check if previous recording exists
-        try:
-            print(f"[{timestamp}] checking folder: {baseurl}")
-            baseresp = requests.get(baseurl, auth=auth, timeout=REQUEST_TIMEOUT)
+        
+        #Setup connection to base directory
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
-            detectedtabsexist = []
-            if baseresp.status_code in (200, 201):
-                items = baseresp.json()
-                existingfiles = [item.get("name", "") for item in items if item.get("mime") != "inode/directory"]
+        # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
+        detected_tabs_exist = []
+        baser = requests.get(base_url, auth=auth)
+        if baser.status_code in [200,201]:
+            # Check if any file of any image type to be uploaded exists in the folder
+            items = baser.json()
+            existing_files = [item["name"] for item in items if item.get("mime") != "inode/directory"]
+            for f in existing_files:
+                # Always add the raw filename (without extension)
+                name, ext = os.path.splitext(f)
+                detected_tabs_exist.append(name)
 
-                # Always add the raw filename without extension
-                for name in existingfiles:
-                    stem, ext = os.path.splitext(name)
-                    detectedtabsexist.append(stem)
-                    if ".jpg" in name.lower() and stem not in detectedtabsexist:
-                        detectedtabsexist.append(stem)
-                    elif ".jpeg" in name.lower() and stem not in detectedtabsexist:
-                        detectedtabsexist.append(stem)
-            else:
-                detectedtabsexist = []
+                # Special handling: detect 'before' or 'after' anywhere in the filename
+                if "油車前" in name.lower() and "油車前" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車前")
+                if "油車後" in name.lower() and "油車後" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車後")
 
-        except requests.RequestException as e:
-            infomsg = f"Folder check failed: {e}"
-            print(f"[{timestamp}] ERROR {infomsg} | ip={clientip} user={username}")
-            return infomsg
+        else:
+            #Create image folder
+            response = requests.put(base_url, auth=auth)
+            if not(response.status_code in [200, 201]):
+                info_msg = "❌Folder creation failed." 
+                return info_msg
 
-        # Create image folder if needed
-        try:
-            response = requests.put(baseurl, auth=auth, timeout=REQUEST_TIMEOUT)
-            if response.status_code not in (200, 201):
-                infomsg = f"Folder creation failed: HTTP {response.status_code}"
-                print(f"[{timestamp}] ERROR {infomsg} | ip={clientip} user={username}")
-                return infomsg
-        except requests.RequestException as e:
-            infomsg = f"Folder creation failed: {e}"
-            print(f"[{timestamp}] ERROR {infomsg} | ip={clientip} user={username}")
-            return infomsg
-
-        # Saving the images
-        returnmsg = []
-        savedpaths = []
-
+        #Saving the images
+        return_msg = []
+        saved_paths = []
         for i, img in enumerate(images):
             if img is None:
                 continue
-
-            tabname = tab_names[i]
-
-            if tabname in detectedtabsexist:
-                infomsg = f"Skipped uploaded image {tabname}"
-                print(f"[{timestamp}] INFO {infomsg} | ip={clientip} user={username}")
-                returnmsg.append(infomsg)
+            if tab_names[i] in detected_tabs_exist:
+                info_msg = f"跳過已上傳照片 {tab_names[i]}"
+                info_log = f"Skipped uploaded image {tab_names[i]}"
+                return_msg.append(info_msg)
                 continue
 
-            try:
-                originalwidth, originalheight = img.size
-                newwidth = int(originalwidth * 400 / originalheight)
-                img = img.resize((newwidth, 400))
+            original_width, original_height = img.size
+            new_width = int(original_width * (400 / original_height))
+            img = img.resize((new_width, 400))
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG")
+            buffer.seek(0)
+            tab_name = tab_names[i]
+            filename = f"{tab_name}.jpg"
+            filepath = f"{base_url}{filename}"
+            # Upload directly from buffer
+            response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
+            if response.status_code not in [200, 201]:
+                return f"❌{tab_name} save failed."
+            saved_paths.append(tab_name)
+            detected_tabs_exist.append(tab_name)
 
-                buffer = BytesIO()
-                img.save(buffer, format="JPEG")
-                buffer.seek(0)
+        #Completion message
+        if saved_paths:
+            location_required_tabs = tab_list_S.get(location, [])
+            missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
 
-                filepath = f"{baseurl}/{tabname}.jpg"
-
-                print(f"[{timestamp}] uploading {tabname}.jpg")
-                response = requests.put(
-                    filepath,
-                    data=buffer.getvalue(),
-                    auth=auth,
-                    timeout=REQUEST_TIMEOUT
-                )
-
-                if response.status_code not in (200, 201):
-                    infomsg = f"{tabname} save failed: HTTP {response.status_code}"
-                    print(f"[{timestamp}] ERROR {infomsg} | ip={clientip} user={username}")
-                    return infomsg
-
-                savedpaths.append(tabname)
-                detectedtabsexist.append(tabname)
-
-            except requests.RequestException as e:
-                infomsg = f"{tabname} save failed: {e}"
-                print(f"[{timestamp}] ERROR {infomsg} | ip={clientip} user={username}")
-                return infomsg
-            except Exception as e:
-                infomsg = f"{tabname} save failed: {e}"
-                print(f"[{timestamp}] ERROR {infomsg} | ip={clientip} user={username}")
-                return infomsg
-
-        if savedpaths:
-            missing = [tab for tab in tab_list_S.get(location, []) if tab not in detectedtabsexist]
+            #Reminder message for if any required images are missing
             if missing:
-                infomsg = f"Uploaded {len(savedpaths)} new images, missing: {', '.join(missing)}"
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片\n請上傳{', '.join(missing)}."
+              info_log = f"Uploaded {len(saved_paths)} new images \nPlease upload{', '.join(missing)}."
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
             else:
-                infomsg = f"Uploaded {len(savedpaths)} new images"
-
-            print(f"[{timestamp}] INFO {infomsg} | ip={clientip} user={username}")
-            returnmsg.append(infomsg)
-            return " ".join(returnmsg)
-
-        infomsg = "Warning: No new image uploaded"
-        print(f"[{timestamp}] INFO {infomsg} | ip={clientip} user={username}")
-        returnmsg.append(infomsg)
-        return " ".join(returnmsg)
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片"
+              info_log = f"Uploaded {len(saved_paths)} new images"
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
+        else:
+            info_msg = "警告：沒有新照片"
+            info_log = "Warning: No new image"
+            return_msg.append(info_msg)
+            return '\n'.join(return_msg)
 
     except Exception as e:
-        return f"Unexpected error: {e}"
+        return f"未知錯誤: {str(e)}"
 
 def nearest(gps):
     if "Allow" in gps:
@@ -540,6 +521,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             #camera_input label {
                 font-size: 20px !important;
             }
+
             
             #camera_input .dropdown-arrow {
                 display: none !important;
