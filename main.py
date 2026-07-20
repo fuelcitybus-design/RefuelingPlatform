@@ -442,7 +442,10 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 next_btn = gr.Button("➡️",visible=False, scale=1, min_width=30)      
             
             # Track current tab index
-            
+            def sync_tab_index(evt: gr.SelectData):
+                # evt.index gives the selected tab index
+                return evt.index
+                
             with gr.Row():
                 with gr.Tabs(selected=None) as img_tabs:
                     image_inputs = []
@@ -460,7 +463,10 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                             image_inputs.append(img_input)
                             tab_list.append(tab)
 
-                
+
+            # Bind tab selection to update current state
+            img_tabs.select(sync_tab_index, None, current)
+
             save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
 
             output_text = gr.Textbox(label="狀態", lines=6)
