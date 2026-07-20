@@ -184,69 +184,77 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         # logging
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         client_ip = request.client.host if request else "unknown"
-        username = getattr(request, "username", "anonymous")
-
+        username = request.username if request and hasattr(request, "username") else "anonymous"
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         num_images = len(uploaded_tabs)
 
-        # --- Validation: depot, car, tank must be selected ---
+        #Warning for not selecting depot, tank car and tank info
         if (
             not location or location == "{請選擇}"
             or not car_id or car_id == "{請選擇}"
             or not tank_id or tank_id == "{請選擇}"
-        ):
-            return "警告：確保已輸入地點，車號，缸號"
-
-        # --- Validate tank_id directly against tank_list ---
-        valid_tanks = tank_list.get(location, ["{請選擇}"])
-        if tank_id not in valid_tanks:
-            return f"警告：無效的缸號 \"{tank_id}\""
-
-        # File path and name format
+           ):
+            info_msg = "警告：確保已輸入地點，車號，缸號"
+            info_log = "Error: Please select Location, Car ID, and Tank ID."
+            return info_msg
+        global tank_choices
+        if not tank_choices or tank_id not in tank_choices:
+            info_msg = f"警告：無效的缸號 \"{tank_id}\""
+            return info_msg
+            
+        #File path and name format for the images
         prefix = f"{location}/{car_id}_{tank_id}"
+        #Auto-select today's date
         today = datetime.now().strftime("%Y-%m-%d")
-        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
-        # --- Check required tabs ---
+        # --- Warning checkpoint 1: Check required tabs if any necessary images to be uploaded are missing (Forced batch uploading)---
         if required_tabs and forced_check:
             tab_dict = dict(zip(tab_names, images))
             missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
             if missing:
-                return f"警告：確保已輸入以下照片 {', '.join(missing)}"
+                info_msg = f"警告：確保已輸入以下照片 {', '.join(missing)}"
+                info_log = f"Error: Missing images for required tabs: {', '.join(missing)}"
+                return info_msg
 
-        # --- Check existing files ---
+        
+        #Setup connection to base directory
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
+
+        # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
         detected_tabs_exist = []
         baser = requests.get(base_url, auth=auth)
-        if baser.status_code in [200, 201]:
-            try:
-                items = baser.json()
-            except ValueError:
-                items = []
+        if baser.status_code in [200,201]:
+            # Check if any file of any image type to be uploaded exists in the folder
+            items = baser.json()
             existing_files = [item["name"] for item in items if item.get("mime") != "inode/directory"]
             for f in existing_files:
+                # Always add the raw filename (without extension)
                 name, ext = os.path.splitext(f)
                 detected_tabs_exist.append(name)
+
+                # Special handling: detect 'before' or 'after' anywhere in the filename
                 if "油車前" in name.lower() and "油車前" not in detected_tabs_exist:
                     detected_tabs_exist.append("油車前")
                 if "油車後" in name.lower() and "油車後" not in detected_tabs_exist:
                     detected_tabs_exist.append("油車後")
-        else:
-            response = requests.put(base_url, auth=auth)
-            if response.status_code not in [200, 201]:
-                return "❌Folder creation failed."
 
-        # --- Save images ---
+        else:
+            #Create image folder
+            response = requests.put(base_url, auth=auth)
+            if not(response.status_code in [200, 201]):
+                info_msg = "❌Folder creation failed." 
+                return info_msg
+
+        #Saving the images
         return_msg = []
         saved_paths = []
         for i, img in enumerate(images):
             if img is None:
                 continue
             if tab_names[i] in detected_tabs_exist:
-                return_msg.append(f"跳過已上傳照片 {tab_names[i]}")
-                continue
-
-            if not hasattr(img, "size"):
-                return_msg.append(f"❌Invalid image type for {tab_names[i]}")
+                info_msg = f"跳過已上傳照片 {tab_names[i]}"
+                info_log = f"Skipped uploaded image {tab_names[i]}"
+                return_msg.append(info_msg)
                 continue
 
             original_width, original_height = img.size
@@ -255,29 +263,37 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             buffer = BytesIO()
             img.save(buffer, format="JPEG")
             buffer.seek(0)
-
-            filename = f"{tab_names[i]}.jpg"
+            tab_name = tab_names[i]
+            filename = f"{tab_name}.jpg"
             filepath = f"{base_url}{filename}"
+            # Upload directly from buffer
             response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
             if response.status_code not in [200, 201]:
-                return_msg.append(f"❌{tab_names[i]} save failed.")
-                continue
+                return f"❌{tab_name} save failed."
+            saved_paths.append(tab_name)
+            detected_tabs_exist.append(tab_name)
 
-            saved_paths.append(tab_names[i])
-            detected_tabs_exist.append(tab_names[i])
-
-        # --- Completion message ---
+        #Completion message
         if saved_paths:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
-            if missing:
-                return_msg.append(f"已上傳 {len(saved_paths)} 張新照片\n請上傳{', '.join(missing)}.")
-            else:
-                return_msg.append(f"已上傳 {len(saved_paths)} 張新照片")
-        else:
-            return_msg.append("警告：沒有新照片")
 
-        return '\n'.join(return_msg)
+            #Reminder message for if any required images are missing
+            if missing:
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片\n請上傳{', '.join(missing)}."
+              info_log = f"Uploaded {len(saved_paths)} new images \nPlease upload{', '.join(missing)}."
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
+            else:
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片"
+              info_log = f"Uploaded {len(saved_paths)} new images"
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
+        else:
+            info_msg = "警告：沒有新照片"
+            info_log = "Warning: No new image"
+            return_msg.append(info_msg)
+            return '\n'.join(return_msg)
 
     except Exception as e:
         return f"未知錯誤: {str(e)}"
@@ -442,7 +458,12 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                                 sources=['webcam','upload']
                             )
                             image_inputs.append(img_input)
-                            tab_list.append(tab)            
+                            tab_list.append(tab)
+                img_tabs.select(
+                    fn=set_current,
+                    inputs=None,
+                    outputs=current
+                )
                 
             save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
 
@@ -471,14 +492,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
                 outputs=tab_list + [save_btn, prev_btn, next_btn, img_tabs]  # include img_tabs for selected update
             )
-
-
-            # Sync tab clicks with current state
-            img_tabs.select(
-                fn=set_current,
-                inputs=None,
-                outputs=current
-            )
+           
             # Raw HTML input for back camera
             gr.HTML(prefer_back_camera())
 
@@ -505,6 +519,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 font-size: 20px !important;
             }
 
+            
             #camera_input .dropdown-arrow {
                 display: none !important;
             }
@@ -518,6 +533,5 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             }
                         
             """
-                
-demo.queue()
+        
 app = gr.mount_gradio_app(app, demo, path="/")
