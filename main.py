@@ -182,6 +182,7 @@ def get_car_ids(date, location):
     except Exception:
         return []
 
+
 def get_tank_names(date, location, id):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
