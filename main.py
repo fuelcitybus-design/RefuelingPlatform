@@ -202,7 +202,6 @@ def get_tank_names(date, location, id):
     except Exception:
         return []
 
-
 def find_jpg_images(date, location, id, tank):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
