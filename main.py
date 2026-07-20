@@ -360,10 +360,6 @@ def toggle_save(location, car, tank):
     else:
         return gr.update(visible=False)
 
-#def clear_images(selection):
-    # Reset all images when depot changes
-    #return [gr.update(value=None) for _ in tab_names]
-
 def set_current(idx):
     return idx
 
@@ -653,8 +649,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                     outputs=[img_tabs, current]
                 )
 
-
-
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
@@ -669,20 +663,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
            
             # Raw HTML input for back camera
             gr.HTML(prefer_back_camera())
-            #Toggle tabs avaliable based on depot selection
-            #location_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-            #car_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-            #tank_dropdown.change(toggle_tabs, [location_dropdown,car_dropdown,tank_dropdown], tab_list)
-
-            #Toggle save button
-            #location_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            #car_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
-            #tank_dropdown.change(toggle_save, [location_dropdown,car_dropdown,tank_dropdown], save_btn)
                 
-            #Clear uploaded images when changing information values
-            #location_dropdown.change(clear_images, location_dropdown, image_inputs)
-            #car_dropdown.change(clear_images, location_dropdown, image_inputs)
-            #tank_dropdown.change(clear_images, location_dropdown, image_inputs)
 
         # Module 4
         with gr.Tab("記錄"):
