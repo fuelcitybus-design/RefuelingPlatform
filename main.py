@@ -444,7 +444,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                             image_inputs.append(img_input)
                             tab_list.append(tab)            
                 
-            save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
+            save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False,show_progress=False)
 
             output_text = gr.Textbox(label="狀態", lines=6)
 
@@ -512,11 +512,5 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                         
             """
                 
-# Enable queue so SSE job IDs are valid each run
-demo.queue(concurrency_count=3, max_size=20)
-
-# --- FastAPI integration ---
-app = FastAPI()
-
-# Mount Gradio app under a path (e.g. /gradio)
+demo.queue()
 app = gr.mount_gradio_app(app, demo, path="/")
