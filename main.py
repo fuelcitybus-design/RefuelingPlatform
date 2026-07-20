@@ -511,5 +511,12 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             }
                         
             """
-        
+                
+# Enable queue so SSE job IDs are valid each run
+demo.queue()
+
+# --- FastAPI integration ---
+app = FastAPI()
+
+# Mount Gradio app under a path (e.g. /gradio)
 app = gr.mount_gradio_app(app, demo, path="/")
