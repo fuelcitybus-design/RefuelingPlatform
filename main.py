@@ -173,7 +173,7 @@ def prefer_back_camera():
     return custom_html
 
 #=========================================================================================================================
-lobal active_tabs
+global active_tabs
 active_tabs = []
 global tank_choices
 tank_choices = []
