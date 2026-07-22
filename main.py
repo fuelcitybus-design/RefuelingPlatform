@@ -1,8 +1,19 @@
+#Library imports
+import os
+import base64
 import requests
+
 from requests.auth import HTTPBasicAuth
-from io import BytesIO
 import gradio as gr
-from fastapi import FastAPI
+from datetime import datetime
+from io import BytesIO
+import re
+import numpy as np
+import cv2
+from paddleocr import PaddleOCR
+import tempfile
+from PIL import Image
+
 
 KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
 KUDU_USER = "$oil-tank-refueling"
