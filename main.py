@@ -2,7 +2,6 @@
 import os
 import base64
 import requests
-
 from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
@@ -13,7 +12,10 @@ import cv2
 from paddleocr import PaddleOCR
 import tempfile
 from PIL import Image
-
+from openpyxl import Workbook, load_workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image
+from openpyxl.drawing.image import Image as XLImage
 
 KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
 KUDU_USER = "$oil-tank-refueling"
