@@ -21,7 +21,6 @@ KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.n
 KUDU_USER = "$oil-tank-refueling"
 KUDU_PASS = "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK"
 AUTH = HTTPBasicAuth(KUDU_USER, KUDU_PASS)
-
 BASE_URL = f"https://{KUDU_HOST}/api/vfs/site/wwwroot/uploads"
 
 app = FastAPI()
