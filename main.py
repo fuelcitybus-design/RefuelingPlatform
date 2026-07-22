@@ -1,5 +1,6 @@
 #***Setup environment for running Gradio interface
 from fastapi import FastAPI
+from fastapi import Request
 app = FastAPI()
 
 #========================================================================================================
@@ -8,6 +9,7 @@ app = FastAPI()
 import os
 import base64
 import requests
+
 from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
@@ -26,16 +28,6 @@ from openpyxl.drawing.image import Image as XLImage
 from datetime import datetime
 
 #========================================================================================================
-
-# 必須加在 mount 之前！強制 Azure 停用 Proxy 緩衝
-@app.middleware("http")
-async def disable_azure_buffering(request: Request, call_next):
-    response = await call_next(request)
-    # 針對 SSE 或所有 Gradio 請求停用緩衝
-    if "/gradio" in request.url.path:
-        response.headers["X-Accel-Buffering"] = "no"
-        response.headers["Cache-Control"] = "no-cache"
-    return response
 
 # --- CONFIGURATION ---
 # Replace these with your actual Azure App Service credentials
@@ -799,5 +791,15 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             }
                         
             """
+
+# 必須加在 mount 之前！強制 Azure 停用 Proxy 緩衝
+@app.middleware("http")
+async def disable_azure_buffering(request: Request, call_next):
+    response = await call_next(request)
+    # 針對 SSE 或所有 Gradio 請求停用緩衝
+    if "/gradio" in request.url.path:
+        response.headers["X-Accel-Buffering"] = "no"
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 app = gr.mount_gradio_app(app, demo, path="/gradio",root_path="/gradio" )
