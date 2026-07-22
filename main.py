@@ -1,48 +1,49 @@
-import os
-from io import BytesIO
-import base64
 import requests
 from requests.auth import HTTPBasicAuth
+from io import BytesIO
 import gradio as gr
 from fastapi import FastAPI
 
-# ====== Azure Kudu settings ======
-KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
-KUDU_USER = "$oil-tank-refueling"
-KUDU_PASS = "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK"
-
+KUDU_HOST = "your-app-name.scm.azurewebsites.net"
+KUDU_USER = "your-publish-username"
+KUDU_PASS = "your-publish-password"
 AUTH = HTTPBasicAuth(KUDU_USER, KUDU_PASS)
-BASE_URL = f"https://{KUDU_HOST}/api/vfs/site/wwwroot/uploads"
 
+BASE_URL = f"https://{KUDU_HOST}/api/vfs/site/wwwroot/uploads"
 app = FastAPI()
 
 def ensure_folder():
-    r = requests.put(BASE_URL + "/", auth=AUTH)
+    r = requests.put(BASE_URL + "/", auth=AUTH, timeout=20)
     return r.status_code in (200, 201, 409)
 
-def upload_image_to_kudu(image, filename):
+def save_one(image, filename):
     if image is None:
-        return "No image selected."
+        return f"Skipped {filename}: no image"
 
-    ensure_folder()
-
-    if not filename:
-        filename = "upload.jpg"
+    if not ensure_folder():
+        return f"Folder check failed for {filename}"
 
     if not filename.lower().endswith((".jpg", ".jpeg", ".png")):
         filename += ".jpg"
 
-    buffer = BytesIO()
-    image.save(buffer, format="JPEG")
-    buffer.seek(0)
-
+    buf = BytesIO()
+    image.save(buf, format="JPEG")
     url = f"{BASE_URL}/{filename}"
-    headers = {"If-Match": "*"}
-    r = requests.put(url, data=buffer.getvalue(), auth=AUTH, headers=headers)
+
+    r = requests.put(
+        url,
+        data=buf.getvalue(),
+        auth=AUTH,
+        headers={"If-Match": "*"},
+        timeout=60
+    )
 
     if r.status_code in (200, 201):
-        return f"Uploaded successfully to Kudu: {filename}"
-    return f"Upload failed: {r.status_code} {r.text}"
+        return f"Uploaded {filename}"
+    return f"Failed {filename}: {r.status_code} {r.text}"
+
+def upload_image_to_kudu(image, filename):
+    return save_one(image, filename)
 
 with gr.Blocks() as demo:
     gr.Markdown("## Upload image to Azure Kudu")
