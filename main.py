@@ -2,6 +2,15 @@
 from fastapi import FastAPI, Request
 app = FastAPI()
 
+# --- Middleware 禁用緩衝 ---
+@app.middleware("http")
+async def disable_azure_buffering(request: Request, call_next):
+    response = await call_next(request)
+    if "/gradio" in request.url.path:
+        response.headers["X-Accel-Buffering"] = "no"
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
 #========================================================================================================
 
 #Library imports
@@ -793,13 +802,3 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
 
 
 app = gr.mount_gradio_app(app, demo, path="/gradio",root_path="/gradio" )
-
-# --- Middleware 禁用緩衝 ---
-@app.middleware("http")
-async def disable_azure_buffering(request: Request, call_next):
-    response = await call_next(request)
-    if "/gradio" in request.url.path:
-        response.headers["X-Accel-Buffering"] = "no"
-        response.headers["Cache-Control"] = "no-cache"
-    return response
-
