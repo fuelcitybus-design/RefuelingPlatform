@@ -167,20 +167,26 @@ def ocr_from_kudu(file_url):
 
 # =====================================================================
 # Kudu Helpers
-def kudu_list_files(root_url, pattern="油車前.jpg"):
+def kudu_list_files(root_url, pattern="油車前.jpg", location=None):
     resp = requests.get(root_url, auth=auth)
     resp.raise_for_status()
-    items = resp.json()   # this is already a list, not a dict
+    items = resp.json()   # list of dicts
     
     matches = []
     for item in items:
         if item["mime"] == "inode/directory":
             # recurse into subfolder
             sub_url = root_url.rstrip("/") + "/" + item["name"] + "/"
-            matches.extend(kudu_list_files(sub_url, pattern))
+            matches.extend(kudu_list_files(sub_url, pattern, location))
         else:
-            if item["name"].lower() == pattern.lower() or pattern == "*.jpg":
-                matches.append(root_url.rstrip("/") + "/" + item["name"])
+            # enforce location path rule
+            if item["name"].lower() == pattern.lower():
+                # check if path contains /data/[any]/[location]/
+                full_path = root_url.rstrip("/") + "/" + item["name"]
+                parts = full_path.split("/")
+                # expect .../data/<any>/<location>/油車前.jpg
+                if len(parts) >= 5 and parts[-3] == location:
+                    matches.append(full_path)
     return matches
 
 def kudu_rename(file_url, new_name):
@@ -215,77 +221,57 @@ def download_from_kudu(file_url):
     image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     return image
 
-#=========================================================================
-
-def find_location_folders(root_folder_O, location):
-    """
-    Find all subfolders under root_folder_O that contain the given location.
-    Returns a list of candidate folder URLs like {root_folder_O}/XXX/{location}/
-    """
-    resp = requests.get(root_folder_O, auth=auth)
-    resp.raise_for_status()
-    items = resp.json()
-
-    candidates = []
-    for item in items:
-        if item["mime"] == "inode/directory":
-            # Build candidate path with this random child + location
-            candidate = f"{root_folder_O}/{item['name']}/{location}/"
-            # Verify it exists
-            check = requests.get(candidate, auth=auth)
-            if check.status_code == 200:
-                candidates.append(candidate)
-    return candidates
-
 # =====================================================================
 # Analysis & Abnormal Extraction
 def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
+    if location == None or location == {請選擇}:
+        return [], "請先選擇位置，再運行分析"
+        
+    root_folder = f"{root_folder_O}/"
     abnormal_list = []
     num_analysis = 0
+       
+    # 油車前
+    for file_url in kudu_list_files(root_folder, "油車前.jpg",location):
+        ocr_number = ocr_from_kudu(file_url)
+        new_name = f"X_油車前_{ocr_number}.jpg" if int(ocr_number) != 0 else f"油車前_{ocr_number}.jpg"
+        kudu_rename(file_url, new_name)
+        num_analysis += 1
 
-    # Find all {root_folder_O}/XXX/{location}/ folders
-    location_folders = find_location_folders(root_folder_O, location)
+    # 油車後
+    for file_url in kudu_list_files(root_folder, "油車後.jpg",location):
+        ocr_number = ocr_from_kudu(file_url)
+        new_name = f"X_油車後_{ocr_number}.jpg" if int(ocr_number) < 6000 else f"油車後_{ocr_number}.jpg"
+        kudu_rename(file_url, new_name)
+        num_analysis += 1
 
-    for root_folder in location_folders:
-        # 油車前
-        for file_url in kudu_list_files(root_folder, "油車前.jpg"):
-            ocr_number = ocr_from_kudu(file_url)
-            new_name = f"X_油車前_{ocr_number}.jpg" if int(ocr_number) != 0 else f"油車前_{ocr_number}.jpg"
-            kudu_rename(file_url, new_name)
-            num_analysis += 1
-
-        # 油車後
-        for file_url in kudu_list_files(root_folder, "油車後.jpg"):
-            ocr_number = ocr_from_kudu(file_url)
-            new_name = f"X_油車後_{ocr_number}.jpg" if int(ocr_number) < 6000 else f"油車後_{ocr_number}.jpg"
-            kudu_rename(file_url, new_name)
-            num_analysis += 1
-
-        # Collect abnormal entries
-        pattern = re.compile(r'^X_(油車前|油車後)_(.+)\.jpg$', re.IGNORECASE)
-        for file_url in kudu_list_files(root_folder, "*.jpg"):
-            fname = file_url.split("/")[-1]
-            match = pattern.match(fname)
-            if match:
-                abnormal_list.append([match.group(1), match.group(2), file_url])
+    # Collect abnormal entries
+    pattern = re.compile(r'^X_(油車前|油車後)_(.+)\.jpg$', re.IGNORECASE)
+    for file_url in kudu_list_files(root_folder, "*.jpg"):
+        fname = file_url.split("/")[-1]
+        match = pattern.match(fname)
+        if match:
+            # Store: [prefix, ocr_number, file_url]
+            abnormal_list.append([match.group(1), match.group(2), file_url])
 
     abnormal_list_10 = abnormal_list[:10]
     global abnormal_count
     abnormal_count = len(abnormal_list)
 
-    # Build images
+    # Build images (numpy arrays) for gr.Image
     imgs = []
     for i in range(10):
         if i < len(abnormal_list_10):
             file_url = abnormal_list_10[i][2]
             cv_img = download_from_kudu(file_url)
             if cv_img is None:
+                # Placeholder for failed images
                 cv_img = np.zeros((100, 100, 3), dtype=np.uint8)
             imgs.append(cv_img)
         else:
             imgs.append(None)
 
-    # Build text labels
+    # Build text labels for gr.Textbox
     txts = [
         f"{abnormal_list_10[i][0]}_{abnormal_list_10[i][1]}" if i < len(abnormal_list_10) else ""
         for i in range(10)
@@ -297,6 +283,7 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
     else:
         msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
 
+    # Return: state, status, 10 images, 10 texts
     return abnormal_list_10, msg, *imgs, *txts
 
 # =====================================================================
@@ -356,7 +343,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
         return result[1], result[0]
     else:
         return "儲存成功", []
-
+        
 # =====================================================================
 # Gradio Hosting
 with gr.Blocks(head=prefer_back_camera()) as demo:
