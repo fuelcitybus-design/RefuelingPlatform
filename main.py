@@ -224,7 +224,7 @@ def download_from_kudu(file_url):
 # =====================================================================
 # Analysis & Abnormal Extraction
 def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
-    if location == None or location == {請選擇}:
+    if location == None or location == "{請選擇}":
         return [], "請先選擇位置，再運行分析"
         
     root_folder = f"{root_folder_O}/"
