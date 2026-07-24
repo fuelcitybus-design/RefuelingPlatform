@@ -30,7 +30,13 @@ PASSWORD = "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK"
 auth=HTTPBasicAuth(USERNAME, PASSWORD)
 KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
 
-ocr_model = None
+ocr_model = PaddleOCR(
+        lang="ch",
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        use_textline_orientation=False,
+        enable_mkldnn=False,   # valid flag for CPU acceleration
+        )
 
 os.environ["FLAGS_use_mkldnn"] = "0"
 
