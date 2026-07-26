@@ -340,8 +340,8 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
         return "警告：輸入數量與照片數量不一致", abnormal_list
 
     text_list = []
-    for idx, txt in filled_images:
-        if txt is None or txt.strip() == "":
+    for idx in filled_images:
+        if texts[idx] is None or texts[idx].strip() == "":
             return f"警告：第{idx+1}張照片缺少輸入", abnormal_list
         try:
             text_list.append(int(txt.strip()))
