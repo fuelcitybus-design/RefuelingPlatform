@@ -340,14 +340,16 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
         return "警告：輸入數量與照片數量不一致", abnormal_list
 
     text_list = []
-    for idx in filled_images:
-        if texts[idx] is None or texts[idx].strip() == "":
+    for idx, (txt, img) in enumerate(zip(texts, images)):
+        if img is None:
+            continue
+        if txt is None or txt.strip() == "":
             return f"警告：第{idx+1}張照片缺少輸入", abnormal_list
         try:
             text_list.append(int(txt.strip()))
         except ValueError:
             return f"警告：第{idx+1}張照片非數字輸入", abnormal_list
-
+                
     num_update = 0
     for i in range(len(abnormal_list)):
         file_url = abnormal_list[i][2]
