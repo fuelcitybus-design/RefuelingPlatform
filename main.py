@@ -172,7 +172,7 @@ def ocr_from_kudu(file_url):
 
 # =====================================================================
 # Kudu Helpers
-def kudu_list_files(root_url, location, pattern="油車前.jpg"):
+def kudu_list_files(root_url, location, pattern):
     resp = requests.get(root_url, auth=auth)
     resp.raise_for_status()
     items = resp.json()   # list of dicts
@@ -237,7 +237,7 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
     num_analysis = 0
        
     # 油車前
-    for file_url in kudu_list_files(root_folder, "油車前.jpg",location):
+    for file_url in kudu_list_files(root_folder, location, "油車前.jpg"):
         ocr_number = ocr_from_kudu(file_url)
         new_name = f"X_油車前_{ocr_number}.jpg" if int(ocr_number) != 0 else f"油車前_{ocr_number}.jpg"
         kudu_rename(file_url, new_name)
