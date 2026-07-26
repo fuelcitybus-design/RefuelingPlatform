@@ -307,10 +307,20 @@ def show_img(abnormal_list):
     return imgs
 
 def show_txt(abnormal_list):
-    return [
-        f"{abnormal_list[i][0]}_{abnormal_list[i][1]}" if i < len(abnormal_list) else ""
-        for i in range(10)
-    ]
+    outputs = []
+    for i in range(10):
+        if i < len(abnormal_list):
+            prefix, ocr_number, file_url = abnormal_list[i]
+            fname = file_url.split("/")[-1]
+            outputs.append(
+                gr.update(
+                    value=f"{prefix}_{ocr_number}",  # textbox content
+                    label=fname                      # textbox label
+                )
+            )
+        else:
+            outputs.append(gr.update(value="", label=f"Text {i}"))
+    return outputs
 
 # =====================================================================
 # Correction Function
@@ -365,7 +375,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             txts, imgs = [], []
             for i in range(10):
                 with gr.Row():
-                    img = gr.Image(None, label=f"Image {i}", visible=True, width=150, interactive=False)
+                    img = gr.Image(None, label=f"Image {i+1}", visible=True, width=150, interactive=False)
                     imgs.append(img)
                     txt = gr.Textbox(value=None, label=f"Text {i}", visible=True)
                     txts.append(txt)
