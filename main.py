@@ -329,7 +329,9 @@ def show_txt(abnormal_list):
 # =====================================================================
 # Correction Function
 def collect_all_texts(request: gr.Request, abnormal_list, *texts):
-    if len(abnormal_list) != len(texts):
+    filled_texts = [t for t in texts if t is not None and t.strip() != ""]
+
+    if len(abnormal_list) != len(filled_texts):
         return "警告：輸入數量與照片數量不一致", abnormal_list
 
     text_list = []
