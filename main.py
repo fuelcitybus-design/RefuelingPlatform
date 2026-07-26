@@ -173,7 +173,7 @@ def ocr_from_kudu(file_url):
 
 # =====================================================================
 # Kudu Helpers
-def kudu_list_files(root_url, pattern="油車前.jpg", location=None):
+def kudu_list_files(root_url, pattern="油車前.jpg", location):
     resp = requests.get(root_url, auth=auth)
     resp.raise_for_status()
     items = resp.json()   # list of dicts
@@ -253,7 +253,7 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
 
     # Collect abnormal entries
     pattern = re.compile(r'^X_(油車前|油車後)_(.+)\.jpg$', re.IGNORECASE)
-    for file_url in kudu_list_files(root_folder, "*.jpg"):
+    for file_url in kudu_list_files(root_folder, "*.jpg", location):
         fname = file_url.split("/")[-1]
         match = pattern.match(fname)
         if match:
