@@ -228,8 +228,12 @@ def download_from_kudu(file_url):
 # =====================================================================
 # Analysis & Abnormal Extraction
 def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
-    if location == None or location == "{請選擇}":
-        return [], "請先選擇位置，再運行分析"
+    if location is None or location == "{請選擇}":
+        # Build 10 empty image slots and 10 empty text slots
+        imgs = [None] * 10
+        txts = [""] * 10
+        # Return abnormal_list (empty), msg, then 10 images + 10 texts
+        return [], "請先選擇位置，再運行分析", *imgs, *txts
         
     root_folder = f"{root_folder_O}/"
     abnormal_list = []
@@ -319,7 +323,7 @@ def show_txt(abnormal_list):
                 )
             )
         else:
-            outputs.append(gr.update(value="", label=f"Text {i}"))
+            outputs.append(gr.update(value="", label=f"Text {i+1}"))
     return outputs
 
 # =====================================================================
@@ -377,7 +381,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 with gr.Row():
                     img = gr.Image(None, label=f"Image {i+1}", visible=True, width=150, interactive=False)
                     imgs.append(img)
-                    txt = gr.Textbox(value=None, label=f"Text {i}", visible=True)
+                    txt = gr.Textbox(value=None, label=f"Text {i+1}", visible=True)
                     txts.append(txt)
         
             # Now wire the button with ALL outputs
