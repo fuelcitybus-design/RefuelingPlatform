@@ -361,7 +361,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             state = gr.Textbox(label="狀態", lines=5)
             
             location_dropdownAI = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
-            
+            run_btn = gr.Button("運行AI")
+                
             # Build image and text components first
             txts, imgs = [], []
             for i in range(10):
