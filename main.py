@@ -15,6 +15,7 @@ import cv2
 from paddleocr import PaddleOCR
 import tempfile
 from PIL import Image
+import fnmatch
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
@@ -184,13 +185,11 @@ def kudu_list_files(root_url, location, pattern):
             sub_url = root_url.rstrip("/") + "/" + item["name"] + "/"
             matches.extend(kudu_list_files(sub_url, location, pattern))
         else:
-            # enforce location path rule
-            if item["name"].lower() == pattern.lower():
-                # check if path contains /data/[any]/[location]/
+            if fnmatch.fnmatch(item["name"].lower(), pattern.lower()):
                 full_path = root_url.rstrip("/") + "/" + item["name"]
                 parts = full_path.split("/")
-                # expect .../data/<any>/<location>/油車前.jpg
-                if len(parts) >= 5 and parts[-3] == location:
+                # safer location check
+                if location in parts:
                     matches.append(full_path)
     return matches
 
