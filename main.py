@@ -334,21 +334,15 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
     for idx in range(n):
         txt = texts[idx]
         if txt is None or txt.strip() == "":
-            imgs = [None]*10
-            txts = [""]*10
-            return abnormal_list, f"警告：第{idx+1}張照片缺少輸入", *imgs, *txts
+            return f"警告：第{idx+1}張照片缺少輸入", abnormal_list
         try:
             num = int(txt.strip())
             text_list.append(num)
         except ValueError:
-            imgs = [None]*10
-            txts = [""]*10
-            return abnormal_list, f"警告：第{idx+1}張照片非數字輸入", *imgs, *txts
+            return f"警告：第{idx+1}張照片非數字輸入", abnormal_list
     
     if len(text_list) < len(abnormal_list):
-        imgs = [None]*10
-        txts = [""]*10
-        return abnormal_list, "警告：缺少輸入", *imgs, *txts
+        return "警告：缺少輸入", abnormal_list
     
     num_update = 0
     for i in range(len(abnormal_list)):
@@ -361,13 +355,12 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
             num_update += 1
             kudu_rename(file_url, new_name)
     
-    # rerun analysis if more remain
     if abnormal_count > 10:
-        return analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
+        # rerun analysis to get next batch
+        new_list, msg, *rest = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
+        return msg, new_list
     else:
-        imgs = [None]*10
-        txts = [""]*10
-        return [], f"儲存成功，共更新 {num_update} 張照片", *imgs, *txts
+        return f"儲存成功，共更新 {num_update} 張照片", []
 
 
         
