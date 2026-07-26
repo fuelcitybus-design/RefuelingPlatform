@@ -329,6 +329,7 @@ def show_txt(abnormal_list):
 # =====================================================================
 # Correction Function
 def collect_all_texts(request: gr.Request, abnormal_list, *texts):
+    # --- Validation ---
     text_list = []
     n = min(len(abnormal_list), len(texts))
     for idx in range(n):
@@ -344,6 +345,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
     if len(text_list) < len(abnormal_list):
         return "警告：缺少輸入", abnormal_list
     
+    # --- Renaming ---
     num_update = 0
     for i in range(len(abnormal_list)):
         file_url = abnormal_list[i][2]
@@ -355,11 +357,15 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
             num_update += 1
             kudu_rename(file_url, new_name)
     
+    # --- Next batch or success ---
     if abnormal_count > 10:
-        new_list, msg, *rest = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
+        # analysis_rename returns 22 values, but we only need the first two
+        result = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
+        new_list, msg = result[0], result[1]
         return msg, new_list
     else:
         return f"儲存成功，共更新 {num_update} 張照片", []
+
 
         
 # =====================================================================
