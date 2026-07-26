@@ -334,7 +334,6 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
     for idx in range(n):
         txt = texts[idx]
         if txt is None or txt.strip() == "":
-            # return warning, keep abnormal_list unchanged
             return f"警告：第{idx+1}張照片缺少輸入", abnormal_list
         try:
             num = int(txt.strip())
@@ -356,14 +355,11 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
             num_update += 1
             kudu_rename(file_url, new_name)
     
-    # If more than 10 abnormal images remain, rerun analysis
     if abnormal_count > 10:
-        result = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
-        # result is a 22‑tuple, but you only need state + abnormal_list here
-        return result[1], result[0]
+        new_list, msg, *rest = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
+        return msg, new_list
     else:
-        # success message, clear abnormal_list
-        return "儲存成功", []
+        return f"儲存成功，共更新 {num_update} 張照片", []
 
         
 # =====================================================================
