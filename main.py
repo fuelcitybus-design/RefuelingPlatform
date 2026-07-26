@@ -329,7 +329,10 @@ def show_txt(abnormal_list):
 
 # =====================================================================
 # Correction Function
-def collect_all_texts(request: gr.Request, abnormal_list, texts, images):
+def collect_all_texts(request: gr.Request, abnormal_list, *args):
+    half = len(args) // 2
+    texts = args[:half]
+    images = args[half:]
     filled_images = [t for t in images if t is not None]
     filled_texts = [t for t in texts if t is not None and t.strip() != ""]
 
