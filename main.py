@@ -182,7 +182,7 @@ def kudu_list_files(root_url, location, pattern="油車前.jpg"):
         if item["mime"] == "inode/directory":
             # recurse into subfolder
             sub_url = root_url.rstrip("/") + "/" + item["name"] + "/"
-            matches.extend(kudu_list_files(sub_url, pattern, location))
+            matches.extend(kudu_list_files(sub_url, location, pattern))
         else:
             # enforce location path rule
             if item["name"].lower() == pattern.lower():
@@ -244,7 +244,7 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
         num_analysis += 1
 
     # 油車後
-    for file_url in kudu_list_files(root_folder, "油車後.jpg",location):
+    for file_url in kudu_list_files(root_folder, location, "油車後.jpg"):
         ocr_number = ocr_from_kudu(file_url)
         new_name = f"X_油車後_{ocr_number}.jpg" if int(ocr_number) < 6000 else f"油車後_{ocr_number}.jpg"
         kudu_rename(file_url, new_name)
@@ -252,7 +252,7 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
 
     # Collect abnormal entries
     pattern = re.compile(r'^X_(油車前|油車後)_(.+)\.jpg$', re.IGNORECASE)
-    for file_url in kudu_list_files(root_folder, "*.jpg", location):
+    for file_url in kudu_list_files(root_folder, location, "*.jpg"):
         fname = file_url.split("/")[-1]
         match = pattern.match(fname)
         if match:
