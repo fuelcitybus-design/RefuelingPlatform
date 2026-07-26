@@ -367,7 +367,6 @@ def collect_all_texts(request: gr.Request, abnormal_list, *texts):
         return f"儲存成功，共更新 {num_update} 張照片", []
 
 
-        
 # =====================================================================
 # Gradio Hosting
 with gr.Blocks(head=prefer_back_camera()) as demo:
