@@ -172,7 +172,7 @@ def ocr_from_kudu(file_url):
 
 # =====================================================================
 # Kudu Helpers
-def kudu_list_files(root_url, pattern="油車前.jpg", location):
+def kudu_list_files(root_url, location, pattern="油車前.jpg")
     resp = requests.get(root_url, auth=auth)
     resp.raise_for_status()
     items = resp.json()   # list of dicts
