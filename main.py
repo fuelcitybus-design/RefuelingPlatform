@@ -328,10 +328,11 @@ def show_txt(abnormal_list):
 
 # =====================================================================
 # Correction Function
-def collect_all_texts(request: gr.Request, abnormal_list, *texts):
+def collect_all_texts(request: gr.Request, abnormal_list, *texts, *images):
+    filled_images = [t for t in images if t is not None]
     filled_texts = [t for t in texts if t is not None and t.strip() != ""]
 
-    if len(abnormal_list) != len(filled_texts):
+    if len(filled_images) != len(filled_texts):
         return "警告：輸入數量與照片數量不一致", abnormal_list
 
     text_list = []
@@ -394,6 +395,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
 
             collect_btn = gr.Button("儲存所有修改")
-            collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts, outputs=[state, abnormal_list])
+            collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, abnormal_list])
 
 app = gr.mount_gradio_app(app, demo, path="/")
