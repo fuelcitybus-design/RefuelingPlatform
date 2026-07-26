@@ -329,43 +329,35 @@ def show_txt(abnormal_list):
 # =====================================================================
 # Correction Function
 def collect_all_texts(request: gr.Request, abnormal_list, *texts):
-    # --- Validation ---
+    if len(abnormal_list) != len(texts):
+        return "警告：輸入數量與照片數量不一致", abnormal_list
+
     text_list = []
-    n = min(len(abnormal_list), len(texts))
-    for idx in range(n):
-        txt = texts[idx]
+    for idx, txt in enumerate(texts):
         if txt is None or txt.strip() == "":
             return f"警告：第{idx+1}張照片缺少輸入", abnormal_list
         try:
-            num = int(txt.strip())
-            text_list.append(num)
+            text_list.append(int(txt.strip()))
         except ValueError:
             return f"警告：第{idx+1}張照片非數字輸入", abnormal_list
-    
-    if len(text_list) < len(abnormal_list):
-        return "警告：缺少輸入", abnormal_list
-    
-    # --- Renaming ---
+
     num_update = 0
     for i in range(len(abnormal_list)):
         file_url = abnormal_list[i][2]
         prefix = abnormal_list[i][0]
         ocr_original = abnormal_list[i][1]
-        
+
         new_name = f"{prefix}_{text_list[i]}.jpg"
         if int(ocr_original) != int(text_list[i]):
             num_update += 1
             kudu_rename(file_url, new_name)
-    
-    # --- Next batch or success ---
+
     if abnormal_count > 10:
-        # analysis_rename returns 22 values, but we only need the first two
         result = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
         new_list, msg = result[0], result[1]
         return msg, new_list
     else:
         return f"儲存成功，共更新 {num_update} 張照片", []
-
 
 # =====================================================================
 # Gradio Hosting
