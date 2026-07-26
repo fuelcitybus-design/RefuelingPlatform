@@ -362,26 +362,24 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             
             location_dropdownAI = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
             
+            # Build image and text components first
             txts, imgs = [], []
-            run_btn = gr.Button("運行AI")
+            for i in range(10):
+                with gr.Row():
+                    img = gr.Image(None, label=f"Image {i}", visible=True, width=150, interactive=False)
+                    imgs.append(img)
+                    txt = gr.Textbox(value=None, label=f"Text {i}", visible=True)
+                    txts.append(txt)
+        
+            # Now wire the button with ALL outputs
             run_btn.click(
                 fn=analysis_rename,
                 inputs=[location_dropdownAI],
                 outputs=[abnormal_list, state] + imgs + txts
             )
 
-
-            for i in range(10):
-                with gr.Row():
-                    img = gr.Image(None, label=i, visible=True, width=150, interactive=False)
-                    imgs.append(img)
-                    txt = gr.Textbox(value=None, label=i, visible=True)
-                    txts.append(txt)
-
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
-
-
 
             collect_btn = gr.Button("儲存所有修改")
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts, outputs=[state, abnormal_list])
