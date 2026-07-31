@@ -1,15 +1,6 @@
 #***Setup environment for running Gradio interface
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 app = FastAPI()
-
-# --- Middleware 禁用緩衝 ---
-@app.middleware("http")
-async def disable_azure_buffering(request: Request, call_next):
-    response = await call_next(request)
-    if "/gradio" in request.url.path:
-        response.headers["X-Accel-Buffering"] = "no"
-        response.headers["Cache-Control"] = "no-cache"
-    return response
 
 #========================================================================================================
 
@@ -17,7 +8,6 @@ async def disable_azure_buffering(request: Request, call_next):
 import os
 import base64
 import requests
-
 from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
@@ -33,6 +23,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
 from openpyxl.drawing.image import Image as XLImage
+from datetime import datetime
 
 #========================================================================================================
 
@@ -65,7 +56,7 @@ tank_list = {"CFD創富": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4
         "TCD東涌": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸"],
         "TKD將軍澳": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸"],
         "TMD屯門": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸"],
-        "WCD黃竹坑": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸"],
+        "WCD黃竹坑": ["{請選擇}", "第1缸(廠外)", "第2缸(廠外)", "第3缸(廠內)"],
         "WKD西九": ["{請選擇}", "第1缸", "第2缸", "第3缸"]}
 
 tab_names = ["車牌","油錶前", "油尺前", "封條1", "封條2", "油車前", "油車後", "油錶後", "油尺後", "收據"]
@@ -188,81 +179,126 @@ global tank_choices
 tank_choices = []
 
 ### Module 1: Uploader function
-def ensure_kudu_folder(folder_url: str) -> bool:
-    """Ensure folder exists; returns True if OK (200,201,409)."""
-    r = requests.put(folder_url + "/", auth=auth, timeout=20)
-    return r.status_code in (200, 201, 409)
-
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
     try:
-        # Basic validation (keep your existing logic)
+        # logging
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        client_ip = request.client.host if request else "unknown"
+        username = request.username if request and hasattr(request, "username") else "anonymous"
+        uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
+        num_images = len(uploaded_tabs)
+
+        #Warning for not selecting depot, tank car and tank info
         if (
             not location or location == "{請選擇}"
             or not car_id or car_id == "{請選擇}"
             or not tank_id or tank_id == "{請選擇}"
-        ):
-            return "警告：確保已輸入地點，車號，缸號"
-
+           ):
+            info_msg = "警告：確保已輸入地點，車號，缸號"
+            info_log = "Error: Please select Location, Car ID, and Tank ID."
+            return info_msg
         global tank_choices
         tank_choices = tank_list.get(location, [])
         if not tank_choices or tank_id not in tank_choices:
-            return f"警告：無效的缸號 \"{tank_id}\""
+            info_msg = f"警告：無效的缸號 \"{tank_id}\""
+            return info_msg
+            
+        #File path and name format for the images
+        prefix = f"{location}/{car_id}_{tank_id}"
+        #Auto-select today's date
+        today = datetime.now().strftime("%Y-%m-%d")
 
-        # Required-tabs check (keep your existing logic if forced_check is True)
+        # --- Warning checkpoint 1: Check required tabs if any necessary images to be uploaded are missing (Forced batch uploading)---
         if required_tabs and forced_check:
             tab_dict = dict(zip(tab_names, images))
             missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
             if missing:
-                return f"警告：確保已輸入以下照片 {', '.join(missing)}"
+                info_msg = f"警告：確保已輸入以下照片 {', '.join(missing)}"
+                info_log = f"Error: Missing images for required tabs: {', '.join(missing)}"
+                return info_msg
 
-        # Build paths
-        today = datetime.now().strftime("%Y-%m-%d")
-        prefix = f"{location}/{car_id}_{tank_id}"
-        base_url = f"{ROOT_FOLDER}/{today}/{prefix}"
+        
+        #Setup connection to base directory
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
-        # Ensure folder exists once (avoid 404 on file PUT)
-        if not ensure_kudu_folder(base_url):
-            return "❌Folder creation failed."
+        # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
+        detected_tabs_exist = []
+        baser = requests.get(base_url, auth=auth)
+        if baser.status_code in [200,201]:
+            # Check if any file of any image type to be uploaded exists in the folder
+            items = baser.json()
+            existing_files = [item["name"] for item in items if item.get("mime") != "inode/directory"]
+            for f in existing_files:
+                # Always add the raw filename (without extension)
+                name, ext = os.path.splitext(f)
+                detected_tabs_exist.append(name)
 
+                # Special handling: detect 'before' or 'after' anywhere in the filename
+                if "油車前" in name.lower() and "油車前" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車前")
+                if "油車後" in name.lower() and "油車後" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車後")
+
+        else:
+            #Create image folder
+            response = requests.put(base_url, auth=auth)
+            if not(response.status_code in [200, 201]):
+                info_msg = "❌Folder creation failed." 
+                return info_msg
+
+        #Saving the images
         return_msg = []
         saved_paths = []
-
         for i, img in enumerate(images):
             if img is None:
                 continue
+            if tab_names[i] in detected_tabs_exist:
+                info_msg = f"跳過已上傳照片 {tab_names[i]}"
+                info_log = f"Skipped uploaded image {tab_names[i]}"
+                return_msg.append(info_msg)
+                continue
 
-            tab_name = tab_names[i]
-            filename = f"{tab_name}.jpg"
-            file_url = f"{base_url}/{filename}"
-
-            # Prepare JPEG buffer (same resizing as before)
             original_width, original_height = img.size
             new_width = int(original_width * (400 / original_height))
             img = img.resize((new_width, 400))
             buffer = BytesIO()
             img.save(buffer, format="JPEG")
             buffer.seek(0)
-
-            # Upload with If-Match: "*" (critical for Kudu file PUT)
-            r = requests.put(
-                file_url,
-                data=buffer.getvalue(),
-                auth=auth,
-                headers={"If-Match": "*"},
-                timeout=60
-            )
-
-            if r.status_code not in (200, 201):
-                return f"❌{tab_name} save failed: {r.status_code}"
+            tab_name = tab_names[i]
+            filename = f"{tab_name}.jpg"
+            filepath = f"{base_url}{filename}"
+            # Upload directly from buffer
+            response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
+            if response.status_code not in [200, 201]:
+                return f"❌{tab_name} save failed."
             saved_paths.append(tab_name)
+            detected_tabs_exist.append(tab_name)
 
+        #Completion message
         if saved_paths:
-            return f"已上傳 {len(saved_paths)} 張新照片"
+            location_required_tabs = tab_list_S.get(location, [])
+            missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
+
+            #Reminder message for if any required images are missing
+            if missing:
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片\n請上傳{', '.join(missing)}."
+              info_log = f"Uploaded {len(saved_paths)} new images \nPlease upload{', '.join(missing)}."
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
+            else:
+              info_msg = f"已上傳 {len(saved_paths)} 張新照片"
+              info_log = f"Uploaded {len(saved_paths)} new images"
+              return_msg.append(info_msg)
+              return '\n'.join(return_msg)
         else:
-            return "警告：沒有新照片"
+            info_msg = "警告：沒有新照片"
+            info_log = "Warning: No new image"
+            return_msg.append(info_msg)
+            return '\n'.join(return_msg)
 
     except Exception as e:
-        return f"未知錯誤：{str(e)}"
+        return f"未知錯誤: {str(e)}"
+
 def nearest(gps):
     if "Allow" in gps:
         return "{請選擇}"
@@ -369,189 +405,8 @@ def prev_tab(current, location):
     return gr.Tabs(selected=nxt), nxt
 
 #============================================================================================================================================================
-# Module 4: History functions
 
-def get_car_ids(date, location):
-    try:
-        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER}/{date_str}/{location}/"
-        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
-        car_id = []
-        if candidates.status_code == 200:
-            items = candidates.json()
-            for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    parts = folder_name.split("_")
-                    if len(parts) >= 1:
-                        car_id.append(parts[0])
-            return sorted(set(car_id))
-        else:
-            return []
-    except Exception:
-        return []
-
-
-def get_tank_names(date, location, id):
-    try:
-        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER}/{date_str}/{location}/"
-        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
-        tank = []
-        if candidates.status_code == 200:
-            items = candidates.json()
-            for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    parts = folder_name.split("_")
-                    if len(parts) >= 2 and id == parts[0]:
-                        tank.append(parts[1])
-            return tank
-        else:
-            return []
-    except Exception:
-        return []
-
-def find_jpg_images(date, location, id, tank):
-    try:
-        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        url = f"{ROOT_FOLDER}/{date_str}/{location}/{id}_{tank}/"
-        gallery_items = []
-
-        response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
-        if response.status_code != 200:
-            return [], f"❌ Failed to fetch directory contents: HTTP {response.status_code}"
-
-        files_json = response.json()
-        os.makedirs("kudu_cache", exist_ok=True)
-
-        for item in files_json:
-            if item.get("mime") == "inode/directory":
-                continue
-
-            filename = item.get("name", "")
-            file_url = url + filename
-
-            file_response = requests.get(file_url, auth=auth, timeout=10)
-            if file_response.status_code == 200:
-                local_cache_path = os.path.join("kudu_cache", filename)
-                with open(local_cache_path, "wb") as f:
-                    f.write(file_response.content)
-                gallery_items.append((local_cache_path, filename))
-
-        if not gallery_items:
-            return [], "ℹ️ Connection successful, but no files were found in this tank folder."
-
-        return gallery_items, f"🖼️ Loaded {len(gallery_items)} files successfully from Kudu storage."
-
-    except Exception as e:
-        return [], f"💥 Error accessing file structures: {str(e)}"
-
-
-def assign_tanks(date, location, id):
-    # Validate inputs early
-    if not id or id in ["請選擇", "沒有記錄"]:
-        return (
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            "請先選取有效車號"
-        )
-
-    tanks = get_tank_names(date, location, id)
-
-    if isinstance(tanks, str):
-        return (
-            [], "錯誤信號",
-            [], "錯誤信號",
-            [], "錯誤信號",
-            [], "錯誤信號",
-            tanks
-        )
-
-    if not tanks:
-        # No tanks found: return empty galleries immediately
-        return (
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            "注意：沒有相關紀錄"
-        )
-
-    galleries_data = []
-    labels = []
-
-    for i in range(4):
-        if i < len(tanks):
-            tank_name = tanks[i]
-            gallery_items, msg = find_jpg_images(date, location, id, tank_name)
-            galleries_data.append(gallery_items)
-            labels.append(f"Tank: {tank_name}")
-        else:
-            galleries_data.append([])
-            labels.append("沒有紀錄")
-
-    tank_names_str = ", ".join(tanks)
-    msg = f"找到 {len(tanks)} 組紀錄: {tank_names_str}"
-
-    return (
-        galleries_data[0], labels[0],
-        galleries_data[1], labels[1],
-        galleries_data[2], labels[2],
-        galleries_data[3], labels[3],
-        msg
-    )
-
-
-def update_car_dropdown(date, location):
-    try:
-        car_ids_list = get_car_ids(date, location)
-        if car_ids_list:
-            car_update = gr.update(choices=["請選擇"] + car_ids_list, value="請選擇")
-        else:
-            car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
-
-        tank_reset = [
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            "請先選取有效車號"
-        ]
-
-        return (car_update, *tank_reset)
-    except Exception:
-        return (
-            gr.update(choices=["錯誤"], value="錯誤"),
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            "伺服器錯誤：無法載入資料"
-        )
-
-
-def update_all(date, location, car):
-    try:
-        g1, l1, g2, l2, g3, l3, g4, l4, msg = assign_tanks(date, location, car)
-        return g1, l1, g2, l2, g3, l3, g4, l4, msg
-    except Exception:
-        return (
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            "伺服器錯誤：無法載入資料"
-        )
-
-def clear_tanks():
-    return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "請先選取有效車號"
-
-#============================================================================================================================================================
-
-###Hosting with Gradio
+#Hosting with Gradio
 with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
     gr.Markdown("落油記錄工具")
 
@@ -643,79 +498,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
            
             # Raw HTML input for back camera
             gr.HTML(prefer_back_camera())
-                
 
-        # Module 4
-        with gr.Tab("記錄"):
-            with gr.Row():
-                date_picker = gr.DateTime(
-                    label="日期", include_time=False,
-                    value=datetime.now().date().isoformat(),
-                    elem_id = "date_history"
-                )
-                location_dropdown2 = gr.Dropdown(
-                    choices=locations, label="地點", value=locations[0], allow_custom_value=False, filterable=False
-                )
-                car_dropdown2 = gr.Dropdown(
-                    choices=[], label="車號", value=None,
-                    allow_custom_value=True, filterable=True,
-                    interactive=True, elem_id="tank_dropdown_history"
-                )
-                confirm_btn2 = gr.Button("確認選擇")
-
-            tank_message = gr.Textbox(label="Tank Summary", interactive=False, lines=2)
-
-            tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
-            gallery1 = gr.Gallery(columns=4, elem_id = "gallery1")
-
-            tank_label2 = gr.Textbox(label="Tank Info 2", interactive=False)
-            gallery2 = gr.Gallery(columns=4, elem_id = "gallery2")
-
-            tank_label3 = gr.Textbox(label="Tank Info 3", interactive=False)
-            gallery3 = gr.Gallery(columns=4, elem_id = "gallery3")
-
-            tank_label4 = gr.Textbox(label="Tank Info 4", interactive=False)
-            gallery4 = gr.Gallery(columns=4, elem_id = "gallery4")
-
-            # Wire events
-            date_picker.change(
-                fn=update_car_dropdown,
-                inputs=[date_picker, location_dropdown2],
-                outputs=[
-                    car_dropdown2,
-                    gallery1, tank_label1,
-                    gallery2, tank_label2,
-                    gallery3, tank_label3,
-                    gallery4, tank_label4,
-                    tank_message
-                ]
-            )
-
-            location_dropdown2.change(
-                fn=update_car_dropdown,
-                inputs=[date_picker, location_dropdown2],
-                outputs=[
-                    car_dropdown2,
-                    gallery1, tank_label1,
-                    gallery2, tank_label2,
-                    gallery3, tank_label3,
-                    gallery4, tank_label4,
-                    tank_message
-                ]
-            )
-
-            confirm_btn2.click(
-                fn=update_all,
-                inputs=[date_picker, location_dropdown2, car_dropdown2],
-                outputs=[
-                    gallery1, tank_label1,
-                    gallery2, tank_label2,
-                    gallery3, tank_label3,
-                    gallery4, tank_label4,
-                    tank_message
-                ]
-            )
-        
             demo.css = """
             #camera_input button {
                 transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
@@ -753,6 +536,5 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             }
                         
             """
-
-
-app = gr.mount_gradio_app(app, demo, path="/", root_path=None)
+        
+app = gr.mount_gradio_app(app, demo, path="/")
