@@ -467,7 +467,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                             image_inputs.append(img_input)
                             tab_list.append(tab)
 
-
             # Bind tab selection to update current state
             img_tabs.select(sync_tab_index, None, current)
 
