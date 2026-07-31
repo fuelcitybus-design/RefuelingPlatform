@@ -190,7 +190,7 @@ tank_choices = []
 ### Module 1: Uploader function
 def ensure_kudu_folder(folder_url: str) -> bool:
     """Ensure folder exists; returns True if OK (200,201,409)."""
-    r = requests.put(folder_url + "/", auth=AUTH, timeout=20)
+    r = requests.put(folder_url + "/", auth=auth, timeout=20)
     return r.status_code in (200, 201, 409)
 
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
@@ -247,7 +247,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             r = requests.put(
                 file_url,
                 data=buffer.getvalue(),
-                auth=AUTH,
+                auth=auth,
                 headers={"If-Match": "*"},
                 timeout=60
             )
