@@ -177,6 +177,8 @@ global active_tabs
 active_tabs = []
 global tank_choices
 tank_choices = []
+global filepath
+filepath = None
 
 ### Module 1: Uploader function
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
@@ -266,6 +268,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             buffer.seek(0)
             tab_name = tab_names[i]
             filename = f"{tab_name}.jpg"
+            global filepath
             filepath = f"{base_url}{filename}"
             # Upload directly from buffer
             response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
