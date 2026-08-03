@@ -271,7 +271,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 messages.append(f"❌{tab_name} upload error: {str(e)}")
 
         # --- Completion message ---
-        if saved_paths:
+        if len(saved_paths)>0:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
             if missing:
