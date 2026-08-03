@@ -183,10 +183,6 @@ filepath = None
 ### Module 1: Uploader function
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
     try:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        client_ip = request.client.host if request else "unknown"
-        username = request.username if request and hasattr(request, "username") else "anonymous"
-
         # Validate dropdowns
         if (
             not location or location == "{請選擇}"
@@ -203,6 +199,13 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
+
+        # --- Required tabs check BEFORE upload loop ---
+        if required_tabs and forced_check:
+            tab_dict = dict(zip(tab_names, images))
+            missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
+            if missing:
+                return f"警告：確保已輸入以下照片 {', '.join(missing)}"
 
         # Check existing files
         detected_tabs_exist = []
@@ -228,12 +231,13 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         except Exception as e:
             return f"❌Connection error: {str(e)}"
 
-        # Save images
+        # --- Upload loop (only real images) ---
         messages = []
         saved_paths = []
         for i, img in enumerate(images):
-            if img is None:
-                continue
+            if img is None or not hasattr(img, "size"):
+                continue  # skip empty slots
+
             tab_name = tab_names[i]
             if tab_name in detected_tabs_exist:
                 messages.append(f"跳過已上傳照片 {tab_name}")
@@ -266,12 +270,12 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         else:
             messages.append("警告：沒有新照片")
 
-        # Always return a single string
         return "\n".join(messages)
 
     except Exception as e:
         print("Upload error:", e)
         return f"❌未知錯誤: {str(e)}"
+
 
 
 def nearest(gps):
