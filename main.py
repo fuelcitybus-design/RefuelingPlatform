@@ -262,8 +262,8 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                         detected_tabs_exist.append(tab_name)
                 except requests.Timeout:
                     messages.append(f"❌{tab_name} upload timed out.")
-                except Exception as e:
-                    messages.append(f"❌{tab_name} upload error: {str(e)}")
+            except Exception as e:
+                messages.append(f"❌{tab_name} upload error: {str(e)}")
 
 
         # --- Completion message ---
