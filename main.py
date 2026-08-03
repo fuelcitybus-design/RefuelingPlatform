@@ -231,7 +231,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         # Save images
         messages = []
         saved_paths = []
-        for i, img in enumerate(images):
+        for i, img in len(images):
             if img is None:
                 continue
             tab_name = tab_names[i]
