@@ -208,12 +208,16 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         detected_tabs_exist = []
         try:
             baser = requests.get(base_url, auth=auth, timeout=5)
-            if baser.status_code in [200, 201]:
+            if baser.status_code == 200:
                 try:
                     items = baser.json()
                 except ValueError:
                     items = []
-                existing_files = [item["name"] for item in items if item.get("mime") != "inode/directory"]
+                existing_files = [
+                    item.get("name")
+                    for item in items
+                    if item.get("mime") != "inode/directory"
+                ]
                 for f in existing_files:
                     name, ext = os.path.splitext(f)
                     detected_tabs_exist.append(name)
@@ -221,12 +225,20 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                         detected_tabs_exist.append("油車前")
                     if "油車後" in name.lower():
                         detected_tabs_exist.append("油車後")
-            else:
+            elif baser.status_code == 404:
+                # Folder not found, try to create it
                 response = requests.put(base_url, auth=auth, timeout=5)
                 if response.status_code not in [200, 201]:
                     return "❌Folder creation failed."
+                existing_files = []
+            else:
+                # Unexpected status, but don’t block uploads
+                print(f"Warning: GET {base_url} returned {baser.status_code} {baser.text[:200]}")
+                existing_files = []
         except Exception as e:
-            return f"❌Connection error: {str(e)}"
+            print("Connection error:", e)
+            existing_files = []
+
                 
         # --- Upload loop (only real images) ---
         messages = []
