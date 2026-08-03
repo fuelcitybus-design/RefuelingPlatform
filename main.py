@@ -198,7 +198,8 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
 
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
-        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
+        # safer: no trailing slash
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}"
 
         # --- Required tabs check BEFORE upload loop ---
         if required_tabs and forced_check:
@@ -253,9 +254,10 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 buffer.seek(0)
 
                 filename = f"{tab_name}.jpg"
-                filepath = f"{base_url}{filename}"
+                filepath = f"{base_url}/{filename}"  # corrected path
+                print(f"Attempting upload: {filepath}")  # debug log
                 response = requests.put(filepath, data=buffer.getvalue(), auth=auth, timeout=5)
-                print(f"Uploading {tab_name} → {response.status_code}")  # debug log
+                print(f"Response {response.status_code}: {response.text}")  # debug log
 
                 if response.status_code not in [200, 201]:
                     messages.append(f"❌{tab_name} save failed (status {response.status_code}).")
@@ -281,7 +283,6 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
     except Exception as e:
         print("Upload error:", e)
         return f"❌未知錯誤: {str(e)}"
-
 
 
 
