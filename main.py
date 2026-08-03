@@ -279,22 +279,29 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
 
 
         # --- Completion message ---
-        if len(saved_paths)>0:
-            location_required_tabs = tab_list_S.get(location, [])
-            missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
-            if missing:
-                messages.append(f"已上傳 {len(saved_paths)} 張新照片\n請上傳 {', '.join(missing)}.")
+        # --- Completion message ---
+        try:
+            if saved_paths:
+                location_required_tabs = tab_list_S.get(location, []) or []
+                missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
+        
+                if missing:
+                    completion_msg = (
+                        f"已上傳 {len(saved_paths)} 張新照片。"
+                        f"尚缺：{', '.join(missing)}"
+                    )
+                else:
+                    completion_msg = f"已上傳 {len(saved_paths)} 張新照片。"
             else:
-                messages.append(f"已上傳 {len(saved_paths)} 張新照片")
-        else:
-            messages.append("警告：沒有新照片")
+                completion_msg = "警告：沒有新照片"
+        
+            messages.append(completion_msg)
+        except Exception as e:
+            messages.append(f"❌完成訊息生成錯誤: {str(e)}")
+        
+        # Always return a single string (no raw newlines mid‑sentence)
+        return " | ".join(messages) if messages else "完成但沒有訊息"
 
-        # Always return a single string
-        return "\n".join(messages) if messages else "完成但沒有訊息"
-
-    except Exception as e:
-        print("Upload error:", e)
-        return f"❌未知錯誤: {str(e)}"
 
 
 
