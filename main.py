@@ -235,29 +235,35 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         messages = []
         saved_paths = []
         for i, img in enumerate(images):
+            # Skip empty slots completely
             if img is None or not hasattr(img, "size"):
-                continue  # skip empty slots
+                continue
 
             tab_name = tab_names[i]
             if tab_name in detected_tabs_exist:
                 messages.append(f"跳過已上傳照片 {tab_name}")
                 continue
 
-            original_width, original_height = img.size
-            new_width = int(original_width * (400 / original_height))
-            img = img.resize((new_width, 400))
-            buffer = BytesIO()
-            img.save(buffer, format="JPEG")
-            buffer.seek(0)
+            try:
+                original_width, original_height = img.size
+                new_width = int(original_width * (400 / original_height))
+                img = img.resize((new_width, 400))
+                buffer = BytesIO()
+                img.save(buffer, format="JPEG")
+                buffer.seek(0)
 
-            filename = f"{tab_name}.jpg"
-            filepath = f"{base_url}{filename}"
-            response = requests.put(filepath, data=buffer.getvalue(), auth=auth, timeout=5)
-            if response.status_code not in [200, 201]:
-                messages.append(f"❌{tab_name} save failed.")
-            else:
-                saved_paths.append(tab_name)
-                detected_tabs_exist.append(tab_name)
+                filename = f"{tab_name}.jpg"
+                filepath = f"{base_url}{filename}"
+                response = requests.put(filepath, data=buffer.getvalue(), auth=auth, timeout=5)
+                print(f"Uploading {tab_name} → {response.status_code}")  # debug log
+
+                if response.status_code not in [200, 201]:
+                    messages.append(f"❌{tab_name} save failed (status {response.status_code}).")
+                else:
+                    saved_paths.append(tab_name)
+                    detected_tabs_exist.append(tab_name)
+            except Exception as e:
+                messages.append(f"❌{tab_name} upload error: {str(e)}")
 
         # Completion message
         if saved_paths:
@@ -275,6 +281,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
     except Exception as e:
         print("Upload error:", e)
         return f"❌未知錯誤: {str(e)}"
+
 
 
 
