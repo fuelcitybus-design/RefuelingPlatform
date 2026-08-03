@@ -234,7 +234,8 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         for i, img in enumerate(images):
             if img is None or not hasattr(img, "size"):
                 continue  # skip empty slots
-
+            if not getattr(img, "size", None):
+                continue  # skip corrupted
             tab_name = tab_names[i]
             if tab_name in detected_tabs_exist:
                 messages.append(f"跳過已上傳照片 {tab_name}")
@@ -274,7 +275,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             messages.append("警告：沒有新照片")
 
         # Always return a single string
-        return "\n".join(messages)
+        return "\n".join(messages) if messages else "完成但沒有訊息"
 
     except Exception as e:
         print("Upload error:", e)
