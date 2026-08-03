@@ -1,6 +1,14 @@
 #***Setup environment for running Gradio interface
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse
+
 app = FastAPI()
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code == 404 and "sse_stream" in str(exc.detail).lower():
+        return PlainTextResponse("Stream job not found", status_code=404)
+    return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
 
 #========================================================================================================
 
