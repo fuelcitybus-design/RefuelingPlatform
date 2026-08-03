@@ -1,35 +1,39 @@
+# Setup environment for running Gradio interface
 from fastapi import FastAPI
+
+app = FastAPI()
+
+#========================================================================================================
+
+# Library imports
 import os
 import requests
 from requests.auth import HTTPBasicAuth
 import gradio as gr
 from datetime import datetime
 from io import BytesIO
+from PIL import Image
 
-app = FastAPI()
+#========================================================================================================
 
-# =========================================================
-# CONFIGURATION
-# =========================================================
-USERNAME = "$oil-tank-refueling"
-PASSWORD = "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK"
+# --- CONFIGURATION ---
+# Replace these with your actual Azure App Service credentials (or set env vars)
+USERNAME = os.getenv("AZURE_USERNAME", "$oil-tank-refueling")
+PASSWORD = os.getenv("AZURE_PASSWORD", "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK")
+KUDU_HOST = os.getenv("KUDU_HOST", "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net")
 auth = HTTPBasicAuth(USERNAME, PASSWORD)
-KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
-ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
+# Information parameters
 locations = ["{請選擇}", "CFD創富", "CWD柴灣", "SHD小蠔灣", "SWD上環", "TCD東涌", "TKD將軍澳", "TMD屯門", "WCD黃竹坑", "WKD西九"]
-
-depot_gps = [
-    ("CFD創富", 22.272764832109846, 114.24250389449965),
-    ("CWD柴灣", 22.270758379558714, 114.24155513333564),
-    ("SHD小蠔灣", 22.315893212234425, 113.99856865402481),
-    ("SWD上環", 22.288271040384796, 114.15105773910038),
-    ("TCD東涌", 22.28009953657451, 113.9394554386798),
-    ("TKD將軍澳", 22.316949281155114, 114.25819879997607),
-    ("TMD屯門", 22.383505220952447, 113.96928212236955),
-    ("WCD黃竹坑", 22.248418440612717, 114.16227259618798),
-    ("WKD西九", 22.329873814418242, 114.14657647254528)
-]
+depot_gps = [("CFD創富", 22.272764832109846, 114.24250389449965),
+             ("CWD柴灣", 22.270758379558714, 114.24155512333564),
+             ("SHD小蠔灣", 22.315893212234425, 113.99856865402481),
+             ("SWD上環", 22.288271040384796, 114.15105773910038),
+             ("TCD東涌", 22.28009953657451, 113.9394554386798),
+             ("TKD將軍澳", 22.316949281155114, 114.25819879997607),
+             ("TMD屯門", 22.383505220952447, 113.96928212236955),
+             ("WCD黃竹坑", 22.248418440612717, 114.16227259618798),
+             ("WKD西九", 22.329873814418242, 114.14657647254528)]
 
 car_ids = ["{請選擇}", "第1車", "第2車", "第3車", "第4車", "第5車"]
 
@@ -44,7 +48,7 @@ tank_list = {
     "TKD將軍澳": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸"],
     "TMD屯門": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸"],
     "WCD黃竹坑": ["{請選擇}", "第1缸(廠外)", "第2缸(廠外)", "第3缸(廠內)"],
-    "WKD西九": ["{請選擇}", "第1缸", "第2缸", "第3缸"]
+    "WKD西九": ["{請選擇}", "第1缸", "第2缸", "第3缸"],
 }
 
 tab_names = ["車牌", "油錶前", "油尺前", "封條1", "封條2", "油車前", "油車後", "油錶後", "油尺後", "收據"]
@@ -59,22 +63,16 @@ tab_list_S = {
     "TKD將軍澳": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
     "TMD屯門": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
     "WCD黃竹坑": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
-    "WKD西九": ["油錶前", "封條1", "封條2", "油車前", "油車後", "油錶後", "收據"]
+    "WKD西九": ["油錶前", "封條1", "封條2", "油車前", "油車後", "油錶後", "收據"],
 }
 
 required_tabs = ["油車前", "油車後"]
-forced_check = False
+forced_check = False  # Forced required image batch uploading button
+ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
-# =========================================================
-# GLOBAL STATE
-# =========================================================
-active_tabs = []
-tank_choices = []
-filepath = None
+#=========================================================================================================================
 
-# =========================================================
-# HELPERS
-# =========================================================
+# Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     return """
     <script>
@@ -89,6 +87,7 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
 
+    // Support multiple dropdown IDs
     const TANK_DROPDOWN_IDS = ['tank_dropdown_uploader', 'tank_dropdown_history'];
 
     function isTankDropdownInput(el) {
@@ -101,7 +100,7 @@ def prefer_back_camera():
 
     function blockTankDropdownTyping(e) {
       if (!isTankDropdownInput(e.target)) return;
-      const allowedKeys = ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab', 'Shift', 'Control', 'Alt', 'Meta'];
+      const allowedKeys = ['ArrowDown','ArrowUp','Enter','Escape','Tab','Shift','Control','Alt','Meta'];
       if (allowedKeys.includes(e.key)) return;
       e.preventDefault();
       e.stopPropagation();
@@ -116,6 +115,7 @@ def prefer_back_camera():
     function initTankDropdownBlocker() {
       if (window._tankDropdownBlockerInitialized) return;
       window._tankDropdownBlockerInitialized = true;
+
       document.addEventListener('keydown', blockTankDropdownTyping, true);
       document.addEventListener('input', (e) => {
         if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
@@ -143,27 +143,138 @@ def prefer_back_camera():
     </script>
     """
 
+#=========================================================================================================================
+
+active_tabs = []
+tank_choices = []
+filepath = None
+
+# Module 1: Uploader function
+def save_images(location, car_id, tank_id, request: gr.Request, *images):
+    messages = []
+    saved_paths = []
+    detected_tabs_exist = []
+
+    try:
+        # Validate dropdowns
+        if (not location or location == "{請選擇}"
+                or not car_id or car_id == "{請選擇}"
+                or not tank_id or tank_id == "{請選擇}"):
+            return "警告：確保已輸入地點，車號，缸號"
+
+        global tank_choices
+        tank_choices = tank_list.get(location, [])
+        if not tank_choices or tank_id not in tank_choices:
+            return f"警告：無效的缸號 \"{tank_id}\""
+
+        prefix = f"{location}/{car_id}_{tank_id}"
+        today = datetime.now().strftime("%Y-%m-%d")
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
+
+        # Check existing files on the server
+        try:
+            baser = requests.get(base_url, auth=auth, timeout=5)
+            if baser.status_code == 200:
+                try:
+                    items = baser.json()
+                except ValueError:
+                    items = []
+                existing_files = [item.get("name") for item in items if item.get("mime") != "inode/directory"]
+            elif baser.status_code == 404:
+                # Folder not found, create it
+                response = requests.put(base_url, auth=auth, timeout=5)
+                if response.status_code not in [200, 201]:
+                    messages.append("❌Folder creation failed.")
+                existing_files = []
+            else:
+                existing_files = []
+                print(f"Warning: GET {base_url} returned {baser.status_code}")
+        except Exception as e:
+            existing_files = []
+            print("Connection error:", e)
+
+        # Upload loop (only real images)
+        for i, img in enumerate(images):
+            if img is None or not hasattr(img, "size") or not img.size:
+                continue  # skip empty / corrupted slots
+
+            tab_name = tab_names[i]
+            if tab_name in detected_tabs_exist:
+                messages.append(f"跳過已上傳照片 {tab_name}")
+                continue
+
+            try:
+                original_width, original_height = img.size
+                new_width = int(original_width * (400 / original_height))
+                img = img.resize((new_width, 400))
+                buffer = BytesIO()
+                img.save(buffer, format="JPEG")
+                buffer.seek(0)
+
+                filename = f"{tab_name}.jpg"
+                filepath = f"{base_url}/{filename}"
+                print(f"Attempting upload: {filepath}")
+
+                response = requests.put(filepath, data=buffer.getvalue(), auth=auth, timeout=5)
+                status = response.status_code
+                if status in [200, 201]:
+                    saved_paths.append(tab_name)
+                    detected_tabs_exist.append(tab_name)
+                else:
+                    messages.append(f"❌{tab_name} save failed (status {status}).")
+            except requests.Timeout:
+                messages.append(f"❌{tab_name} upload timed out.")
+            except Exception as e:
+                messages.append(f"❌{tab_name} upload error: {str(e)}")
+
+        # Completion message
+        if saved_paths:
+            location_required_tabs = tab_list_S.get(location, [])
+            missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
+            if missing:
+                completion_msg = f"已上傳 {len(saved_paths)} 張新照片。尚缺：{', '.join(missing)}"
+            else:
+                completion_msg = f"已上傳 {len(saved_paths)} 張新照片。"
+        else:
+            completion_msg = "警告：沒有新照片"
+
+        messages.append(completion_msg)
+
+    except Exception as e:
+        messages.append(f"❌完成訊息生成錯誤: {str(e)}")
+
+    return " | ".join(messages) if messages else "完成但沒有訊息"
+
+
 def nearest(gps):
     if "Allow" in gps:
         return "{請選擇}"
     lat, lon = map(float, gps.strip("[]").split(","))
-    return min(depot_gps, key=lambda c: (lat - c[1])**2 + (lon - c[2])**2)[0]
+    d = lambda c: (lat - c[1]) ** 2 + (lon - c[2]) ** 2
+    return min(depot_gps, key=d)[0]
+
 
 def update_tank_dropdown(location):
     global tank_choices
     tank_choices = tank_list.get(location, ["{請選擇}"])
     return gr.update(choices=tank_choices, value=tank_choices[0], label="缸號", interactive=True)
 
+
 def toggle_ui_components(location, car, tank):
     global active_tabs
     active_tabs = tab_list_S.get(location, [])
 
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        tab_updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
+        first_tab = active_tabs[0] if active_tabs else None
+        tab_updates = []
+        for tab in tab_names:
+            tab_updates.append(gr.update(visible=True))
+
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
-        first_idx = tab_names.index(active_tabs[0]) if active_tabs else None
+
+        first_idx = tab_names.index(first_tab) if first_tab else None
         tabs_update = gr.update(selected=first_idx)
     else:
         tab_updates = [gr.update(visible=False) for _ in tab_names]
@@ -174,17 +285,23 @@ def toggle_ui_components(location, car, tank):
 
     return tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
 
+
 def toggle_tabs(location, car, tank):
     active_tabs = tab_list_S.get(location, [])
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        return [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
-    return [gr.update(visible=False) for _ in tab_names]
+        updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
+        info_msg = "Start uploading images"
+    else:
+        updates = [gr.update(visible=False) for _ in tab_names]
+        info_msg = "Please select"
+    return updates
+
 
 def toggle_save(location, car, tank):
-    return gr.update(visible=(location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}"))
+    if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+        return gr.update(visible=True)
+    return gr.update(visible=False)
 
-def set_current(idx):
-    return idx
 
 def next_tab(current, location):
     active_tabs = tab_list_S.get(location, [])
@@ -198,6 +315,7 @@ def next_tab(current, location):
     nxt = active_indices[(pos + 1) % len(active_indices)]
     return gr.Tabs(selected=nxt), nxt
 
+
 def prev_tab(current, location):
     active_tabs = tab_list_S.get(location, [])
     if not active_tabs:
@@ -210,92 +328,14 @@ def prev_tab(current, location):
     nxt = active_indices[(pos - 1) % len(active_indices)]
     return gr.Tabs(selected=nxt), nxt
 
-def save_images(location, car_id, tank_id, request: gr.Request, *images):
-    messages = []
-    saved_paths = []
-    detected_tabs_exist = []
+#============================================================================================================================================================
 
-    try:
-        if (
-            not location or location == "{請選擇}"
-            or not car_id or car_id == "{請選擇}"
-            or not tank_id or tank_id == "{請選擇}"
-        ):
-            return "警告：確保已輸入地點，車號，缸號"
-
-        if tank_id not in tank_list.get(location, []):
-            return f"警告：無效的缸號 \"{tank_id}\""
-
-        prefix = f"{location}/{car_id}_{tank_id}"
-        today = datetime.now().strftime("%Y-%m-%d")
-        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
-
-        try:
-            baser = requests.get(base_url, auth=auth, timeout=5)
-            if baser.status_code == 200:
-                try:
-                    items = baser.json()
-                except ValueError:
-                    items = []
-                existing_files = [item.get("name") for item in items if item.get("mime") != "inode/directory"]
-                detected_tabs_exist = [name.replace(".jpg", "") for name in existing_files]
-            elif baser.status_code == 404:
-                requests.put(base_url, auth=auth, timeout=5)
-        except Exception as e:
-            messages.append(f"❌資料夾檢查失敗: {str(e)}")
-
-        for i, img in enumerate(images):
-            if img is None or not hasattr(img, "size") or not img.size:
-                continue
-
-            tab_name = tab_names[i]
-            if tab_name in detected_tabs_exist:
-                messages.append(f"跳過已上傳照片 {tab_name}")
-                continue
-
-            try:
-                original_width, original_height = img.size
-                new_width = int(original_width * (400 / original_height))
-                img = img.resize((new_width, 400))
-
-                buffer = BytesIO()
-                img.save(buffer, format="JPEG")
-                buffer.seek(0)
-
-                filepath = f"{base_url}/{tab_name}.jpg"
-                response = requests.put(filepath, data=buffer.getvalue(), auth=auth, timeout=5)
-
-                if response.status_code in [200, 201]:
-                    saved_paths.append(tab_name)
-                    detected_tabs_exist.append(tab_name)
-                else:
-                    messages.append(f"❌{tab_name} save failed (status {response.status_code}).")
-            except Exception as e:
-                messages.append(f"❌{tab_name} upload error: {str(e)}")
-
-        location_required_tabs = tab_list_S.get(location, []) or []
-        missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
-
-        if saved_paths:
-            if missing:
-                messages.append(f"已上傳 {len(saved_paths)} 張新照片。尚缺：{', '.join(missing)}")
-            else:
-                messages.append(f"已上傳 {len(saved_paths)} 張新照片。")
-        else:
-            messages.append("警告：沒有新照片")
-
-    except Exception as e:
-        messages.append(f"❌完成訊息生成錯誤: {str(e)}")
-
-    return " | ".join(messages) if messages else "完成但沒有訊息"
-
-# =========================================================
-# UI
-# =========================================================
+# Hosting with Gradio
 with gr.Blocks(head=prefer_back_camera()) as demo:
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
+        # Module 1
         with gr.Tab("拍照"):
             current = gr.State(0)
 
@@ -306,22 +346,22 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 confirm_btn = gr.Button("確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
-                demo.load(
-                    None, None, raw_gps,
-                    js="""() => new Promise(r => navigator.geolocation.getCurrentPosition(
-                        p => r(`[${p.coords.latitude}, ${p.coords.longitude}]`),
-                        () => r("[Tap Allow Location]"),
-                        {enableHighAccuracy:true}
-                    ))"""
-                )
+                demo.load(None, None, raw_gps, js="""() => new Promise(r => navigator.geolocation.getCurrentPosition(
+                    p => r(`[${p.coords.latitude}, ${p.coords.longitude}]`),
+                    () => r("[Tap Allow Location]"), {enableHighAccuracy:true}))""")
+
                 raw_gps.change(fn=nearest, inputs=raw_gps, outputs=location_dropdown)
                 location_dropdown.change(fn=update_tank_dropdown, inputs=location_dropdown, outputs=tank_dropdown)
 
             gr.Markdown("---")
 
+            # Tabs with arrow navigation
             with gr.Row(equal_height=True):
                 prev_btn = gr.Button("⬅️", visible=False, scale=1, min_width=30)
                 next_btn = gr.Button("➡️", visible=False, scale=1, min_width=30)
+
+            def sync_tab_index(evt: gr.SelectData):
+                return evt.index
 
             with gr.Row():
                 with gr.Tabs(selected=None) as img_tabs:
@@ -335,13 +375,10 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                                 height=400,
                                 elem_id="camera_input",
                                 mirror_webcam=False,
-                                sources=["webcam", "upload"],
+                                sources=['webcam', 'upload'],
                             )
                             image_inputs.append(img_input)
                             tab_list.append(tab)
-
-            def sync_tab_index(evt: gr.SelectData):
-                return evt.index
 
             img_tabs.select(sync_tab_index, None, current)
 
@@ -351,23 +388,27 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             next_btn.click(fn=next_tab, inputs=[current, location_dropdown], outputs=[img_tabs, current])
             prev_btn.click(fn=prev_tab, inputs=[current, location_dropdown], outputs=[img_tabs, current])
             save_btn.click(fn=save_images, inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs, outputs=output_text)
-
-            confirm_btn.click(
-                fn=toggle_ui_components,
-                inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                outputs=tab_list + [save_btn, prev_btn, next_btn, img_tabs],
-            )
+            confirm_btn.click(fn=toggle_ui_components, inputs=[location_dropdown, car_dropdown, tank_dropdown], outputs=tab_list + [save_btn, prev_btn, next_btn, img_tabs])
 
             gr.HTML(prefer_back_camera())
 
             demo.css = """
-            #camera_input button { transform: scale(1.6); }
-            .gradio-container, body, div, span, p, label, button, h1, h2, h3, h4, h5, h6, textarea, input, select {
+            #camera_input button {
+                transform: scale(1.6);
+            }
+            .gradio-container, body, div, span, p, label, button,
+            h1, h2, h3, h4, h5, h6, textarea, input, select {
                 font-size: 16px !important;
             }
-            #camera_input label { font-size: 20px !important; }
-            #camera_input .dropdown-arrow,
-            #camera_input .select-wrap,
+            #camera_input label {
+                font-size: 20px !important;
+            }
+            #camera_input .dropdown-arrow {
+                display: none !important;
+            }
+            #camera_input .select-wrap {
+                display: none !important;
+            }
             #camera_input button-wrap.button.icon {
                 display: none !important;
             }
