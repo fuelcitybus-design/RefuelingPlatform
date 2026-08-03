@@ -183,6 +183,10 @@ filepath = None
 ### Module 1: Uploader function
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
     try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        client_ip = request.client.host if request else "unknown"
+        username = request.username if request and hasattr(request, "username") else "anonymous"
+
         # Validate dropdowns
         if (
             not location or location == "{請選擇}"
@@ -198,15 +202,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
 
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
-        # safer: no trailing slash
-        base_url = f"{ROOT_FOLDER}/{today}/{prefix}"
-
-        # --- Required tabs check BEFORE upload loop ---
-        if required_tabs and forced_check:
-            tab_dict = dict(zip(tab_names, images))
-            missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
-            if missing:
-                return f"警告：確保已輸入以下照片 {', '.join(missing)}"
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
         # Check existing files
         detected_tabs_exist = []
@@ -232,40 +228,32 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         except Exception as e:
             return f"❌Connection error: {str(e)}"
 
-        # --- Upload loop (only real images) ---
+        # Save images
         messages = []
         saved_paths = []
         for i, img in enumerate(images):
-            # Skip empty slots completely
-            if img is None or not hasattr(img, "size"):
+            if img is None:
                 continue
-
             tab_name = tab_names[i]
             if tab_name in detected_tabs_exist:
                 messages.append(f"跳過已上傳照片 {tab_name}")
                 continue
 
-            try:
-                original_width, original_height = img.size
-                new_width = int(original_width * (400 / original_height))
-                img = img.resize((new_width, 400))
-                buffer = BytesIO()
-                img.save(buffer, format="JPEG")
-                buffer.seek(0)
+            original_width, original_height = img.size
+            new_width = int(original_width * (400 / original_height))
+            img = img.resize((new_width, 400))
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG")
+            buffer.seek(0)
 
-                filename = f"{tab_name}.jpg"
-                filepath = f"{base_url}/{filename}"  # corrected path
-                print(f"Attempting upload: {filepath}")  # debug log
-                response = requests.put(filepath, data=buffer.getvalue(), auth=auth, timeout=5)
-                print(f"Response {response.status_code}: {response.text}")  # debug log
-
-                if response.status_code not in [200, 201]:
-                    messages.append(f"❌{tab_name} save failed (status {response.status_code}).")
-                else:
-                    saved_paths.append(tab_name)
-                    detected_tabs_exist.append(tab_name)
-            except Exception as e:
-                messages.append(f"❌{tab_name} upload error: {str(e)}")
+            filename = f"{tab_name}.jpg"
+            filepath = f"{base_url}{filename}"
+            response = requests.put(filepath, data=buffer.getvalue(), auth=auth, timeout=5)
+            if response.status_code not in [200, 201]:
+                messages.append(f"❌{tab_name} save failed.")
+            else:
+                saved_paths.append(tab_name)
+                detected_tabs_exist.append(tab_name)
 
         # Completion message
         if saved_paths:
@@ -278,11 +266,13 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
         else:
             messages.append("警告：沒有新照片")
 
+        # Always return a single string
         return "\n".join(messages)
 
     except Exception as e:
         print("Upload error:", e)
         return f"❌未知錯誤: {str(e)}"
+
 
 
 
