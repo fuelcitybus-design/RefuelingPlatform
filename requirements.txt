@@ -1,14 +1,29 @@
+# Core web framework
 fastapi==0.115.2
-gradio==5.50.0
+starlette==0.40.0
+uvicorn==0.30.0
 gunicorn==26.0.0
+
+# Gradio UI
+gradio==5.50.0
+
+# Numerical + data stack
 numpy==1.26.4
 pandas==2.2.2
 PyYAML==6.0.2
-uvicorn==0.48.0
-virtualenv==21.3.3
-requests>=2.31.0 
-pillow>=10.0.0
-paddleocr==3.6.0
-opencv-python-headless==4.9.0.80
 openpyxl==3.1.5
-paddlepaddle
+
+# Virtual environment tools
+virtualenv==21.3.3
+
+# Networking
+requests>=2.31.0
+
+# Imaging + OCR
+pillow>=10.0.0
+opencv-python-headless==4.9.0.80
+paddleocr==3.6.0
+paddlepaddle==2.6.2   # explicitly pinned, required for paddleocr 3.6.0
+
+# Compression
+brotli>=1.1.0
