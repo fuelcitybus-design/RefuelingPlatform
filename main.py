@@ -252,16 +252,19 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                 filename = f"{tab_name}.jpg"
                 filepath = f"{base_url}/{filename}"
                 print(f"Attempting upload: {filepath}")  # debug log
-                response = requests.put(filepath, data=buffer.getvalue(), auth=auth, timeout=5)
-                print(f"Response {response.status_code}: {response.text}")  # debug log
+                try:
+                    response = requests.put(filepath, data=buffer.getvalue(), auth=auth, timeout=5)
+                    status = response.status_code
+                    if status not in [200, 201]:
+                        messages.append(f"❌{tab_name} save failed (status {status}).")
+                    else:
+                        saved_paths.append(tab_name)
+                        detected_tabs_exist.append(tab_name)
+                except requests.Timeout:
+                    messages.append(f"❌{tab_name} upload timed out.")
+                except Exception as e:
+                    messages.append(f"❌{tab_name} upload error: {str(e)}")
 
-                if response.status_code not in [200, 201]:
-                    messages.append(f"❌{tab_name} save failed (status {response.status_code}).")
-                else:
-                    saved_paths.append(tab_name)
-                    detected_tabs_exist.append(tab_name)
-            except Exception as e:
-                messages.append(f"❌{tab_name} upload error: {str(e)}")
 
         # --- Completion message ---
         if len(saved_paths)>0:
