@@ -183,7 +183,6 @@ filepath = None
 ### Module 1: Uploader function
 def save_images(location, car_id, tank_id, request: gr.Request, *images):
     try:
-        # logging
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         client_ip = request.client.host if request else "unknown"
         username = request.username if request and hasattr(request, "username") else "anonymous"
@@ -203,16 +202,9 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
 
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
-        base_url = f"{ROOT_FOLDER}/{today}/{prefix}"  # no trailing slash
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
-        # --- Required tabs check BEFORE upload loop ---
-        if required_tabs and forced_check:
-            tab_dict = dict(zip(tab_names, images))
-            missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
-            if missing:
-                return f"警告：確保已輸入以下照片 {', '.join(missing)}"
-
-        # --- Check existing files ---
+        # Check existing files
         detected_tabs_exist = []
         try:
             baser = requests.get(base_url, auth=auth, timeout=5)
@@ -235,7 +227,7 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
                     return "❌Folder creation failed."
         except Exception as e:
             return f"❌Connection error: {str(e)}"
-
+                
         # --- Upload loop (only real images) ---
         messages = []
         saved_paths = []
