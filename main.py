@@ -298,9 +298,10 @@ def save_images(location, car_id, tank_id, request: gr.Request, *images):
             messages.append(completion_msg)
         except Exception as e:
             messages.append(f"❌完成訊息生成錯誤: {str(e)}")
-        
-        # Always return a single string (no raw newlines mid‑sentence)
-        return " | ".join(messages) if messages else "完成但沒有訊息"
+    except Exception as e:
+            messages.append(f"❌完成訊息生成錯誤: {str(e)}")     
+    # Always return a single string (no raw newlines mid‑sentence)
+    return " | ".join(messages) if messages else "完成但沒有訊息"
 
 
 
