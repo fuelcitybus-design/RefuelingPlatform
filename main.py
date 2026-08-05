@@ -44,7 +44,7 @@ depot_gps = [("CFD創富", 22.272764832109846, 114.24250389449965),
         ("TKD將軍澳", 22.316949281155114, 114.25819879997607),
         ("TMD屯門", 22.383505220952447, 113.96928212236955),
         ("WCD黃竹坑", 22.248418440612717, 114.16227259618798),
-        ("WKD西九", 22.329873814418242, 114.14657647254528)]
+        ("WKD西九", 22.329873814418242, 114.146576475279628)]
 
 car_ids = ["{請選擇}", "第1車", "第2車", "第3車", "第4車", "第5車"]
 
@@ -179,125 +179,188 @@ global tank_choices
 tank_choices = []
 
 ### Module 1: Uploader function
-def save_images(location, car_id, tank_id, request: gr.Request, *images):
+def save_images(location, car_id, tank_id, *images, request: gr.Request = None):
+    """
+    Save provided PIL images to Kudu VFS with timeouts and error handling.
+    NOTE: request is optional and placed at the end to avoid Gradio positional binding issues.
+    """
+    session = None
     try:
         # logging
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        client_ip = request.client.host if request else "unknown"
+        client_ip = "unknown"
+        if request and getattr(request, "client", None):
+            client_ip = request.client.host
         username = request.username if request and hasattr(request, "username") else "anonymous"
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         num_images = len(uploaded_tabs)
+        print(f"[{timestamp}] Upload attempt by {username} ({client_ip}): {uploaded_tabs}")
 
-        #Warning for not selecting depot, tank car and tank info
+        # Warning for not selecting depot, tank car and tank info
         if (
             not location or location == "{請選擇}"
             or not car_id or car_id == "{請選擇}"
             or not tank_id or tank_id == "{請選擇}"
            ):
             info_msg = "警告：確保已輸入地點，車號，缸號"
-            info_log = "Error: Please select Location, Car ID, and Tank ID."
+            print(info_msg)
             return info_msg
+
         global tank_choices
         tank_choices = tank_list.get(location, [])
         if not tank_choices or tank_id not in tank_choices:
             info_msg = f"警告：無效的缸號 \"{tank_id}\""
+            print(info_msg)
             return info_msg
-            
-        #File path and name format for the images
+
+        # File path and name format for the images
         prefix = f"{location}/{car_id}_{tank_id}"
-        #Auto-select today's date
+        # Auto-select today's date
         today = datetime.now().strftime("%Y-%m-%d")
 
-        # --- Warning checkpoint 1: Check required tabs if any necessary images to be uploaded are missing (Forced batch uploading)---
-        if required_tabs and forced_check:
-            tab_dict = dict(zip(tab_names, images))
-            missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
-            if missing:
-                info_msg = f"警告：確保已輸入以下照片 {', '.join(missing)}"
-                info_log = f"Error: Missing images for required tabs: {', '.join(missing)}"
-                return info_msg
-
-        
-        #Setup connection to base directory
+        # Setup connection to base directory
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
+        print(f"Base URL: {base_url}")
+
+        # Use a session and set timeouts to avoid indefinite hangs
+        session = requests.Session()
+        default_timeout = 15  # seconds
 
         # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
         detected_tabs_exist = []
-        baser = requests.get(base_url, auth=auth)
-        if baser.status_code in [200,201]:
-            # Check if any file of any image type to be uploaded exists in the folder
-            items = baser.json()
-            existing_files = [item["name"] for item in items if item.get("mime") != "inode/directory"]
-            for f in existing_files:
-                # Always add the raw filename (without extension)
-                name, ext = os.path.splitext(f)
-                detected_tabs_exist.append(name)
+        try:
+            baser = session.get(base_url, auth=auth, timeout=default_timeout)
+        except requests.exceptions.Timeout:
+            msg = "網絡超時：無法檢查資料夾 (timeout)"
+            print(msg)
+            return msg
+        except requests.exceptions.RequestException as e:
+            msg = f"網絡錯誤（檢查資料夾）: {e}"
+            print(msg)
+            return msg
 
-                # Special handling: detect 'before' or 'after' anywhere in the filename
-                if "油車前" in name.lower() and "油車前" not in detected_tabs_exist:
-                    detected_tabs_exist.append("油車前")
-                if "油車後" in name.lower() and "油車後" not in detected_tabs_exist:
-                    detected_tabs_exist.append("油車後")
-
+        if baser.status_code in [200, 201]:
+            try:
+                items = baser.json()
+                existing_files = [item["name"] for item in items if item.get("mime") != "inode/directory"]
+                for f in existing_files:
+                    name, ext = os.path.splitext(f)
+                    if name not in detected_tabs_exist:
+                        detected_tabs_exist.append(name)
+                    # Simple substring detection for common parts (not case sensitive)
+                    if "油車前" in name and "油車前" not in detected_tabs_exist:
+                        detected_tabs_exist.append("油車前")
+                    if "油車後" in name and "油車後" not in detected_tabs_exist:
+                        detected_tabs_exist.append("油車後")
+                print(f"Existing detected files: {detected_tabs_exist}")
+            except Exception as e:
+                print(f"Failed to parse folder listing JSON: {e}")
+                detected_tabs_exist = []
         else:
-            #Create image folder
-            response = requests.put(base_url, auth=auth)
-            if not(response.status_code in [200, 201]):
-                info_msg = "❌Folder creation failed." 
-                return info_msg
+            # Create image folder
+            try:
+                response = session.put(base_url, auth=auth, timeout=default_timeout)
+            except requests.exceptions.Timeout:
+                msg = "網絡超時：無法創建資料夾 (timeout)"
+                print(msg)
+                return msg
+            except requests.exceptions.RequestException as e:
+                msg = f"網絡錯誤（創建資料夾）: {e}"
+                print(msg)
+                return msg
 
-        #Saving the images
+            if response.status_code not in [200, 201, 204]:
+                info_msg = f"❌Folder creation failed. Status={response.status_code} {response.text}"
+                print(info_msg)
+                return info_msg
+            else:
+                print("Folder created or already exists.")
+
+        # Saving the images
         return_msg = []
         saved_paths = []
         for i, img in enumerate(images):
             if img is None:
                 continue
-            if tab_names[i] in detected_tabs_exist:
-                info_msg = f"跳過已上傳照片 {tab_names[i]}"
-                info_log = f"Skipped uploaded image {tab_names[i]}"
+            tab_name = tab_names[i]
+            if tab_name in detected_tabs_exist:
+                info_msg = f"跳過已上傳照片 {tab_name}"
+                print(info_msg)
                 return_msg.append(info_msg)
                 continue
 
-            original_width, original_height = img.size
-            new_width = int(original_width * (400 / original_height))
-            img = img.resize((new_width, 400))
-            buffer = BytesIO()
-            img.save(buffer, format="JPEG")
-            buffer.seek(0)
-            tab_name = tab_names[i]
+            try:
+                original_width, original_height = img.size
+                new_width = int(original_width * (400 / original_height)) if original_height else 400
+                img_resized = img.resize((new_width, 400))
+                buffer = BytesIO()
+                img_resized.save(buffer, format="JPEG")
+                buffer.seek(0)
+            except Exception as e:
+                err = f"影像處理失敗 {tab_name}: {e}"
+                print(err)
+                return err
+
             filename = f"{tab_name}.jpg"
             filepath = f"{base_url}{filename}"
-            # Upload directly from buffer
-            response = requests.put(filepath, data=buffer.getvalue(), auth=auth)
-            if response.status_code not in [200, 201]:
-                return f"❌{tab_name} save failed."
+            print(f"Uploading {tab_name} to {filepath} ({len(buffer.getvalue())} bytes)")
+
+            try:
+                resp = session.put(
+                    filepath,
+                    data=buffer.getvalue(),
+                    auth=auth,
+                    timeout=30,
+                    headers={"Content-Type": "application/octet-stream"}
+                )
+            except requests.exceptions.Timeout:
+                buffer.close()
+                msg = f"網絡超時：上傳 {tab_name} 失敗 (timeout)"
+                print(msg)
+                return msg
+            except requests.exceptions.RequestException as e:
+                buffer.close()
+                msg = f"網絡錯誤（上傳 {tab_name}）: {e}"
+                print(msg)
+                return msg
+
+            buffer.close()
+
+            if resp.status_code not in [200, 201, 204]:
+                err = f"❌{tab_name} save failed. Status={resp.status_code} {resp.text}"
+                print(err)
+                return err
+
             saved_paths.append(tab_name)
             detected_tabs_exist.append(tab_name)
+            print(f"Saved {tab_name}")
 
-        #Completion message
+        # Completion message
         if saved_paths:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
 
-            #Reminder message for if any required images are missing
+            # Reminder message for if any required images are missing
             if missing:
               info_msg = f"已上傳 {len(saved_paths)} 張新照片\n請上傳{', '.join(missing)}."
-              info_log = f"Uploaded {len(saved_paths)} new images \nPlease upload{', '.join(missing)}."
-              return_msg.append(info_msg)
-              return '\n'.join(return_msg)
+              print(info_msg)
+              return '\n'.join(return_msg + [info_msg])
             else:
               info_msg = f"已上傳 {len(saved_paths)} 張新照片"
-              info_log = f"Uploaded {len(saved_paths)} new images"
-              return_msg.append(info_msg)
-              return '\n'.join(return_msg)
+              print(info_msg)
+              return '\n'.join(return_msg + [info_msg])
         else:
             info_msg = "警告：沒有新照片"
-            info_log = "Warning: No new image"
-            return_msg.append(info_msg)
-            return '\n'.join(return_msg)
+            print(info_msg)
+            return info_msg
 
     except Exception as e:
-        return f"未知錯誤: {str(e)}"
+        err = f"未知錯誤: {str(e)}"
+        print(err)
+        return err
+    finally:
+        if session:
+            session.close()
 
 def nearest(gps):
     if "Allow" in gps:
