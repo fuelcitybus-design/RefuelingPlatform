@@ -228,17 +228,16 @@ def prefer_back_camera():
     return custom_html
 
 #=========================================================================================================================
+#=========================================================================================================================
 global active_tabs
 active_tabs = []
 global tank_choices
 tank_choices = []
 
-### Module 1: Uploader function
-def save_images(location, car_id, tank_id, *images, request: gr.Request = None):
+# --- Synchronous upload logic (unchanged except for being moved into a helper) ---
+def save_images_sync(location, car_id, tank_id, *images, request=None):
     """
-    Save images to Kudu VFS.
-    - request: optional Gradio request object (typed) so Gradio will inject it.
-    Always returns a user-visible string promptly. Uses per-call sessions to avoid connection pooling issues.
+    Original synchronous upload logic (moved here). Returns string summary.
     """
     start_ts = datetime.now().isoformat()
     try:
@@ -249,7 +248,7 @@ def save_images(location, car_id, tank_id, *images, request: gr.Request = None):
         except Exception:
             client_repr = "unknown"
 
-        print(f"[{start_ts}] save_images START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr)
+        print(f"[{start_ts}] save_images_sync START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr)
 
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         if not uploaded_tabs:
@@ -382,11 +381,30 @@ def save_images(location, car_id, tank_id, *images, request: gr.Request = None):
             if not messages:
                 messages.append("警告：沒有新照片")
         end_ts = datetime.now().isoformat()
-        print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr)
+        print(f"[{end_ts}] save_images_sync END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr)
         return "\n".join(messages)
     except Exception as e:
         tb = traceback.format_exc()
-        print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr)
+        print(f"[save_images_sync] Exception: {e}\n{tb}", file=sys.stderr)
+        return f"未知錯誤: {str(e)}"
+
+# --- Async wrapper that offloads blocking work to a thread using anyio ---
+async def save_images(location, car_id, tank_id, *images, request: gr.Request = None):
+    """
+    Async wrapper that runs the synchronous save_images_sync in a thread.
+    This avoids blocking Gradio's event loop/worker threads.
+    """
+    wrapper_start = datetime.now().isoformat()
+    print(f"[{wrapper_start}] save_images wrapper START", file=sys.stderr)
+    try:
+        # Run sync function in a worker thread
+        result = await anyio.to_thread.run_sync(save_images_sync, location, car_id, tank_id, *images, request)
+        wrapper_end = datetime.now().isoformat()
+        print(f"[{wrapper_end}] save_images wrapper END", file=sys.stderr)
+        return result
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(f"[save_images wrapper] Exception: {e}\n{tb}", file=sys.stderr)
         return f"未知錯誤: {str(e)}"
 
 def nearest(gps):
