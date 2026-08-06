@@ -26,11 +26,13 @@ from openpyxl.drawing.image import Image
 from openpyxl.drawing.image import Image as XLImage
 from datetime import datetime
 import time
+import traceback
+import sys
 
 #========================================================================================================
 
 # --- CONFIGURATION ---
-# Replace these with your actual Azure App Service credentials
+# Replace these with your actual Azure App Service credentials (consider reading from env vars)
 USERNAME = "$oil-tank-refueling"
 PASSWORD = "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK"
 auth = HTTPBasicAuth(USERNAME, PASSWORD)
@@ -46,7 +48,7 @@ depot_gps = [("CFD創富", 22.272764832109846, 114.24250389449965),
         ("TKD將軍澳", 22.316949281155114, 114.25819879997607),
         ("TMD屯門", 22.383505220952447, 113.96928212236955),
         ("WCD黃竹坑", 22.248418440612717, 114.16227259618798),
-        ("WKD西九", 22.329873814418242, 114.146576545282)]
+        ("WKD西九", 22.329873814418242, 114.14657657248228)]
 
 car_ids = ["{請選擇}", "第1車", "第2車", "第3車", "第4車", "第5車"]
 
@@ -80,28 +82,56 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 # =========================================================================================================================
 
-# Create a persistent requests Session to reuse connections
-HTTP_TIMEOUT = 10  # seconds
-session = requests.Session()
-session.auth = auth
-session.headers.update({"User-Agent": "RefuelingUploader/1.0"})
+# Use per-call sessions rather than a single global session to avoid connection pooling issues
+HTTP_TIMEOUT = 12  # seconds
 
-def http_get(url, timeout=HTTP_TIMEOUT):
-    try:
-        r = session.get(url, timeout=timeout)
-        return r
-    except requests.exceptions.RequestException as e:
-        print(f"[http_get] Error fetching {url}: {e}")
-        return None
+def http_get_json(url, timeout=HTTP_TIMEOUT, attempts=2):
+    """
+    Create a fresh Session per call, return (status_code, json_or_None) and always close responses/sessions.
+    On network error returns (None, None).
+    """
+    for attempt in range(attempts):
+        try:
+            with requests.Session() as s:
+                s.auth = auth
+                s.headers.update({"User-Agent": "RefuelingUploader/1.0"})
+                r = s.get(url, timeout=timeout)
+                status = r.status_code
+                data = None
+                try:
+                    data = r.json()
+                except Exception:
+                    data = None
+                try:
+                    r.close()
+                except Exception:
+                    pass
+                return status, data
+        except requests.exceptions.RequestException as e:
+            print(f"[http_get_json] attempt {attempt+1} error fetching {url}: {e}", file=sys.stderr)
+            time.sleep(0.25 * (attempt + 1))
+    return None, None
 
-def http_put(url, data=None, timeout=HTTP_TIMEOUT):
-    try:
-        # Kudu VFS PUT upload
-        r = session.put(url, data=data, timeout=timeout)
-        return r
-    except requests.exceptions.RequestException as e:
-        print(f"[http_put] Error putting {url}: {e}")
-        return None
+def http_put_status(url, data=None, timeout=HTTP_TIMEOUT, attempts=2):
+    """
+    Create a fresh Session per call, return status_code or None on network error.
+    """
+    for attempt in range(attempts):
+        try:
+            with requests.Session() as s:
+                s.auth = auth
+                s.headers.update({"User-Agent": "RefuelingUploader/1.0"})
+                r = s.put(url, data=data, timeout=timeout)
+                status = r.status_code
+                try:
+                    r.close()
+                except Exception:
+                    pass
+                return status
+        except requests.exceptions.RequestException as e:
+            print(f"[http_put_status] attempt {attempt+1} error putting {url}: {e}", file=sys.stderr)
+            time.sleep(0.25 * (attempt + 1))
+    return None
 
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
@@ -202,165 +232,161 @@ global active_tabs
 active_tabs = []
 global tank_choices
 tank_choices = []
-return_msg = ""
 
 ### Module 1: Uploader function
-def save_images(location, car_id, tank_id, *images, request=None):
+def save_images(location, car_id, tank_id, *images, request: gr.Request = None):
     """
     Save images to Kudu VFS.
-    The request parameter is optional (gradio request object) — if provided we extract client info.
-    This function uses timeouts and returns promptly on network errors so Gradio queues don't hang.
+    - request: optional Gradio request object (typed) so Gradio will inject it.
+    Always returns a user-visible string promptly. Uses per-call sessions to avoid connection pooling issues.
     """
+    start_ts = datetime.now().isoformat()
     try:
-        # logging
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        client_ip = getattr(request, "client", None).host if request and getattr(request, "client", None) else "unknown"
-        username = getattr(request, "username", "anonymous") if request else "anonymous"
-        uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
-        num_images = len(uploaded_tabs)
+        client_repr = "unknown"
+        try:
+            if request and getattr(request, "client", None):
+                client_repr = f"{request.client.host}:{request.client.port}"
+        except Exception:
+            client_repr = "unknown"
 
-        #Warning for not selecting depot, tank car and tank info
+        print(f"[{start_ts}] save_images START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr)
+
+        uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
+        if not uploaded_tabs:
+            return "警告：沒有選擇任何照片"
+
+        # Basic validation
         if (
             not location or location == "{請選擇}"
             or not car_id or car_id == "{請選擇}"
             or not tank_id or tank_id == "{請選擇}"
-           ):
-            info_msg = "警告：確保已輸入地點，車號，缸號"
-            return info_msg
+        ):
+            return "警告：確保已輸入地點，車號，缸號"
+
         global tank_choices
         tank_choices = tank_list.get(location, [])
         if not tank_choices or tank_id not in tank_choices:
-            info_msg = f"警告：無效的缸號 \"{tank_id}\""
-            return info_msg
+            return f"警告：無效的缸號 \"{tank_id}\""
 
-        #File path and name format for the images
         prefix = f"{location}/{car_id}_{tank_id}"
-        #Auto-select today's date
         today = datetime.now().strftime("%Y-%m-%d")
-
-        # --- Warning checkpoint 1: Check required tabs if any necessary images to be uploaded are missing (Forced batch uploading)---
-        if required_tabs and forced_check:
-            tab_dict = dict(zip(tab_names, images))
-            missing = [tab for tab in required_tabs if not tab_dict.get(tab)]
-            if missing:
-                info_msg = f"警告：確保已輸入以下照片 {', '.join(missing)}"
-                return info_msg
-
-        #Setup connection to base directory
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
-        # --- Warning checkpoint 2: Check if previous recording was made based on the individual image uploaded ---
-        detected_tabs_exist = []
-        baser = http_get(base_url)
-        if baser is None:
+        # Check if directory exists (Kudu VFS returns 200 with JSON list or 404)
+        status, items = http_get_json(base_url)
+        if status is None:
             return "網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
-        if baser.status_code in [200, 201]:
-            # Check if any file of any image type to be uploaded exists in the folder
-            try:
-                items = baser.json()
-            except ValueError:
-                items = []
+        detected_tabs_exist = []
+        if status in (200, 201):
+            items = items or []
             existing_files = [item.get("name") for item in items if item.get("name") and item.get("mime") != "inode/directory"]
             for f in existing_files:
-                # Always add the raw filename (without extension)
                 name, ext = os.path.splitext(f)
                 if name and name not in detected_tabs_exist:
                     detected_tabs_exist.append(name)
-
-                # Special handling: detect '油車前' or '油車後' anywhere in the filename
                 if "油車前" in name and "油車前" not in detected_tabs_exist:
                     detected_tabs_exist.append("油車前")
                 if "油車後" in name and "油車後" not in detected_tabs_exist:
                     detected_tabs_exist.append("油車後")
-        elif baser.status_code == 404:
-            #Create image folder (Kudu VFS will create parent directories as needed)
-            # Retry folder creation a few times if transient error
+        elif status == 404:
+            # try creating the folder; Kudu supports creating path via PUT of empty body
             created = False
-            for attempt in range(2):
-                response = http_put(base_url, data=b"")
-                if response is None:
+            for attempt in range(3):
+                put_status = http_put_status(base_url, data=b"")
+                if put_status is None:
                     return "網絡錯誤：無法建立資料夾（伺服器未響應）"
-                if response.status_code in [200, 201, 204]:
+                if put_status in (200, 201, 204):
                     created = True
                     break
-                time.sleep(0.5)
+                time.sleep(0.4 * (attempt + 1))
             if not created:
                 return "❌Folder creation failed."
         else:
-            # Unexpected code but attempt to create
-            response = http_put(base_url, data=b"")
-            if response is None or response.status_code not in [200, 201, 204]:
+            # unexpected status: attempt to create anyway
+            put_status = http_put_status(base_url, data=b"")
+            if put_status is None or put_status not in (200, 201, 204):
                 return "❌Folder creation failed."
 
-        #Saving the images
-        return_msg = []
-        saved_paths = []
+        # Upload each provided image with small retries
+        saved = []
+        messages = []
         for i, img in enumerate(images):
             if img is None:
                 continue
             tab_name = tab_names[i]
+
             if tab_name in detected_tabs_exist:
-                info_msg = f"跳過已上傳照片 {tab_name}"
-                return_msg.append(info_msg)
+                messages.append(f"跳過已上傳照片 {tab_name}")
                 continue
 
+            # Coerce to PIL image if necessary
             try:
-                original_width, original_height = img.size
-            except Exception:
-                # If not a PIL Image, try to coerce
-                try:
+                if hasattr(img, "size"):
+                    original_width, original_height = img.size
+                else:
                     img = Image.fromarray(np.array(img))
                     original_width, original_height = img.size
-                except Exception:
-                    return f"錯誤：處理影像 {tab_name} 時發生錯誤"
+            except Exception:
+                messages.append(f"錯誤：處理影像 {tab_name} 時發生錯誤")
+                continue
 
             # Normalize to height 400
-            new_width = int(original_width * (400 / float(original_height))) if original_height else 400
-            img = img.resize((max(1, new_width), 400))
+            try:
+                new_width = int(original_width * (400 / float(original_height))) if original_height else 400
+            except Exception:
+                new_width = 400
+            img_resized = img.resize((max(1, new_width), 400))
             buffer = BytesIO()
-            img.save(buffer, format="JPEG", quality=85)
+            try:
+                img_resized.save(buffer, format="JPEG", quality=85)
+            except Exception:
+                # fallback: convert mode then save
+                try:
+                    img_resized = img_resized.convert("RGB")
+                    buffer = BytesIO()
+                    img_resized.save(buffer, format="JPEG", quality=85)
+                except Exception:
+                    messages.append(f"錯誤：儲存影像 {tab_name} 時發生錯誤")
+                    continue
             buffer.seek(0)
+            filepath = f"{base_url}{tab_name}.jpg"
 
-            filename = f"{tab_name}.jpg"
-            filepath = f"{base_url}{filename}"
-
-            # Upload directly from buffer. Retry transient failures a couple of times
             uploaded = False
-            for attempt in range(2):
-                resp = http_put(filepath, data=buffer.getvalue())
-                if resp is None:
-                    # network error
-                    return f"網絡錯誤：上傳 {tab_name} 失敗（未能連線）"
-                if resp.status_code in [200, 201, 204]:
+            last_status = None
+            for attempt in range(3):
+                last_status = http_put_status(filepath, data=buffer.getvalue())
+                if last_status is None:
+                    # network error — abort this upload
+                    messages.append(f"網絡錯誤：上傳 {tab_name} 失敗（未能連線）")
+                    break
+                if last_status in (200, 201, 204):
                     uploaded = True
                     break
-                # On failure, wait briefly and retry
-                time.sleep(0.3)
-            if not uploaded:
-                return f"❌{tab_name} save failed. HTTP {resp.status_code if resp else 'N/A'}"
-            saved_paths.append(tab_name)
-            detected_tabs_exist.append(tab_name)
+                time.sleep(0.3 * (attempt + 1))
+            if uploaded:
+                saved.append(tab_name)
+                detected_tabs_exist.append(tab_name)
+                messages.append(f"已上傳: {tab_name}")
+            else:
+                messages.append(f"❌{tab_name} save failed. HTTP {last_status if last_status is not None else 'N/A'}")
 
-        #Completion message
-        if saved_paths:
+        # Final summary
+        if saved:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
-
-            #Reminder message for if any required images are missing
             if missing:
-              info_msg = f"已上傳 {len(saved_paths)} 張新照片\n請上傳{', '.join(missing)}."
-              return_msg.append(info_msg)
-              return '\n'.join(return_msg)
+                messages.append(f"已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}.")
             else:
-              info_msg = f"已上傳 {len(saved_paths)} 張新照片"
-              return_msg.append(info_msg)
-              return '\n'.join(return_msg)
+                messages.append(f"已上傳 {len(saved)} 張新照片")
         else:
-            info_msg = "警告：沒有新照片"
-            return_msg.append(info_msg)
-            return '\n'.join(return_msg)
-
+            if not messages:
+                messages.append("警告：沒有新照片")
+        end_ts = datetime.now().isoformat()
+        print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr)
+        return "\n".join(messages)
     except Exception as e:
+        tb = traceback.format_exc()
+        print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr)
         return f"未知錯誤: {str(e)}"
 
 def nearest(gps):
@@ -412,9 +438,9 @@ def toggle_ui_components(location, car, tank):
 
 def toggle_tabs(location, car, tank):
     info_msg = []
-    active_tabs = tab_list_S.get(location, [])
+    active_tabs_local = tab_list_S.get(location, [])
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
+        updates = [gr.update(visible=(tab in active_tabs_local)) for tab in tab_names]
         info_msg = "Start uploading images"
     else:
         # Hide all tabs if not valid
@@ -429,20 +455,16 @@ def toggle_save(location, car, tank):
     else:
         return gr.update(visible=False)
 
-#def clear_images(selection):
-    # Reset all images when depot changes
-    #return [gr.update(value=None) for _ in tab_names]
-
 def set_current(idx):
     return idx
 
 def next_tab(current, location):
-    active_tabs = tab_list_S.get(location, [])
-    if not active_tabs:
+    active_tabs_local = tab_list_S.get(location, [])
+    if not active_tabs_local:
         return gr.Tabs(selected=None), current
 
     # Map active tab names to their indices in tab_names
-    active_indices = [tab_names.index(tab) for tab in active_tabs]
+    active_indices = [tab_names.index(tab) for tab in active_tabs_local]
 
     # Find current position in active list
     try:
@@ -454,11 +476,11 @@ def next_tab(current, location):
     return gr.Tabs(selected=nxt), nxt
 
 def prev_tab(current, location):
-    active_tabs = tab_list_S.get(location, [])
-    if not active_tabs:
+    active_tabs_local = tab_list_S.get(location, [])
+    if not active_tabs_local:
         return gr.Tabs(selected=None), current
 
-    active_indices = [tab_names.index(tab) for tab in active_tabs]
+    active_indices = [tab_names.index(tab) for tab in active_tabs_local]
 
     try:
         pos = active_indices.index(current)
@@ -471,7 +493,7 @@ def prev_tab(current, location):
 #============================================================================================================================================================
 
 #Hosting with Gradio
-with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launc[...]
+with gr.Blocks(head=prefer_back_camera()) as demo:
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
@@ -514,7 +536,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             with gr.Row():
                 with gr.Tabs(selected=None) as img_tabs:
                     image_inputs = []
-                    tab_list = []
+                    tab_list_local = []
                     for i, tab_name in enumerate(tab_names):
                         with gr.Tab(tab_name, id =i, visible=False) as tab:
                             img_input = gr.Image(
@@ -526,7 +548,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                                 sources=['webcam','upload']
                             )
                             image_inputs.append(img_input)
-                            tab_list.append(tab)
+                            tab_list_local.append(tab)
+
 
             # Bind tab selection to update current state
             img_tabs.select(sync_tab_index, None, current)
@@ -547,6 +570,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                     outputs=[img_tabs, current]
                 )
 
+            # Note: Gradio will inject request if function signature contains request: gr.Request
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
@@ -556,7 +580,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
             confirm_btn.click(
                 fn=toggle_ui_components,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                outputs=tab_list + [save_btn, prev_btn, next_btn, img_tabs]  # include img_tabs for selected update
+                outputs=tab_list_local + [save_btn, prev_btn, next_btn, img_tabs]  # include img_tabs for selected update
             )
            
             # Raw HTML input for back camera
@@ -585,6 +609,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 font-size: 20px !important;
             }
 
+            
             #camera_input .dropdown-arrow {
                 display: none !important;
             }
