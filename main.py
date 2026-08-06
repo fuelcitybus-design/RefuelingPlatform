@@ -234,13 +234,12 @@ global active_tabs
 active_tabs = []
 global tank_choices
 tank_choices = []
-global messages
-messages = ""
 
-# --- Synchronous upload logic (unchanged except for being moved into a helper) ---
+# --- Synchronous upload logic (keeps all per-request state local) ---
 def save_images_sync(location, car_id, tank_id, *images, request=None):
     """
     Original synchronous upload logic (moved here). Returns string summary.
+    All per-request variables are local; no global "messages" list used.
     """
     start_ts = datetime.now().isoformat()
     try:
@@ -251,7 +250,7 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
         except Exception:
             client_repr = "unknown"
 
-        print(f"[{start_ts}] save_images_sync START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr)
+        print(f"[{start_ts}] save_images_sync START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr, flush=True)
 
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         if not uploaded_tabs:
@@ -265,9 +264,8 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
         ):
             return "警告：確保已輸入地點，車號，缸號"
 
-        global tank_choices
-        tank_choices = tank_list.get(location, [])
-        if not tank_choices or tank_id not in tank_choices:
+        tank_choices_local = tank_list.get(location, [])
+        if not tank_choices_local or tank_id not in tank_choices_local:
             return f"警告：無效的缸號 \"{tank_id}\""
 
         prefix = f"{location}/{car_id}_{tank_id}"
@@ -311,14 +309,14 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
 
         # Upload each provided image with small retries
         saved = []
-        messages = []
+        messages_local = []
         for i, img in enumerate(images):
             if img is None:
                 continue
             tab_name = tab_names[i]
 
             if tab_name in detected_tabs_exist:
-                messages.append(f"跳過已上傳照片 {tab_name}")
+                messages_local.append(f"跳過已上傳照片 {tab_name}")
                 continue
 
             # Coerce to PIL image if necessary
@@ -329,7 +327,7 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
                     img = Image.fromarray(np.array(img))
                     original_width, original_height = img.size
             except Exception:
-                messages.append(f"錯誤：處理影像 {tab_name} 時發生錯誤")
+                messages_local.append(f"錯誤：處理影像 {tab_name} 時發生錯誤")
                 continue
 
             # Normalize to height 400
@@ -348,7 +346,7 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
                     buffer = BytesIO()
                     img_resized.save(buffer, format="JPEG", quality=85)
                 except Exception:
-                    messages.append(f"錯誤：儲存影像 {tab_name} 時發生錯誤")
+                    messages_local.append(f"錯誤：儲存影像 {tab_name} 時發生錯誤")
                     continue
             buffer.seek(0)
             filepath = f"{base_url}{tab_name}.jpg"
@@ -359,7 +357,7 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
                 last_status = http_put_status(filepath, data=buffer.getvalue())
                 if last_status is None:
                     # network error — abort this upload
-                    messages.append(f"網絡錯誤：上傳 {tab_name} 失敗（未能連線）")
+                    messages_local.append(f"網絡錯誤：上傳 {tab_name} 失敗（未能連線）")
                     break
                 if last_status in (200, 201, 204):
                     uploaded = True
@@ -368,27 +366,31 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
             if uploaded:
                 saved.append(tab_name)
                 detected_tabs_exist.append(tab_name)
-                messages.append(f"已上傳: {tab_name}")
+                messages_local.append(f"已上傳: {tab_name}")
             else:
-                messages.append(f"❌{tab_name} save failed. HTTP {last_status if last_status is not None else 'N/A'}")
+                messages_local.append(f"❌{tab_name} save failed. HTTP {last_status if last_status is not None else 'N/A'}")
 
         # Final summary
         if saved:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
             if missing:
-                messages.append(f"已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}.")
+                messages_local.append(f"已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}.")
             else:
-                messages.append(f"已上傳 {len(saved)} 張新照片")
+                messages_local.append(f"已上傳 {len(saved)} 張新照片")
         else:
-            if not messages:
-                messages.append("警告：沒有新照片")
+            if not messages_local:
+                messages_local.append("警告：沒有新照片")
+
+        result_text = "\n".join(messages_local)
+        # Log the exact return text so we can verify it's being returned to the client
+        print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
-        print(f"[{end_ts}] save_images_sync END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr)
-        return "\n".join(messages)
+        print(f"[{end_ts}] save_images_sync END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
+        return result_text
     except Exception as e:
         tb = traceback.format_exc()
-        print(f"[save_images_sync] Exception: {e}\n{tb}", file=sys.stderr)
+        print(f"[save_images_sync] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
         return f"未知錯誤: {str(e)}"
 
 # --- Async wrapper that offloads blocking work to a thread using asyncio.run_in_executor ---
@@ -398,17 +400,19 @@ async def save_images(location, car_id, tank_id, *images, request: gr.Request = 
     This avoids blocking Gradio's event loop/worker threads.
     """
     wrapper_start = datetime.now().isoformat()
-    print(f"[{wrapper_start}] save_images wrapper START", file=sys.stderr)
+    print(f"[{wrapper_start}] save_images wrapper START", file=sys.stderr, flush=True)
     try:
         loop = asyncio.get_event_loop()
         fn = partial(save_images_sync, location, car_id, tank_id, *images, request=request)
         result = await loop.run_in_executor(None, fn)
         wrapper_end = datetime.now().isoformat()
-        print(f"[{wrapper_end}] save_images wrapper END", file=sys.stderr)
+        print(f"[{wrapper_end}] save_images wrapper END", file=sys.stderr, flush=True)
+        # Log what was returned by the sync function (already logged inside), extra safety:
+        print(f"[{datetime.now().isoformat()}] wrapper result length={len(result) if result is not None else 'None'}", file=sys.stderr, flush=True)
         return result
     except Exception as e:
         tb = traceback.format_exc()
-        print(f"[save_images wrapper] Exception: {e}\n{tb}", file=sys.stderr)
+        print(f"[save_images wrapper] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
         return f"未知錯誤: {str(e)}"
 
 def nearest(gps):
