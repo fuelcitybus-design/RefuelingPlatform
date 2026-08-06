@@ -85,7 +85,7 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 # =========================================================================================================================
 
 # Use per-call sessions rather than a single global session to avoid connection pooling issues
-HTTP_TIMEOUT = 12  # seconds
+HTTP_TIMEOUT = 20  # seconds
 
 def http_get_json(url, timeout=HTTP_TIMEOUT, attempts=2):
     """
@@ -234,6 +234,8 @@ global active_tabs
 active_tabs = []
 global tank_choices
 tank_choices = []
+global messages
+messages = ""
 
 # --- Synchronous upload logic (unchanged except for being moved into a helper) ---
 def save_images_sync(location, car_id, tank_id, *images, request=None):
