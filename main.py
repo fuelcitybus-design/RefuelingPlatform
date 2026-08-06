@@ -1,4 +1,4 @@
-#***Setup environment for running Gradio interface
+#Setup environment for running Gradio interface
 from fastapi import FastAPI
 app = FastAPI()
 
