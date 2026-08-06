@@ -18,18 +18,15 @@ import numpy as np
 import cv2
 from paddleocr import PaddleOCR
 import tempfile
-from PIL import Image
+from PIL import Image as PILImage
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
-from openpyxl.drawing.image import Image
 from openpyxl.drawing.image import Image as XLImage
 from datetime import datetime
 import time
 import traceback
 import sys
-import asyncio
-from functools import partial
 
 #========================================================================================================
 
@@ -79,19 +76,14 @@ tab_list_S = {
         "WKD西九": ["油錶前",  "封條1", "封條2", "油車前", "油車後", "油錶後", "收據"]}
 
 required_tabs = ["油車前", "油車後"]
-forced_check = False #Forced required image batch uploading button)
+forced_check = False
 ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 
 # =========================================================================================================================
 
-# Use per-call sessions rather than a single global session to avoid connection pooling issues
-HTTP_TIMEOUT = 20  # seconds
+HTTP_TIMEOUT = 12  # seconds
 
 def http_get_json(url, timeout=HTTP_TIMEOUT, attempts=2):
-    """
-    Create a fresh Session per call, return (status_code, json_or_None) and always close responses/sessions.
-    On network error returns (None, None).
-    """
     for attempt in range(attempts):
         try:
             with requests.Session() as s:
@@ -115,9 +107,6 @@ def http_get_json(url, timeout=HTTP_TIMEOUT, attempts=2):
     return None, None
 
 def http_put_status(url, data=None, timeout=HTTP_TIMEOUT, attempts=2):
-    """
-    Create a fresh Session per call, return status_code or None on network error.
-    """
     for attempt in range(attempts):
         try:
             with requests.Session() as s:
@@ -152,7 +141,6 @@ def prefer_back_camera():
       return originalGetUserMedia(constraints);
     };
 
-    // Support multiple dropdown IDs
     const TANK_DROPDOWN_IDS = ['tank_dropdown_uploader', 'tank_dropdown_history'];
 
     function isTankDropdownInput(el) {
@@ -169,18 +157,13 @@ def prefer_back_camera():
       if (!isTankDropdownInput(e.target)) {
         return;
       }
-
-      // Allow navigation keys only
       const allowedKeys = [
         'ArrowDown', 'ArrowUp', 'Enter', 'Escape',
         'Tab', 'Shift', 'Control', 'Alt', 'Meta'
       ];
-
       if (allowedKeys.includes(e.key)) {
         return;
       }
-
-      // Block all other keys
       e.preventDefault();
       e.stopPropagation();
     }
@@ -202,19 +185,17 @@ def prefer_back_camera():
       document.addEventListener('keydown', blockTankDropdownTyping, true);
       document.addEventListener('input', (e) => {
         if (isTankDropdownInput(e.target) && e.target.tagName === 'INPUT') {
-          // Force value back to last known good value (i.e., selected option)
           e.target.value = e.target._lastGoodValue || '';
         }
       }, true);
       document.addEventListener('paste', blockTankDropdownPaste, true);
 
-      // Initialize _lastGoodValue and clear any typed content on load for all dropdowns
       setTimeout(() => {
         TANK_DROPDOWN_IDS.forEach(id => {
           const tankInput = document.querySelector(`#${id} input[type="text"]`);
           if (tankInput) {
             tankInput._lastGoodValue = tankInput.value;
-            tankInput.value = tankInput._lastGoodValue; // ensure no stray text
+            tankInput.value = tankInput._lastGoodValue;
           }
         });
       }, 300);
@@ -235,12 +216,8 @@ active_tabs = []
 global tank_choices
 tank_choices = []
 
-# --- Synchronous upload logic (keeps all per-request state local) ---
-def save_images_sync(location, car_id, tank_id, *images, request=None):
-    """
-    Original synchronous upload logic (moved here). Returns string summary.
-    All per-request variables are local; no global "messages" list used.
-    """
+# Single synchronous save handler (no global messages)
+def save_images(location, car_id, tank_id, *images, request=None):
     start_ts = datetime.now().isoformat()
     try:
         client_repr = "unknown"
@@ -250,13 +227,12 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
         except Exception:
             client_repr = "unknown"
 
-        print(f"[{start_ts}] save_images_sync START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr, flush=True)
+        print(f"[{start_ts}] save_images START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr, flush=True)
 
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         if not uploaded_tabs:
             return "警告：沒有選擇任何照片"
 
-        # Basic validation
         if (
             not location or location == "{請選擇}"
             or not car_id or car_id == "{請選擇}"
@@ -272,7 +248,6 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
         today = datetime.now().strftime("%Y-%m-%d")
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
-        # Check if directory exists (Kudu VFS returns 200 with JSON list or 404)
         status, items = http_get_json(base_url)
         if status is None:
             return "網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
@@ -289,7 +264,6 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
                 if "油車後" in name and "油車後" not in detected_tabs_exist:
                     detected_tabs_exist.append("油車後")
         elif status == 404:
-            # try creating the folder; Kudu supports creating path via PUT of empty body
             created = False
             for attempt in range(3):
                 put_status = http_put_status(base_url, data=b"")
@@ -302,12 +276,10 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
             if not created:
                 return "❌Folder creation failed."
         else:
-            # unexpected status: attempt to create anyway
             put_status = http_put_status(base_url, data=b"")
             if put_status is None or put_status not in (200, 201, 204):
                 return "❌Folder creation failed."
 
-        # Upload each provided image with small retries
         saved = []
         messages_local = []
         for i, img in enumerate(images):
@@ -319,18 +291,17 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
                 messages_local.append(f"跳過已上傳照片 {tab_name}")
                 continue
 
-            # Coerce to PIL image if necessary
+            # Coerce to PILImage if necessary
             try:
                 if hasattr(img, "size"):
                     original_width, original_height = img.size
                 else:
-                    img = Image.fromarray(np.array(img))
+                    img = PILImage.fromarray(np.array(img))
                     original_width, original_height = img.size
             except Exception:
                 messages_local.append(f"錯誤：處理影像 {tab_name} 時發生錯誤")
                 continue
 
-            # Normalize to height 400
             try:
                 new_width = int(original_width * (400 / float(original_height))) if original_height else 400
             except Exception:
@@ -340,7 +311,6 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
             try:
                 img_resized.save(buffer, format="JPEG", quality=85)
             except Exception:
-                # fallback: convert mode then save
                 try:
                     img_resized = img_resized.convert("RGB")
                     buffer = BytesIO()
@@ -356,7 +326,6 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
             for attempt in range(3):
                 last_status = http_put_status(filepath, data=buffer.getvalue())
                 if last_status is None:
-                    # network error — abort this upload
                     messages_local.append(f"網絡錯誤：上傳 {tab_name} 失敗（未能連線）")
                     break
                 if last_status in (200, 201, 204):
@@ -370,7 +339,6 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
             else:
                 messages_local.append(f"❌{tab_name} save failed. HTTP {last_status if last_status is not None else 'N/A'}")
 
-        # Final summary
         if saved:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
@@ -383,36 +351,13 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
                 messages_local.append("警告：沒有新照片")
 
         result_text = "\n".join(messages_local)
-        # Log the exact return text so we can verify it's being returned to the client
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
-        print(f"[{end_ts}] save_images_sync END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
+        print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
         return result_text
     except Exception as e:
         tb = traceback.format_exc()
-        print(f"[save_images_sync] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
-        return f"未知錯誤: {str(e)}"
-
-# --- Async wrapper that offloads blocking work to a thread using asyncio.run_in_executor ---
-async def save_images(location, car_id, tank_id, *images, request: gr.Request = None):
-    """
-    Async wrapper that runs the synchronous save_images_sync in a thread.
-    This avoids blocking Gradio's event loop/worker threads.
-    """
-    wrapper_start = datetime.now().isoformat()
-    print(f"[{wrapper_start}] save_images wrapper START", file=sys.stderr, flush=True)
-    try:
-        loop = asyncio.get_event_loop()
-        fn = partial(save_images_sync, location, car_id, tank_id, *images, request=request)
-        result = await loop.run_in_executor(None, fn)
-        wrapper_end = datetime.now().isoformat()
-        print(f"[{wrapper_end}] save_images wrapper END", file=sys.stderr, flush=True)
-        # Log what was returned by the sync function (already logged inside), extra safety:
-        print(f"[{datetime.now().isoformat()}] wrapper result length={len(result) if result is not None else 'None'}", file=sys.stderr, flush=True)
-        return result
-    except Exception as e:
-        tb = traceback.format_exc()
-        print(f"[save_images wrapper] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
+        print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
         return f"未知錯誤: {str(e)}"
 
 def nearest(gps):
@@ -425,22 +370,20 @@ def nearest(gps):
 def update_tank_dropdown(location):
     global tank_choices
     tank_choices = tank_list.get(location, ["{請選擇}"])
-    # Always reset to placeholder when location changes
     return gr.update(
         choices=tank_choices,
-        value=tank_choices[0],  # "{請選擇}"
+        value=tank_choices[0],
         label="缸號",
         interactive=True
     )
 
 def toggle_ui_components(location, car, tank):
-    global active_tabs  # <-- important
+    global active_tabs
     active_tabs = tab_list_S.get(location, [])
 
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         tab_updates = []
         for i, tab in enumerate(tab_names):
-            # Always show the first tab of the active list
             if active_tabs and tab == active_tabs[0]:
                 tab_updates.append(gr.update(visible=True))
             else:
@@ -450,7 +393,6 @@ def toggle_ui_components(location, car, tank):
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
 
-        # Select the first active tab index
         first_idx = tab_names.index(active_tabs[0]) if active_tabs else None
         tabs_update = gr.update(selected=first_idx)
     else:
@@ -463,19 +405,16 @@ def toggle_ui_components(location, car, tank):
     return tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
 
 def toggle_tabs(location, car, tank):
-    info_msg = []
     active_tabs_local = tab_list_S.get(location, [])
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         updates = [gr.update(visible=(tab in active_tabs_local)) for tab in tab_names]
         info_msg = "Start uploading images"
     else:
-        # Hide all tabs if not valid
         updates = [gr.update(visible=False) for _ in tab_names]
         info_msg = "Please select"
     return updates
 
 def toggle_save(location, car, tank):
-    # Show save button only if all dropdowns are not placeholders
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         return gr.update(visible=True)
     else:
@@ -488,16 +427,11 @@ def next_tab(current, location):
     active_tabs_local = tab_list_S.get(location, [])
     if not active_tabs_local:
         return gr.Tabs(selected=None), current
-
-    # Map active tab names to their indices in tab_names
     active_indices = [tab_names.index(tab) for tab in active_tabs_local]
-
-    # Find current position in active list
     try:
         pos = active_indices.index(current)
     except ValueError:
-        pos = 0  # fallback if current not in active list
-
+        pos = 0
     nxt = active_indices[(pos + 1) % len(active_indices)]
     return gr.Tabs(selected=nxt), nxt
 
@@ -505,26 +439,21 @@ def prev_tab(current, location):
     active_tabs_local = tab_list_S.get(location, [])
     if not active_tabs_local:
         return gr.Tabs(selected=None), current
-
     active_indices = [tab_names.index(tab) for tab in active_tabs_local]
-
     try:
         pos = active_indices.index(current)
     except ValueError:
         pos = 0
-
     nxt = active_indices[(pos - 1) % len(active_indices)]
     return gr.Tabs(selected=nxt), nxt
 
 #============================================================================================================================================================
 
-#Hosting with Gradio
 with gr.Blocks(head=prefer_back_camera()) as demo:
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
 
-        # Module 1
         with gr.Tab("拍照"):
             
             current = gr.State(0)
@@ -539,24 +468,18 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 demo.load(None, None, raw_gps, js="""() => new Promise(r => navigator.geolocation.getCurrentPosition(
                     p => r(`[${p.coords.latitude}, ${p.coords.longitude}]`),
                     () => r("[Tap Allow Location]"), {enableHighAccuracy:true}))""")
-                # GPS sets location
                 raw_gps.change(fn=nearest, inputs=raw_gps, outputs=location_dropdown)
-                
-                # Location change updates tanks
                 location_dropdown.change(fn=update_tank_dropdown,
                                          inputs=location_dropdown,
                                          outputs=tank_dropdown)
 
             gr.Markdown("---")
                 
-            # --- Tabs with arrow navigation ---
             with gr.Row(equal_height=True):
                 prev_btn = gr.Button("⬅️",visible=False, scale=1, min_width=30)
                 next_btn = gr.Button("➡️",visible=False, scale=1, min_width=30)      
             
-            # Track current tab index
             def sync_tab_index(evt: gr.SelectData):
-                # evt.index gives the selected tab index
                 return evt.index
                 
             with gr.Row():
@@ -576,8 +499,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                             image_inputs.append(img_input)
                             tab_list_local.append(tab)
 
-
-            # Bind tab selection to update current state
             img_tabs.select(sync_tab_index, None, current)
 
             save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
@@ -596,7 +517,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     outputs=[img_tabs, current]
                 )
 
-            # Gradio will inject request if function signature includes request: gr.Request
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
@@ -606,17 +526,15 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             confirm_btn.click(
                 fn=toggle_ui_components,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                outputs=tab_list_local + [save_btn, prev_btn, next_btn, img_tabs]  # include img_tabs for selected update
+                outputs=tab_list_local + [save_btn, prev_btn, next_btn, img_tabs]
             )
            
-            # Raw HTML input for back camera
             gr.HTML(prefer_back_camera())
 
             demo.css = """
             #camera_input button {
-                transform: scale(1.6);   /* Scaling for making all gr.image buttons larger */
+                transform: scale(1.6);
             }
-
             .gradio-container,
             body,
             div,
@@ -630,27 +548,20 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             select {
                 font-size: 16px !important;
             }
-
             #camera_input label {
                 font-size: 20px !important;
             }
-
-            
             #camera_input .dropdown-arrow {
                 display: none !important;
             }
-
             #camera_input .select-wrap {
                 display: none !important;
             }
-
             #camera_input button-wrap.button.icon {
                 display: none !important;
-            }
-                        
+            }            
             """
-# Enable Gradio queue to avoid blocking the UI and to handle longer network ops in background
-# Use kwargs when supported; fall back to the simple form for older Gradio versions.
+# Enable Gradio queue (compatibility fallback)
 try:
     demo.queue(concurrency_count=4, max_size=32)
 except TypeError:
