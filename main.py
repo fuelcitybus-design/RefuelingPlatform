@@ -202,6 +202,7 @@ global active_tabs
 active_tabs = []
 global tank_choices
 tank_choices = []
+return_msg = ""
 
 ### Module 1: Uploader function
 def save_images(location, car_id, tank_id, *images, request=None):
@@ -360,7 +361,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
             return '\n'.join(return_msg)
 
     except Exception as e:
-        print(f"[save_images] Exception: {e}")
         return f"未知錯誤: {str(e)}"
 
 def nearest(gps):
@@ -528,7 +528,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                             image_inputs.append(img_input)
                             tab_list.append(tab)
 
-
             # Bind tab selection to update current state
             img_tabs.select(sync_tab_index, None, current)
 
@@ -586,7 +585,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                 font-size: 20px !important;
             }
 
-            
             #camera_input .dropdown-arrow {
                 display: none !important;
             }
