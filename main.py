@@ -28,6 +28,8 @@ from datetime import datetime
 import time
 import traceback
 import sys
+import asyncio
+from functools import partial
 
 #========================================================================================================
 
@@ -228,7 +230,6 @@ def prefer_back_camera():
     return custom_html
 
 #=========================================================================================================================
-#=========================================================================================================================
 global active_tabs
 active_tabs = []
 global tank_choices
@@ -388,7 +389,7 @@ def save_images_sync(location, car_id, tank_id, *images, request=None):
         print(f"[save_images_sync] Exception: {e}\n{tb}", file=sys.stderr)
         return f"未知錯誤: {str(e)}"
 
-# --- Async wrapper that offloads blocking work to a thread using anyio ---
+# --- Async wrapper that offloads blocking work to a thread using asyncio.run_in_executor ---
 async def save_images(location, car_id, tank_id, *images, request: gr.Request = None):
     """
     Async wrapper that runs the synchronous save_images_sync in a thread.
@@ -397,8 +398,9 @@ async def save_images(location, car_id, tank_id, *images, request: gr.Request = 
     wrapper_start = datetime.now().isoformat()
     print(f"[{wrapper_start}] save_images wrapper START", file=sys.stderr)
     try:
-        # Run sync function in a worker thread
-        result = await anyio.to_thread.run_sync(save_images_sync, location, car_id, tank_id, *images, request)
+        loop = asyncio.get_event_loop()
+        fn = partial(save_images_sync, location, car_id, tank_id, *images, request=request)
+        result = await loop.run_in_executor(None, fn)
         wrapper_end = datetime.now().isoformat()
         print(f"[{wrapper_end}] save_images wrapper END", file=sys.stderr)
         return result
@@ -588,7 +590,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     outputs=[img_tabs, current]
                 )
 
-            # Note: Gradio will inject request if function signature contains request: gr.Request
+            # Gradio will inject request if function signature includes request: gr.Request
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
