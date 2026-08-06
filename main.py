@@ -46,7 +46,7 @@ depot_gps = [("CFD創富", 22.272764832109846, 114.24250389449965),
         ("TKD將軍澳", 22.316949281155114, 114.25819879997607),
         ("TMD屯門", 22.383505220952447, 113.96928212236955),
         ("WCD黃竹坑", 22.248418440612717, 114.16227259618798),
-        ("WKD西九", 22.329873814418242, 114.14657647254528)]
+        ("WKD西九", 22.329873814418242, 114.146576545282)]
 
 car_ids = ["{請選擇}", "第1車", "第2車", "第3車", "第4車", "第5車"]
 
@@ -471,7 +471,7 @@ def prev_tab(current, location):
 #============================================================================================================================================================
 
 #Hosting with Gradio
-with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launch() i[...]
+with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'head' parameter in the Blocks constructor will be removed in Gradio 6.0. You will need to pass 'head' to Blocks.launc[...]
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
@@ -601,6 +601,10 @@ with gr.Blocks(head=prefer_back_camera()) as demo: # DeprecationWarning: The 'he
                         
             """
 # Enable Gradio queue to avoid blocking the UI and to handle longer network ops in background
-demo.queue(concurrency_count=4, max_size=32)
+# Use kwargs when supported; fall back to the simple form for older Gradio versions.
+try:
+    demo.queue(concurrency_count=4, max_size=32)
+except TypeError:
+    demo.queue()
 
 app = gr.mount_gradio_app(app, demo, path="/")
