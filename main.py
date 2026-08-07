@@ -82,8 +82,6 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 # =========================================================================================================================
 
 HTTP_TIMEOUT = 12  # seconds
-# Maximum wall-clock time allowed for a single save_images call (in seconds)
-TOTAL_SAVE_TIMEOUT = 45  # seconds
 
 def http_get_json(url, timeout=HTTP_TIMEOUT, attempts=2):
     for attempt in range(attempts):
@@ -221,7 +219,6 @@ tank_choices = []
 # Single synchronous save handler (no global messages)
 def save_images(location, car_id, tank_id, *images, request=None):
     start_ts = datetime.now().isoformat()
-    wall_start = time.time()
     try:
         client_repr = "unknown"
         try:
@@ -251,14 +248,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
         today = datetime.now().strftime("%Y-%m-%d")
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
-        # helper to check wall-clock timeout
-        def _timed_out():
-            return (time.time() - wall_start) > TOTAL_SAVE_TIMEOUT
-
-        if _timed_out():
-            print(f"[save_images] Aborting early due to wall-clock timeout after start", file=sys.stderr)
-            return "操作逾時：請稍後再試"
-
         status, items = http_get_json(base_url)
         if status is None:
             return "網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
@@ -277,12 +266,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         elif status == 404:
             created = False
             for attempt in range(3):
-                if _timed_out():
-                    print(f"[save_images] Folder creation aborted due to timeout", file=sys.stderr)
-                    return "操作逾時：建立資料夾失敗，請稍後再試"
-                print(f"[save_images] Attempting to create folder {base_url} (attempt {attempt+1})", file=sys.stderr)
                 put_status = http_put_status(base_url, data=b"")
-                print(f"[save_images] Folder create response: {put_status}", file=sys.stderr)
                 if put_status is None:
                     return "網絡錯誤：無法建立資料夾（伺服器未響應）"
                 if put_status in (200, 201, 204):
@@ -301,10 +285,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
         for i, img in enumerate(images):
             if img is None:
                 continue
-            if _timed_out():
-                print(f"[save_images] Aborting uploads due to wall-clock timeout", file=sys.stderr)
-                messages_local.append("操作逾時：部分或全部檔案未上傳，請稍後重試")
-                break
             tab_name = tab_names[i]
 
             if tab_name in detected_tabs_exist:
@@ -344,16 +324,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
             uploaded = False
             last_status = None
             for attempt in range(3):
-                if _timed_out():
-                    print(f"[save_images] Upload attempt aborted for {tab_name} due to timeout (attempt {attempt+1})", file=sys.stderr)
-                    break
-                print(f"[save_images] Uploading {tab_name} to {filepath} (attempt {attempt+1})", file=sys.stderr)
-                try:
-                    last_status = http_put_status(filepath, data=buffer.getvalue())
-                except Exception as e:
-                    last_status = None
-                    print(f"[save_images] Exception during http_put_status for {tab_name}: {e}", file=sys.stderr)
-                print(f"[save_images] Upload response for {tab_name}: {last_status}", file=sys.stderr)
+                last_status = http_put_status(filepath, data=buffer.getvalue())
                 if last_status is None:
                     messages_local.append(f"網絡錯誤：上傳 {tab_name} 失敗（未能連線）")
                     break
@@ -361,11 +332,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
                     uploaded = True
                     break
                 time.sleep(0.3 * (attempt + 1))
-            try:
-                buffer.close()
-            except Exception:
-                pass
-
             if uploaded:
                 saved.append(tab_name)
                 detected_tabs_exist.append(tab_name)
@@ -497,7 +463,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
-                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_upload")
+                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_uploader")
                 confirm_btn = gr.Button("確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
