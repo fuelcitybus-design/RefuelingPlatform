@@ -528,7 +528,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             confirm_btn.click(
                 fn=toggle_ui_components,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                outputs=output_text + tab_list_local + [save_btn, prev_btn, next_btn, img_tabs]
+                outputs=[output_text] + tab_list_local + [save_btn, prev_btn, next_btn, img_tabs]
             )
            
             gr.HTML(prefer_back_camera())
