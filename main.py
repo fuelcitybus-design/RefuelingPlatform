@@ -404,7 +404,7 @@ def toggle_ui_components(location, car, tank):
         tabs_update = gr.update(selected=None)
         messages = "警告：確保已輸入地點，車號，缸號"
 
-    return messages + tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
+    return [messages] + tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
 
 def toggle_tabs(location, car, tank):
     active_tabs_local = tab_list_S.get(location, [])
