@@ -354,6 +354,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
+        print(f"[{result_text}])
         return result_text
     except Exception as e:
         tb = traceback.format_exc()
