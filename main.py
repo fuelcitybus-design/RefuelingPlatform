@@ -383,6 +383,7 @@ def toggle_ui_components(location, car, tank):
 
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         tab_updates = []
+        msg = ""
         for i, tab in enumerate(tab_names):
             if active_tabs and tab == active_tabs[0]:
                 tab_updates.append(gr.update(visible=True))
@@ -392,7 +393,7 @@ def toggle_ui_components(location, car, tank):
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
-
+        msg = f"可以開始拍照。\n注：上載前請先再確認資料無誤。"
         first_idx = tab_names.index(active_tabs[0]) if active_tabs else None
         tabs_update = gr.update(selected=first_idx)
     else:
@@ -401,8 +402,9 @@ def toggle_ui_components(location, car, tank):
         prev_btn_update = gr.update(visible=False)
         next_btn_update = gr.update(visible=False)
         tabs_update = gr.update(selected=None)
+        msg = "警告：確保已輸入地點，車號，缸號"
 
-    return tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
+    return msg + tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
 
 def toggle_tabs(location, car, tank):
     active_tabs_local = tab_list_S.get(location, [])
@@ -526,7 +528,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             confirm_btn.click(
                 fn=toggle_ui_components,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
-                outputs=tab_list_local + [save_btn, prev_btn, next_btn, img_tabs]
+                outputs=output_text + tab_list_local + [save_btn, prev_btn, next_btn, img_tabs]
             )
            
             gr.HTML(prefer_back_camera())
