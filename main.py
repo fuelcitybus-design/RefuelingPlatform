@@ -331,7 +331,7 @@ def show_txt(abnormal_list):
                 )
             )
         else:
-            outputs.append(gr.update(value="", label=f"Text {i+1}"))
+            outputs.append(gr.update(value=None, label=f"Text {i+1}"))
     return outputs
 
 # =====================================================================
