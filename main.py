@@ -369,7 +369,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
             num_update += 1
             viewed +=1
             kudu_rename(file_url, new_name)
-        else
+        else:
             viewed +=1
             kudu_rename(file_url, new_name)
 
