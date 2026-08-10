@@ -38,4 +38,4 @@ COPY . .
 EXPOSE 8000
 
 # Startup command (adjust main:app to your entrypoint)
-CMD ["gunicorn","main:app","--workers=4","--worker-class=uvicorn.workers.UvicornWorker","--bind=0.0.0.0:8000","--timeout=1200","--graceful-timeout=1200","--keep-alive=75"]
+CMD ["gunicorn","main:app","--workers=4","--worker-class=uvicorn.workers.UvicornWorker","--bind=0.0.0.0:8000","--timeout=1200","--keep-alive=75"]
