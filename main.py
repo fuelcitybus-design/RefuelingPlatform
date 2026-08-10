@@ -358,6 +358,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
             return f"警告：第{idx+1}張照片非數字輸入", abnormal_list
                 
     num_update = 0
+    viewed = 0
     for i in range(len(abnormal_list)):
         file_url = abnormal_list[i][2]
         prefix = abnormal_list[i][0]
@@ -366,6 +367,10 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
         new_name = f"{prefix}_{text_list[i]}.jpg"
         if int(ocr_original) != int(text_list[i]):
             num_update += 1
+            viewed +=1
+            kudu_rename(file_url, new_name)
+        else
+            viewed +=1
             kudu_rename(file_url, new_name)
 
     if abnormal_count > 10:
@@ -373,7 +378,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
         new_list, msg = result[0], result[1]
         return msg, new_list
     else:
-        return f"儲存成功，共更新 {num_update} 張照片", []
+        return f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", []
 
 # =====================================================================
 # Gradio Hosting
