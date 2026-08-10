@@ -319,21 +319,20 @@ def show_img(abnormal_list):
     return imgs
 
 def show_txt(abnormal_list):
-    # Return filename display updates first, then textbox updates
-    filename_updates = []
-    text_updates = []
+    outputs = []
     for i in range(10):
         if i < len(abnormal_list):
             prefix, ocr_number, file_url = abnormal_list[i]
             fname = file_url.split("/")[-1]
-            # Update filename display value and the textbox value
-            filename_updates.append(gr.update(value=fname))
-            text_updates.append(gr.update(value=str(ocr_number)))
+            outputs.append(
+                gr.update(
+                    value=ocr_number,  # textbox content
+                    label=fname                      # textbox label
+                )
+            )
         else:
-            filename_updates.append(gr.update(value=""))
-            text_updates.append(gr.update(value=""))
-    # Return filename updates followed by textbox updates (order must match outputs wiring)
-    return filename_updates + text_updates
+            outputs.append(gr.update(value="", label=f"Text {i+1}"))
+    return outputs
 
 # =====================================================================
 # Correction Function
@@ -389,29 +388,24 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             location_dropdownAI = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
             run_btn = gr.Button("運行AI")
                 
-            # Build image, filename-display and text components
-            txts, imgs, filename_displays = [], [], []
+            # Build image and text components first
+            txts, imgs = [], []
             for i in range(10):
                 with gr.Row():
                     img = gr.Image(None, label=f"Image {i+1}", visible=True, width=150, interactive=False)
                     imgs.append(img)
-                    # Non-editable small textbox to show the filename (we update its value)
-                    fname_box = gr.Textbox(value="", label=f"File {i+1}", interactive=False)
-                    filename_displays.append(fname_box)
                     txt = gr.Textbox(value=None, label=f"Text {i+1}", visible=True)
                     txts.append(txt)
         
-            # Now wire the button with ALL outputs (must match analysis_rename return order)
+            # Now wire the button with ALL outputs
             run_btn.click(
                 fn=analysis_rename,
                 inputs=[location_dropdownAI],
                 outputs=[abnormal_list, state] + imgs + txts
             )
 
-            # Update images when abnormal_list changes
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
-            # Update filename displays and textboxes when abnormal_list changes
-            abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=filename_displays + txts)
+            abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
 
             collect_btn = gr.Button("儲存所有修改")
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, abnormal_list])
