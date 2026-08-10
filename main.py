@@ -340,6 +340,8 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
     half = len(args) // 2
     texts = args[:half]
     images = args[half:]
+    num_update = 0
+    viewed = 0
     filled_images = [t for t in images if t is not None]
     filled_texts = [t for t in texts if t is not None and t.strip() != ""]
 
@@ -357,21 +359,15 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
         except ValueError:
             return f"警告：第{idx+1}張照片非數字輸入", abnormal_list
                 
-    num_update = 0
-    viewed = 0
-    for i in range(len(abnormal_list)):
+    for i in range(len(filled_images)):
         file_url = abnormal_list[i][2]
         prefix = abnormal_list[i][0]
         ocr_original = abnormal_list[i][1]
-
         new_name = f"{prefix}_{text_list[i]}.jpg"
         if int(ocr_original) != int(text_list[i]):
             num_update += 1
-            viewed +=1
-            kudu_rename(file_url, new_name)
-        else:
-            viewed +=1
-            kudu_rename(file_url, new_name)
+        viewed +=1
+        kudu_rename(file_url, new_name)
 
     if abnormal_count > 10:
         result = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
