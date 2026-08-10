@@ -8,4 +8,3 @@ exec gunicorn main:app \
     --timeout 1200
     --keep-alive 75
     --graceful-timeout 1200
-    --log-level info
