@@ -2,7 +2,10 @@
 set -e
 
 exec gunicorn main:app \
-    --workers 4 \
-    --worker-class uvicorn.workers.UvicornWorker \
-    --bind 0.0.0.0:${PORT:-8000} \
-    --timeout 600
+    --workers 1
+    --worker-class uvicorn.workers.UvicornWorker
+    --bind 0.0.0.0:${PORT:-8000}
+    --timeout 1200
+    --keep-alive 75
+    --graceful-timeout 1200
+    --log-level info
