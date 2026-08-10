@@ -7,4 +7,3 @@ exec gunicorn main:app \
     --bind 0.0.0.0:${PORT:-8000}
     --timeout 1200
     --keep-alive 75
-    --graceful-timeout 1200
