@@ -409,7 +409,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             collect_btn = gr.Button("儲存所有修改")
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, abnormal_list])
 
-
 # Enable Gradio queue (compatibility fallback)
 try:
     demo.queue(concurrency_count=4, max_size=32)
