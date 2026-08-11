@@ -367,14 +367,14 @@ def save_images(location, car_id, tank_id, *images, request=None):
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
             if missing:
-                messages_local.append(f"已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}.")
+                messages_local.append(str(f"已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}."))
             else:
-                messages_local.append(f"已上傳 {len(saved)} 張新照片")
+                messages_local.append(str(f"已上傳 {len(saved)} 張新照片"))
         else:
             if not messages_local:
-                messages_local.append("警告：沒有新照片")
+                messages_local.append(str("警告：沒有新照片"))
 
-        result_text = "\n".join(messages_local)
+        result_text = "\n".join([str(m) for m in messages_local])
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
@@ -1019,7 +1019,6 @@ def assign_tanks(date, location, id):
         msg
     )
 
-
 def update_car_dropdown(date, location):
     try:
         car_ids_list = get_car_ids(date, location)
@@ -1122,7 +1121,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
 
-            output_text = gr.Textbox(label="狀態", lines=6)
+            output_text = gr.Textbox("請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
 
             next_btn.click(
                     fn=next_tab,
@@ -1153,7 +1152,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
         #Module 2
         with gr.Tab("AI處理"):
             abnormal_list = gr.State([])
-            state = gr.Textbox(label="狀態", lines=5)
+            state = gr.Textbox("選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
             
             location_dropdownAI = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
             run_btn = gr.Button("運行AI")
@@ -1188,7 +1187,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 date_picker = gr.DateTime(label="日期", include_time=False, value=str(datetime.now().date()))
 
             output = gr.File(label="下載")
-            state = gr.Textbox(label="狀態")
+            state = gr.Textbox("選擇日期、地點以便輸出落油紀錄", label="狀態")
 
             export_btn = gr.Button("下載")
             export_btn.click(
@@ -1216,7 +1215,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 )
                 confirm_btn = gr.Button("確認選擇")
 
-            tank_message = gr.Textbox(label="Tank Summary", interactive=False, lines=2)
+            tank_message = gr.Textbox("選擇日期、地點查看已上載的照片。", label="Tank Summary", interactive=False, lines=2)
 
             tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
             gallery1 = gr.Gallery(columns=4, elem_id = "gallery1")
