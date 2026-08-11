@@ -1128,7 +1128,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=output_text
+                outputs=[output_text]
             )
 
             confirm_btn.click(
