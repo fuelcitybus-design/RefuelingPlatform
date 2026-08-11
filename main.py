@@ -370,6 +370,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
         yield gr.update(value="") 
+        print("Resetted value")
         return gr.update(value=result_text)
     except Exception as e:
         tb = traceback.format_exc()
