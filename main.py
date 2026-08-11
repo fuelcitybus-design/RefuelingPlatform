@@ -33,32 +33,34 @@ import sys
 
 # --- CONFIGURATION ---
 # Replace these with your actual Azure App Service credentials
-USERNAME = "$oil-tank-refueling"
-PASSWORD = "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK"
-auth=HTTPBasicAuth(USERNAME, PASSWORD)
-KUDU_HOST = "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net"
+# --- CONFIGURATION ---
+# Credentials: prefer environment variables (set them in App Service Application Settings).
+KUDU_HOST = os.environ.get("KUDU_HOST", "oil-tank-refueling-e8a5atdqg9fnh2et.scm.eastasia-01.azurewebsites.net")
+USERNAME = os.environ.get("KUDU_USER", "$oil-tank-refueling")
+PASSWORD = os.environ.get("KUDU_PASS", "E8F6BQT62Mt290N5fpK1sHAnQTnxPyvsD2vXAqmmClZnYkyYDQ1Du17aNNiK")
+auth = HTTPBasicAuth(USERNAME, PASSWORD)
 
-ocr_model = PaddleOCR(
-        lang="ch",
-        use_doc_orientation_classify=False,
-        use_doc_unwarping=False,
-        use_textline_orientation=False,
-        enable_mkldnn=False,   # valid flag for CPU acceleration
-        )
+# Global reusable requests session (will be initialized on startup)
+session = None
 
+# OCR model: lazy-initialized
+ocr_model = None
 os.environ["FLAGS_use_mkldnn"] = "0"
 
-def ocr():
+def init_ocr():
+    """Lazily initialize the PaddleOCR model and store in global ocr_model."""
     global ocr_model
-    if ocr is None:
-        # Initialize once, on first request
+    if ocr_model is None:
+        # Create model once per process
         ocr_model = PaddleOCR(
-        lang="ch",
-        use_doc_orientation_classify=False,
-        use_doc_unwarping=False,
-        use_textline_orientation=False,
-        enable_mkldnn=False,   # valid flag for CPU acceleration
+            lang="ch",
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+            enable_mkldnn=False,
         )
+    return ocr_model
+
 
 #Information parameters
 locations = ["{請選擇}", "CFD創富", "CWD柴灣", "SHD小蠔灣", "SWD上環", "TCD東涌", "TKD將軍澳", "TMD屯門", "WCD黃竹坑", "WKD西九"]
@@ -505,7 +507,7 @@ def ocr_from_kudu(file_url):
     image = cv2.resize(image, (400, int(400 * h / float(w))), interpolation=cv2.INTER_AREA)
     image = auto_adjust_brightness_contrast(image)
 
-    ocr()
+    ocr_model = init_ocr()
     result = ocr_model.predict(image)
     for res in result:
         text = res["rec_texts"]
