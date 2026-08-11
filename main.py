@@ -370,7 +370,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
-        return
+        return [gr.update(value=result_text)]
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
@@ -464,6 +464,7 @@ def prev_tab(current, location):
         pos = 0
     nxt = active_indices[(pos - 1) % len(active_indices)]
     return gr.Tabs(selected=nxt), nxt
+        
 #=========================================================================================================================
 
 ###Module 2: AI proessor function
@@ -1130,12 +1131,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
                 outputs=[output_text]
-            )
-
-            result_text.change(
-                fn=lambda val: val,
-                inputs=result_text,
-                outputs=output_text
             )
                 
             confirm_btn.click(
