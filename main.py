@@ -373,7 +373,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
-        return f"未知錯誤: {str(e)}"
+        return gr.update(value=f"未知錯誤: {str(e)}")
 
 def nearest(gps):
     if "Allow" in gps:
