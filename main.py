@@ -363,15 +363,14 @@ def save_images(location, car_id, tank_id, *images, request=None):
         else:
             if not messages_local:
                 messages_local.append(str("警告：沒有新照片"))
+        global result_text
         result_text = ""
         result_text = "\n".join([str(m) for m in messages_local])
         result_text = result_text.encode("utf-8", "ignore").decode("utf-8")
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
-        yield gr.update(value="") 
-        print("Resetted value")
-        return gr.update(value=result_text)
+        return
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
@@ -1114,7 +1113,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
 
             output_text = gr.Textbox("請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
-
+                
             next_btn.click(
                     fn=next_tab,
                     inputs=[current, location_dropdown],
@@ -1133,6 +1132,12 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 outputs=[output_text]
             )
 
+            result_text.change(
+                fn=lambda val: val,
+                inputs=result_text,
+                outputs=output_text
+            )
+                
             confirm_btn.click(
                 fn=toggle_ui_components,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown],
