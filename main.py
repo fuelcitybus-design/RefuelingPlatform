@@ -1,6 +1,14 @@
 #Setup environment for running Gradio interface
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+
 app = FastAPI()
+
+# Dummy endpoint to satisfy Gradio frontend
+@app.get("/gradio_api/upload_progress")
+async def upload_progress(upload_id: str):
+    # Always return "complete" so the frontend stops polling
+    return JSONResponse({"status": "complete", "progress": 100})
 
 #========================================================================================================
 
