@@ -231,7 +231,7 @@ global result_text
 result_text = ""
 
 # Single synchronous save handler (no global messages)
-def save_images(location, car_id, tank_id, *images, request=None):
+async def save_images(location, car_id, tank_id, *images, request=None):
     start_ts = datetime.now().isoformat()
     try:
         client_repr = "unknown"
