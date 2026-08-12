@@ -7,8 +7,12 @@ app = FastAPI()
 # Dummy endpoint to satisfy Gradio frontend
 @app.get("/gradio_api/upload_progress")
 async def upload_progress(upload_id: str):
-    # Always return "complete" so the frontend stops polling
-    return JSONResponse({"status": "complete", "progress": 100})
+    return JSONResponse({
+        "status": "complete",
+        "progress": 1.0,   # float between 0 and 1
+        "eta": 0,
+        "average_speed": 0
+    })
 
 #========================================================================================================
 
@@ -1116,8 +1120,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                                 height=400,
                                 elem_id="camera_input",
                                 mirror_webcam=False,
-                                sources=['webcam','upload'],
-                                show_progress=False
+                                sources=['webcam','upload']
                             )
                             image_inputs.append(img_input)
                             tab_list_local.append(tab)
