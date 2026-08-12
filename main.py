@@ -370,11 +370,14 @@ def save_images(location, car_id, tank_id, *images, request=None):
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
-        return gr.update(value=result_text)
+        return result_text
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
         return gr.update(value=f"未知錯誤: {str(e)}")
+
+def sync_output():
+    return result_text
 
 def nearest(gps):
     if "Allow" in gps:
@@ -1132,15 +1135,10 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=result_hidden
+                outputs=None
             )
 
-            # Mirror result_hidden into output_text
-            result_hidden.change(
-                fn=lambda val: val,
-                inputs=result_hidden,
-                outputs=output_text
-            )
+            save_btn.click(fn=sync_output, inputs=None, outputs=output_text)
             
             confirm_btn.click(
                 fn=toggle_ui_components,
