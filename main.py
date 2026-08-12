@@ -638,7 +638,7 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
         msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
 
     # Return: state, status, 10 images, 10 texts
-    return abnormal_list_10, msg, *imgs, *txts
+    return abnormal_list_10, msg, msg, *imgs, *txts
 
 # =====================================================================
 # Display Functions
@@ -710,7 +710,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
     if abnormal_count > 10:
         result = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
         new_list, msg = result[0], result[1]
-        return msg, new_list
+        return msg, msg, new_list
     else:
         return f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", []
     
@@ -1167,20 +1167,22 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     txt = gr.Textbox(value=None, label=f"Text {i+1}", visible=True)
                     txts.append(txt)
         
-            # Now wire the button with ALL outputs
-            run_btn.click(
-                fn=analysis_rename,
-                inputs=[location_dropdownAI],
-                outputs=[abnormal_list, state] + imgs + txts
-            )
-
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)
 
             collect_btn = gr.Button("儲存所有修改")
-            collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, abnormal_list])
 
-        
+            state2 = gr.Textbox("選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
+                
+            collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, state2, abnormal_list])
+
+            # Now wire the button with ALL outputs
+            run_btn.click(
+                fn=analysis_rename,
+                inputs=[location_dropdownAI],
+                outputs=[abnormal_list, state, state2] + imgs + txts
+            )
+                
         # Module 3
         with gr.Tab("下載"):
             with gr.Row():
