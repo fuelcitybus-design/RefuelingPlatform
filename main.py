@@ -1298,7 +1298,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
         #camera_input .select-wrap {
             display: none !important;
         }
-        #camera_input button-wrap.button.icon {
+        #camera_input button[aria-label="select input source"] {
             display: none !important;
         }            
         """
