@@ -1132,7 +1132,8 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 )
             
             result_hidden = gr.Textbox(visible=False)
-            
+                
+            hidden_state = gr.State("")
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
