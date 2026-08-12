@@ -227,11 +227,11 @@ global active_tabs
 active_tabs = []
 global tank_choices
 tank_choices = []
-global result_text
+
 result_text = ""
 
 # Single synchronous save handler (no global messages)
-async def save_images(location, car_id, tank_id, *images, request=None):
+def save_images(location, car_id, tank_id, *images, request=None):
     start_ts = datetime.now().isoformat()
     try:
         client_repr = "unknown"
@@ -364,9 +364,9 @@ async def save_images(location, car_id, tank_id, *images, request=None):
             if not messages_local:
                 messages_local.append(str("警告：沒有新照片"))
         global result_text
-        result_text = ""
         result_text = "\n".join([str(m) for m in messages_local])
         result_text = result_text.encode("utf-8", "ignore").decode("utf-8")
+        result_text=f"{result_text}\n[{datetime.now().isoformat()}]"
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
@@ -377,7 +377,8 @@ async def save_images(location, car_id, tank_id, *images, request=None):
         return gr.update(value=f"未知錯誤: {str(e)}")
 
 def sync_output():
-    return result_text
+        global result_text
+        return result_text
 
 def nearest(gps):
     if "Allow" in gps:
@@ -1135,7 +1136,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=None
+                outputs=output_text
             )
 
             save_btn.click(fn=sync_output, inputs=None, outputs=output_text)
