@@ -1123,7 +1123,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     outputs=[img_tabs, current]
                 )
             
-            result_hidden = gr.Textbox(visible=False)
+            result_hidden = gr.Textbox(visible=Fals, eallow_custom_value=True, filterable=True)
             
             save_btn.click(
                 fn=save_images,
