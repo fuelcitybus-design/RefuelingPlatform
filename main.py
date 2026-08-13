@@ -595,7 +595,7 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
         imgs = [None] * 10
         txts = [""] * 10
         # Return abnormal_list (empty), msg, then 10 images + 10 texts
-        return [], "請先選擇位置，再運行分析", *imgs, *txts
+        return [], "請先選擇位置，再運行分析","請先選擇位置，再運行分析", *imgs, *txts
         
     root_folder = f"{root_folder_O}/"
     abnormal_list = []
@@ -700,18 +700,18 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
     filled_texts = [t for t in texts if t is not None and t.strip() != ""]
 
     if len(filled_images) != len(filled_texts):
-        return "警告：輸入數量與照片數量不一致", abnormal_list
+        return "警告：輸入數量與照片數量不一致", "警告：輸入數量與照片數量不一致", abnormal_list
 
     text_list = []
     for idx, (txt, img) in enumerate(zip(texts, images)):
         if img is None:
             continue
         if txt is None or txt.strip() == "":
-            return f"警告：第{idx+1}張照片缺少輸入", abnormal_list
+            return f"警告：第{idx+1}張照片缺少輸入", f"警告：第{idx+1}張照片缺少輸入", abnormal_list
         try:
             text_list.append(int(txt.strip()))
         except ValueError:
-            return f"警告：第{idx+1}張照片非數字輸入", abnormal_list
+            return f"警告：第{idx+1}張照片非數字輸入", f"警告：第{idx+1}張照片非數字輸入", abnormal_list
                 
     for i in range(len(filled_images)):
         file_url = abnormal_list[i][2]
@@ -728,7 +728,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
         new_list, msg = result[0], result[1]
         return msg, msg, new_list
     else:
-        return f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", []
+        return f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", []
     
 
 #===========================================================================================
