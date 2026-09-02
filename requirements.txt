@@ -23,7 +23,7 @@ requests>=2.31.0
 pillow>=10.0.0
 opencv-python-headless==4.9.0.80
 paddleocr==3.6.0
-paddlepaddle==3.0.0   # explicitly pinned, required for paddleocr 3.6.0
+paddlepaddle==2.6.2   # explicitly pinned, required for paddleocr 3.6.0 changed from 3.0.0
 
 # Compression
 brotli>=1.1.0
