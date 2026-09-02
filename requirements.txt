@@ -19,11 +19,14 @@ virtualenv==21.3.3
 # Networking
 requests>=2.31.0
 
+# block GUI build new!!!!!!!!!!!!!!!!!!!!!!!!!!
+opencv-python==0.0.0
+
 # Imaging + OCR
 pillow>=10.0.0
 opencv-python-headless==4.9.0.80
 paddleocr==3.6.0
-paddlepaddle==2.6.2   # explicitly pinned, required for paddleocr 3.6.0 changed from 3.0.0
+paddlepaddle==2.6.2   # explicitly pinned, required for paddleocr 3.6.0 changed from 3.0.0!!!!!!!!!!!!!!!!!!!!
 
 # Compression
 brotli>=1.1.0
