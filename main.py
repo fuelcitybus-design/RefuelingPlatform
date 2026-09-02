@@ -826,9 +826,13 @@ def export(request: gr.Request, location, date):
 
     for i in range(data_count):
         subfolder_name = subfolders[i]
+        print(f"{subfolder_name}", file=sys.stderr, flush=True)
         carid, tankid = subfolder_name.split("_")
+        print(f"{carid},{tankid}", file=sys.stderr, flush=True)
         subfolder_url = f"{folder_url}{subfolder_name}/"
-
+        
+        print(f"{subfolder_url}", file=sys.stderr, flush=True)
+        
         before = None
         after = None
         sort_list = []
