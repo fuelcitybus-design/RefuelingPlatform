@@ -824,7 +824,8 @@ def export(request: gr.Request, location, date):
         RAW.cell(row=2+i, column=6).value = f"=E{2+i}-D{2+i}"
 
 
-    for subfolder_name in subfolders:
+    for i in range(data_count):
+        subfolder_name = subfolders[i]
         carid, tankid = subfolder_name.split("_")
         subfolder_url = f"{folder_url}{subfolder_name}/"
 
