@@ -890,7 +890,7 @@ def export(request: gr.Request, location, date):
                 len(tab_names)  # push unmatched items to the end
             )
         )
-
+        print(f"{sort_list}", file=sys.stderr, flush=True)
         add_data(wb, carid, tankid, before[1], after[1], sort_list, i)
         
     save_url = f"{folder_url}/{location}_{date}.xlsx"
