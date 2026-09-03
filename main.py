@@ -748,6 +748,7 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
 
     for j, img in enumerate(img_list):
         if img is None:
+            MAIN.cell(row=10 * (i - 1), column=2+3*j).value = ""  # leave blank
             continue
         
         # Download image from Kudu
@@ -890,7 +891,6 @@ def export(request: gr.Request, location, date):
                 len(tab_names)  # push unmatched items to the end
             )
         )
-        print(f"{sort_list}", file=sys.stderr, flush=True)
         add_data(wb, carid, tankid, before[1], after[1], sort_list, i)
         
     save_url = f"{folder_url}/{location}_{date}.xlsx"
