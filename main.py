@@ -729,7 +729,6 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
         return msg, msg, new_list
     else:
         return f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", []
-    
 
 #===========================================================================================
 ##Module 3: Exporter
