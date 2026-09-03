@@ -883,13 +883,16 @@ def export(request: gr.Request, location, date):
             return None, info_msg
 
         sort_list = [before[0], after[0]] + sort_list
-        # 🔑 replace your sort_list.sort line with:
-        sort_list.sort(
-            key=lambda path: next(
-                (idx for idx, label in enumerate(tab_names) if label in path),
-                len(tab_names)  # push unmatched items to the end
-            )
-        )
+        # Build a fixed-length list aligned to tab_names
+        aligned_list = []
+        for label in tab_names:
+            # Find the first image whose filename contains the label
+            match = next((img for img in sort_list if label in img), None)
+            aligned_list.append(match)
+        
+        # aligned_list now has the same length as tab_names
+        # Each position corresponds to the label order, with None if missing
+        sort_list = aligned_list
         add_data(wb, carid, tankid, before[1], after[1], sort_list, i)
         
     save_url = f"{folder_url}/{location}_{date}.xlsx"
