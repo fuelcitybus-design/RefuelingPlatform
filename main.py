@@ -747,7 +747,7 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
 
     for j, img in enumerate(img_list):
         if img is None:
-            MAIN.cell(row=10 * (i - 1), column=2+3*j).value = "N/A"  # leave blank
+            MAIN.cell(row=10 * (i - 1)+1, column=2+3*j).value = "N/A"  # leave blank
             continue
         
         # Download image from Kudu
@@ -828,8 +828,8 @@ def export(request: gr.Request, location, date):
     data_count = len(subfolders)
     for i in range(data_count):
         MAIN.cell(row=10+10*(i), column=1).value = i+1
-        for j in range(len(tab_names)):
-            MAIN.cell(row=10+10*i, column=2+3*j).value = tab_names[j]
+        for j in range(tab_list_S[location]):
+            MAIN.cell(row=10+10*i, column=2+3*j).value = tab_list_S[location][j]
         RAW.cell(row=2+i, column=1).value = i+1
         RAW.cell(row=2+i, column=6).value = f"=E{2+i}-D{2+i}"
 
