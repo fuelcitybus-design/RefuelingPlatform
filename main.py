@@ -712,16 +712,32 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
             text_list.append(int(txt.strip()))
         except ValueError:
             return f"警告：第{idx+1}張照片非數字輸入", f"警告：第{idx+1}張照片非數字輸入", abnormal_list
-                
-    for i in range(len(filled_images)):
-        file_url = abnormal_list[i][2]
-        prefix = abnormal_list[i][0]
-        ocr_original = abnormal_list[i][1]
+
+    for i in range(min(len(filled_images), len(abnormal_list))):
+        row = abnormal_list[i]
+        if len(row) < 3:
+            return "警告：abnormal_list 結構錯誤", "警告：abnormal_list 結構錯誤", abnormal_list
+    
+        file_url = row[2]
+        prefix = row[0]
+        ocr_original = row[1]
         new_name = f"{prefix}_{text_list[i]}.jpg"
+    
         if int(ocr_original) != int(text_list[i]):
             num_update += 1
-        viewed +=1
+        viewed += 1
         kudu_rename(file_url, new_name)
+
+    
+    #for i in range(len(filled_images)):
+       # file_url = abnormal_list[i][2]
+        #prefix = abnormal_list[i][0]
+        #ocr_original = abnormal_list[i][1]
+        #new_name = f"{prefix}_{text_list[i]}.jpg"
+        #if int(ocr_original) != int(text_list[i]):
+        #    num_update += 1
+        #viewed +=1
+        #kudu_rename(file_url, new_name)
 
     if abnormal_count > 10:
         result = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
