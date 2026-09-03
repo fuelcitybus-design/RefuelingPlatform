@@ -774,6 +774,12 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
 
     return
 
+def sort_key(path):
+            for idx, label in enumerate(tab_names):
+                if label in path:
+                    return idx
+            return len(tab_names)  # push unknowns to the end
+
 def export(request: gr.Request, location, date):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     client_ip = request.client.host if request else "unknown"
@@ -821,15 +827,12 @@ def export(request: gr.Request, location, date):
         RAW.cell(row=2+i, column=1).value = i+1
         RAW.cell(row=2+i, column=6).value = f"=E{2+i}-D{2+i}"
 
-
     for i in range(data_count):
         subfolder_name = subfolders[i]
         print(f"{subfolder_name}", file=sys.stderr, flush=True)
         carid, tankid = subfolder_name.split("_")
         print(f"{carid},{tankid}", file=sys.stderr, flush=True)
         subfolder_url = f"{folder_url}{subfolder_name}/"
-        
-        print(f"{subfolder_url}", file=sys.stderr, flush=True)
         
         before = None
         after = None
@@ -874,7 +877,8 @@ def export(request: gr.Request, location, date):
             return None, info_msg
 
         sort_list = [before[0], after[0]] + sort_list
-        print(f"{carid},{tankid}", file=sys.stderr, flush=True)
+        sort_list.sort(key=sort_key)
+        
         add_data(wb, carid, tankid, before[1], after[1], sort_list, i)
         
     save_url = f"{folder_url}/{location}_{date}.xlsx"
