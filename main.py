@@ -774,11 +774,17 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
 
     return
 
-def sort_key(path):
-            for idx, label in enumerate(tab_names):
-                if label in path:
-                    return idx
-            return len(tab_names)  # push unknowns to the end
+def reorder_images(images, subfolder_url):
+    # Initialize slots for each tab_name
+    ordered = [None] * len(tab_names)
+
+    for img in images:
+        file_url = f"{subfolder_url}{img}"
+        for idx, label in enumerate(tab_names):
+            if label in img:
+                ordered[idx] = file_url
+                break
+    return ordered
 
 def export(request: gr.Request, location, date):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -877,8 +883,14 @@ def export(request: gr.Request, location, date):
             return None, info_msg
 
         sort_list = [before[0], after[0]] + sort_list
-        sort_list.sort(key=sort_key)
-        
+        # 🔑 replace your sort_list.sort line with:
+        sort_list.sort(
+            key=lambda path: next(
+                (idx for idx, label in enumerate(tab_names) if label in path),
+                len(tab_names)  # push unmatched items to the end
+            )
+        )
+
         add_data(wb, carid, tankid, before[1], after[1], sort_list, i)
         
     save_url = f"{folder_url}/{location}_{date}.xlsx"
