@@ -747,7 +747,7 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
 
     for j, img in enumerate(img_list):
         if img is None:
-            MAIN.cell(row=10 * (i - 1), column=2+3*j).value = ""  # leave blank
+            MAIN.cell(row=10 * (i - 1), column=2+3*j).value = "N/A"  # leave blank
             continue
         
         # Download image from Kudu
@@ -885,7 +885,7 @@ def export(request: gr.Request, location, date):
         sort_list = [before[0], after[0]] + sort_list
         # Build a fixed-length list aligned to tab_names
         aligned_list = []
-        for label in tab_names:
+        for label in tab_list_S[location]:
             # Find the first image whose filename contains the label
             match = next((img for img in sort_list if label in img), None)
             aligned_list.append(match)
