@@ -876,8 +876,9 @@ def export(request: gr.Request, location, date):
             return None, info_msg
 
         sort_list = [before[0], after[0]] + sort_list
-
+        print(f"{carid},{tankid}", file=sys.stderr, flush=True)
         add_data(wb, carid, tankid, before[1], after[1], sort_list, data_count)
+        
     save_url = f"{folder_url}/{location}_{date}.xlsx"
     local_path = f"/tmp/{location}_{date}.xlsx"
     wb.save(local_path)
