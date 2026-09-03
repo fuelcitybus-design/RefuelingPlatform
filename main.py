@@ -13,7 +13,7 @@ async def upload_progress(upload_id: str):
         "eta": 0,
         "average_speed": 0
     })
-
+    
 #========================================================================================================
 
 #Library imports
