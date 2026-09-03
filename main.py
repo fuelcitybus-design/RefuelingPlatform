@@ -736,43 +736,41 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
 def add_data(wb, car, tank, before, after, img_list, rowcount):
     RAW = wb['RAW']
     MAIN = wb['Main']
+    i = rowcount + 2
+    RAW.cell(row=i, column=2).value = car
+    RAW.cell(row=i, column=3).value = tank
+    RAW.cell(row=i, column=4).value = int(before)
+    RAW.cell(row=i, column=5).value = int(after)
+        
+    MAIN.cell(row=10 * (i - 1), column=1).value = i-1
+    MAIN.cell(row=10 * (i - 1) + 1, column=1).value = car
+    MAIN.cell(row=10 * (i - 1) + 2, column=1).value = tank
 
-    for i in range(2, rowcount + 2):
-        if RAW.cell(row=i, column=2).value is None:
-            RAW.cell(row=i, column=2).value = car
-            RAW.cell(row=i, column=3).value = tank
-            RAW.cell(row=i, column=4).value = int(before)
-            RAW.cell(row=i, column=5).value = int(after)
-                
-            MAIN.cell(row=10 * (i - 1), column=1).value = i-1
-            MAIN.cell(row=10 * (i - 1) + 1, column=1).value = car
-            MAIN.cell(row=10 * (i - 1) + 2, column=1).value = tank
+    for j, img in enumerate(img_list):
+        if img is None:
+            continue
+        
+        # Download image from Kudu
+        response = requests.get(img, auth=auth)
+        if response.status_code != 200:
+            raise Exception(f"❌ Failed to download image: HTTP {response.status_code}")
+        
+        MAIN.cell(row=10 * (i - 1), column=2+3*j).value = img.split("/")[-1].rsplit(".", 1)[0]
+        # Load directly from memory
+        image_data = BytesIO(response.content)
+        image = XLImage(image_data)
 
-            for j, img in enumerate(img_list):
-                if img is None:
-                    continue
-                
-                # Download image from Kudu
-                response = requests.get(img, auth=auth)
-                if response.status_code != 200:
-                    raise Exception(f"❌ Failed to download image: HTTP {response.status_code}")
-                
-                MAIN.cell(row=10 * (i - 1), column=2+3*j).value = img.split("/")[-1].rsplit(".", 1)[0]
-                # Load directly from memory
-                image_data = BytesIO(response.content)
-                image = XLImage(image_data)
+        # Resize proportionally
+        if image.width > image.height:
+            image.height = image.height / image.width * 180
+            image.width = 180
+        else:
+            image.width = image.width / image.height * 180
+            image.height = 180
 
-                # Resize proportionally
-                if image.width > image.height:
-                    image.height = image.height / image.width * 180
-                    image.width = 180
-                else:
-                    image.width = image.width / image.height * 180
-                    image.height = 180
-
-                # Place into correct cell
-                cell_address = get_column_letter(3 * j + 2) + str(10 * i - 9)
-                MAIN.add_image(image, cell_address)
+        # Place into correct cell
+        cell_address = get_column_letter(3 * j + 2) + str(10 * i - 9)
+        MAIN.add_image(image, cell_address)
 
     return
 
@@ -877,12 +875,13 @@ def export(request: gr.Request, location, date):
 
         sort_list = [before[0], after[0]] + sort_list
         print(f"{carid},{tankid}", file=sys.stderr, flush=True)
-        add_data(wb, carid, tankid, before[1], after[1], sort_list, data_count)
+        add_data(wb, carid, tankid, before[1], after[1], sort_list, i)
         
     save_url = f"{folder_url}/{location}_{date}.xlsx"
     local_path = f"/tmp/{location}_{date}.xlsx"
     wb.save(local_path)
 
+    #Export completion and download
     with open(local_path, "rb") as f:
         wbp = requests.put(save_url, data=f, auth=auth)
     if wbp.status_code in [200, 201]:
