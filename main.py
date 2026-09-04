@@ -45,13 +45,20 @@ def safe_request(url, method="get", retries=3, **kwargs):
             else:
                 raise
                 
+# --- Warm‑up hook ---
 @app.on_event("startup")
 async def warmup():
     try:
-        # Example: ping Kudu or your own health endpoint
+        # Example: ping a lightweight endpoint or Kudu
         safe_request(ROOT_FOLDER + "/healthcheck", auth=auth)
+        print("Warm‑up completed")
     except Exception as e:
-        print("Warmup failed:", e)
+        print("Warm‑up failed:", e)
+
+# --- Your routes / Gradio mount ---
+@app.get("/healthcheck")
+async def healthcheck():
+    return {"status": "ok"}
 
 #----------------------------------------------------------------------------
 # Dummy endpoint to satisfy Gradio frontend
