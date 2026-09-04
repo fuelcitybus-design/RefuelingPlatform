@@ -287,18 +287,18 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         if not uploaded_tabs:
-            return "警告：沒有選擇任何照片"
+            return "⚠️警告：沒有選擇任何照片"
 
         if (
             not location or location == "{請選擇}"
             or not car_id or car_id == "{請選擇}"
             or not tank_id or tank_id == "{請選擇}"
         ):
-            return "警告：確保已輸入地點，車號，缸號"
+            return "⚠️警告：確保已輸入地點，車號，缸號"
 
         tank_choices_local = tank_list.get(location, [])
         if not tank_choices_local or tank_id not in tank_choices_local:
-            return f"警告：無效的缸號 \"{tank_id}\""
+            return f"⚠️警告：無效的缸號 \"{tank_id}\""
 
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
@@ -306,7 +306,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
         status, items = http_get_json(base_url)
         if status is None:
-            return "網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
+            return "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
         detected_tabs_exist = []
         if status in (200, 201):
             items = items or []
@@ -324,17 +324,17 @@ def save_images(location, car_id, tank_id, *images, request=None):
             for attempt in range(3):
                 put_status = http_put_status(base_url, data=b"")
                 if put_status is None:
-                    return "網絡錯誤：無法建立資料夾（伺服器未響應）"
+                    return "🛜網絡錯誤：無法建立資料夾（伺服器未響應）"
                 if put_status in (200, 201, 204):
                     created = True
                     break
                 time.sleep(0.4 * (attempt + 1))
             if not created:
-                return "❌Folder creation failed."
+                return "❌錯誤：無法建立資料夾"
         else:
             put_status = http_put_status(base_url, data=b"")
             if put_status is None or put_status not in (200, 201, 204):
-                return "❌Folder creation failed."
+                return "❌錯誤：無法建立資料夾"
 
         saved = []
         messages_local = []
@@ -344,7 +344,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
             tab_name = tab_names[i]
 
             if tab_name in detected_tabs_exist:
-                messages_local.append(f"跳過已上傳照片 {tab_name}")
+                messages_local.append(f"⚠️跳過已上傳照片 {tab_name}")
                 continue
 
             # Coerce to PILImage if necessary
@@ -355,7 +355,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
                     img = PILImage.fromarray(np.array(img))
                     original_width, original_height = img.size
             except Exception:
-                messages_local.append(f"錯誤：處理影像 {tab_name} 時發生錯誤")
+                messages_local.append(f"❌錯誤：處理影像 {tab_name} 時發生錯誤")
                 continue
 
             try:
@@ -372,7 +372,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
                     buffer = BytesIO()
                     img_resized.save(buffer, format="JPEG", quality=85)
                 except Exception:
-                    messages_local.append(f"錯誤：儲存影像 {tab_name} 時發生錯誤")
+                    messages_local.append(f"❌錯誤：儲存影像 {tab_name} 時發生錯誤")
                     continue
             buffer.seek(0)
             filepath = f"{base_url}{tab_name}.jpg"
@@ -382,7 +382,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
             for attempt in range(3):
                 last_status = http_put_status(filepath, data=buffer.getvalue())
                 if last_status is None:
-                    messages_local.append(f"網絡錯誤：上傳 {tab_name} 失敗（未能連線）")
+                    messages_local.append(f"🛜網絡錯誤：上傳 {tab_name} 失敗（未能連線）")
                     break
                 if last_status in (200, 201, 204):
                     uploaded = True
@@ -391,20 +391,20 @@ def save_images(location, car_id, tank_id, *images, request=None):
             if uploaded:
                 saved.append(tab_name)
                 detected_tabs_exist.append(tab_name)
-                messages_local.append(f"已上傳: {tab_name}")
+                messages_local.append(f"✅已上傳: {tab_name}")
             else:
-                messages_local.append(f"❌{tab_name} save failed. HTTP {last_status if last_status is not None else 'N/A'}")
+                messages_local.append(f"❌錯誤：{tab_name} 上傳失敗. HTTP {last_status if last_status is not None else 'N/A'}")
 
         if saved:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
             if missing:
-                messages_local.append(str(f"已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}."))
+                messages_local.append(str(f"✅已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}."))
             else:
-                messages_local.append(str(f"已上傳 {len(saved)} 張新照片"))
+                messages_local.append(str(f"✅已上傳 {len(saved)} 張新照片"))
         else:
             if not messages_local:
-                messages_local.append(str("警告：沒有新照片"))
+                messages_local.append(str("⚠️警告：沒有新照片"))
         global result_text
         result_text = "\n".join([str(m) for m in messages_local])
         result_text = result_text.encode("utf-8", "ignore").decode("utf-8")
@@ -416,7 +416,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
-        return gr.update(value=f"未知錯誤: {str(e)}")
+        return gr.update(value=f"❌未知錯誤: {str(e)}")
 
 def sync_output():
         global result_text
@@ -464,7 +464,7 @@ def toggle_ui_components(location, car, tank):
         prev_btn_update = gr.update(visible=False)
         next_btn_update = gr.update(visible=False)
         tabs_update = gr.update(selected=None)
-        msg = "警告：確保已輸入地點，車號，缸號"
+        msg = "⚠️警告：確保已輸入地點，車號，缸號"
 
     return [msg] + tab_updates + [save_btn_update, prev_btn_update, next_btn_update, tabs_update]
 
@@ -624,7 +624,7 @@ def download_from_kudu(file_url, retries=3):
             if attempt < retries - 1:
                 time.sleep(2 ** attempt)
             else:
-                print("Image download failed:", e)
+                print(f"❌錯誤：相片下載失敗", e)
     # fallback placeholder
     return np.zeros((100, 100, 3), dtype=np.uint8)
 
@@ -636,7 +636,7 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
         imgs = [None] * 10
         txts = [""] * 10
         # Return abnormal_list (empty), msg, then 10 images + 10 texts
-        return [], "請先選擇位置，再運行分析","請先選擇位置，再運行分析", *imgs, *txts
+        return [], "⚠️警告：請先選擇位置，再運行分析","請先選擇位置，再運行分析", *imgs, *txts
         
     root_folder = f"{root_folder_O}/"
     abnormal_list = []
@@ -690,9 +690,9 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
 
     # Status message
     if len(abnormal_list) <= 10:
-        msg = f"{len(abnormal_list)}張照片需要檢查"
+        msg = f"ℹ️{len(abnormal_list)}張照片需要檢查"
     else:
-        msg = f"剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
+        msg = f"ℹ️剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
 
     # Return: state, status, 10 images, 10 texts
     return abnormal_list_10, msg, msg, *imgs, *txts
@@ -741,23 +741,23 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
     filled_texts = [t for t in texts if t is not None and t.strip() != ""]
 
     if len(filled_images) != len(filled_texts):
-        return "警告：輸入數量與照片數量不一致", "警告：輸入數量與照片數量不一致", abnormal_list
+        return "⚠️警告：輸入數量與照片數量不一致", "警告：輸入數量與照片數量不一致", abnormal_list
 
     text_list = []
     for idx, (txt, img) in enumerate(zip(texts, images)):
         if img is None:
             continue
         if txt is None or txt.strip() == "":
-            return f"警告：第{idx+1}張照片缺少輸入", f"警告：第{idx+1}張照片缺少輸入", abnormal_list
+            return f"⚠️警告：第{idx+1}張照片缺少輸入", f"警告：第{idx+1}張照片缺少輸入", abnormal_list
         try:
             text_list.append(int(txt.strip()))
         except ValueError:
-            return f"警告：第{idx+1}張照片非數字輸入", f"警告：第{idx+1}張照片非數字輸入", abnormal_list
+            return f"⚠️警告：第{idx+1}張照片非數字輸入", f"警告：第{idx+1}張照片非數字輸入", abnormal_list
 
     for i in range(min(len(filled_images), len(abnormal_list))):
         row = abnormal_list[i]
         if len(row) < 3:
-            return "警告：abnormal_list 結構錯誤", "警告：abnormal_list 結構錯誤", abnormal_list
+            return "⚠️警告：abnormal_list 結構錯誤", "警告：abnormal_list 結構錯誤", abnormal_list
     
         file_url = row[2]
         prefix = row[0]
@@ -785,7 +785,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
         new_list, msg = result[0], result[1]
         return msg, msg, new_list
     else:
-        return f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", []
+        return f"✅儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", []
 
 #===========================================================================================
 ##Module 3: Exporter
@@ -810,7 +810,7 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
         # Download image from Kudu
         response = requests.get(img, auth=auth)
         if response.status_code != 200:
-            raise Exception(f"❌ Failed to download image: HTTP {response.status_code}")
+            raise Exception(f"❌錯誤：相片下載失敗: HTTP {response.status_code}")
         
         MAIN.cell(row=10 * (i - 1), column=2+3*j).value = img.split("/")[-1].rsplit(".", 1)[0]
         # Load directly from memory
@@ -852,14 +852,14 @@ def export(request: gr.Request, location, date):
     template_url = f"{ROOT_FOLDER}/template.xlsx"
 
     if not location or location == "{請選擇}":
-            info_msg = "警告：確保已輸入地點"
+            info_msg = "⚠️警告：確保已輸入地點"
             info_log = "Error: Please select Location."
             return None, info_msg
     
     #Template from KUDU
     templateR = requests.get(template_url, auth=auth)
     if templateR.status_code != 200:
-        raise Exception(f"❌ Error {templateR.status_code}: {templateR.text}")
+        raise Exception(f"❌錯誤：失去匯出範本")
     # Step 2: Save locally
     local_path = "/tmp/template.xlsx"
     with open(local_path, "wb") as f:
@@ -869,7 +869,7 @@ def export(request: gr.Request, location, date):
 
     folder = requests.get(folder_url, auth=auth, timeout=15)
     if folder.status_code != 200:
-        info_msg = "警告：沒有相關記錄"
+        info_msg = "⚠️警告：沒有相關記錄"
         info_log = "Warning: No record avaliable"
         return None, info_msg
     RAW = wb['RAW']
@@ -917,7 +917,7 @@ def export(request: gr.Request, location, date):
                 try:
                     name, value, _ = img.replace('.', '_').split("_")
                 except:
-                    info_msg = "警告：缺少圖片，請確保已運行AI並儲存修改"
+                    info_msg = "⚠️警告：缺少圖片，請確保已運行AI並儲存修改"
                     info_log = "Warning: Image undetected. Remember to run AI analysis before exporting."
                     return None, info_msg
                 before = [file_url, value]
@@ -926,7 +926,7 @@ def export(request: gr.Request, location, date):
                 try:
                     name, value, _ = img.replace('.', '_').split("_")
                 except:
-                    info_msg = "警告：缺少圖片，請確保已運行AI並儲存修改"
+                    info_msg = "⚠️警告：缺少圖片，請確保已運行AI並儲存修改"
                     info_log = "Warning: Image undetected. Remember to run AI analysis before exporting."
                     return None, info_msg
 
@@ -935,7 +935,7 @@ def export(request: gr.Request, location, date):
                 sort_list.append(file_url)
 
         if before == None or after == None:
-            info_msg = "警告：缺少圖片，請確保已拍照並儲存"
+            info_msg = "⚠️警告：缺少圖片，請確保已拍照並儲存"
             info_log = "Warning: Image missing. Please Upload your image by image recorder."
             return None, info_msg
 
@@ -960,15 +960,15 @@ def export(request: gr.Request, location, date):
     with open(local_path, "rb") as f:
         wbp = requests.put(save_url, data=f, auth=auth)
     if wbp.status_code in [200, 201]:
-        return local_path, "✅ 導出成功，已上傳"
+        return local_path, "✅導出成功，已上傳"
     else:
         del_resp = requests.delete(save_url, auth=auth, headers={"If-Match": "*"})
         with open(local_path, "rb") as f:
             wbp = requests.put(save_url, data=f, auth=auth)
         if wbp.status_code in [200, 201]:
-            return local_path, "✅ 導出成功，已更新存檔"
+            return local_path, "✅導出成功，已更新存檔"
         else:
-            return local_path, f" 導出成功，只能從上下載最新版本: {wbp.status_code} {wbp.text}"
+            return local_path, f" ✅導出成功，只能從上下載最新版本: {wbp.status_code} {wbp.text}"
         
 #============================================================================================================================================================
 
@@ -1023,7 +1023,7 @@ def find_jpg_images(date, location, id, tank):
 
         response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
         if response.status_code != 200:
-            return [], f"❌ Failed to fetch directory contents: HTTP {response.status_code}"
+            return [], f"❌ 錯誤：無法存取儲存伺服器: HTTP {response.status_code}"
 
         files_json = response.json()
         os.makedirs("kudu_cache", exist_ok=True)
@@ -1043,44 +1043,44 @@ def find_jpg_images(date, location, id, tank):
                 gallery_items.append((local_cache_path, filename))
 
         if not gallery_items:
-            return [], "ℹ️ Connection successful, but no files were found in this tank folder."
+            return [], "⚠️連接成功，但這資料來沒有相片"
 
-        return gallery_items, f"🖼️ Loaded {len(gallery_items)} files successfully from Kudu storage."
+        return gallery_items, f"✅成功從儲存伺服器存取 {len(gallery_items)}組相片"
 
     except Exception as e:
-        return [], f"💥 Error accessing file structures: {str(e)}"
+        return [], f"❌錯誤：存取檔案結構時出錯: {str(e)}"
 
 
 def assign_tanks(date, location, id):
     # Validate inputs early
     if not id or id in ["請選擇", "沒有記錄"]:
         return (
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            "請先選取有效車號"
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            "⚠️警告：請先選取有效車號"
         )
 
     tanks = get_tank_names(date, location, id)
 
     if isinstance(tanks, str):
         return (
-            [], "錯誤信號",
-            [], "錯誤信號",
-            [], "錯誤信號",
-            [], "錯誤信號",
+            [], "❌錯誤信號",
+            [], "❌錯誤信號",
+            [], "❌錯誤信號",
+            [], "❌錯誤信號",
             tanks
         )
 
     if not tanks:
         # No tanks found: return empty galleries immediately
         return (
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            "注意：沒有相關紀錄"
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            "⚠️警告：沒有相關紀錄"
         )
 
     galleries_data = []
@@ -1097,7 +1097,7 @@ def assign_tanks(date, location, id):
             labels.append("沒有紀錄")
 
     tank_names_str = ", ".join(tanks)
-    msg = f"找到 {len(tanks)} 組紀錄: {tank_names_str}"
+    msg = f"✅找到 {len(tanks)} 組紀錄: {tank_names_str}"
 
     return (
         galleries_data[0], labels[0],
@@ -1116,22 +1116,22 @@ def update_car_dropdown(date, location):
             car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
         tank_reset = [
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            [], "沒有紀錄",
-            "請先選取有效車號"
+            [], "⚠️沒沒有紀錄",
+            [], "⚠️沒沒有紀錄",
+            [], "⚠️沒沒有紀錄",
+            [], "⚠️沒沒有紀錄",
+            "⚠️警告：請先選取有效車號"
         ]
 
         return (car_update, *tank_reset)
     except Exception:
         return (
             gr.update(choices=["錯誤"], value="錯誤"),
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            "伺服器錯誤：無法載入資料"
+            [], "❌錯誤",
+            [], "❌錯誤",
+            [], "❌錯誤",
+            [], "❌錯誤",
+            "❌錯誤：無法載入資料"
         )
 
 
@@ -1141,15 +1141,15 @@ def update_all(date, location, car):
         return g1, l1, g2, l2, g3, l3, g4, l4, msg
     except Exception:
         return (
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            [], "錯誤",
-            "伺服器錯誤：無法載入資料"
+            [], "❌錯誤",
+            [], "❌錯誤",
+            [], "❌錯誤",
+            [], "❌錯誤",
+            "❌錯誤：無法載入資料"
         )
 
 def clear_tanks():
-    return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "請先選取有效車號"
+    return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "⚠️警告：請先選取有效車號"
 
     
 #============================================================================================================================================================
@@ -1168,7 +1168,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
                 tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_uploader")
-                confirm_btn = gr.Button("確認選擇")
+                confirm_btn = gr.Button("✅確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
                 demo.load(None, None, raw_gps, js="""() => new Promise(r => navigator.geolocation.getCurrentPosition(
@@ -1209,7 +1209,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
 
-            output_text = gr.Textbox("請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
+            output_text = gr.Textbox("ℹ️請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
                 
             next_btn.click(
                     fn=next_tab,
@@ -1245,10 +1245,10 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
         #Module 2
         with gr.Tab("AI處理"):
             abnormal_list = gr.State([])
-            state = gr.Textbox("選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
+            state = gr.Textbox("ℹ️選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
             
             location_dropdownAI = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
-            run_btn = gr.Button("運行AI")
+            run_btn = gr.Button("🤖運行AI")
                 
             # Build image and text components first
             txts, imgs = [], []
@@ -1259,7 +1259,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     txt = gr.Textbox(value=None, label=f"Text {i+1}", visible=True)
                     txts.append(txt)
 
-            collect_btn = gr.Button("儲存所有修改")
+            collect_btn = gr.Button("✅儲存所有修改")
             
             state2 = gr.Textbox("選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
         
@@ -1283,9 +1283,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 date_picker = gr.DateTime(label="日期", include_time=False, value=str(datetime.now().date()))
 
             output = gr.File(label="下載")
-            state = gr.Textbox("選擇日期、地點以便輸出落油紀錄", label="狀態")
+            state = gr.Textbox("ℹ️選擇日期、地點以便輸出落油紀錄", label="狀態")
 
-            export_btn = gr.Button("下載")
+            export_btn = gr.Button("✅下載")
             export_btn.click(
                 fn=export,
                 inputs=[location_dropdown, date_picker],
@@ -1308,9 +1308,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                     allow_custom_value=True, filterable=True,
                     interactive=True, elem_id="tank_dropdown_history"
                 )
-                confirm_btn = gr.Button("確認選擇")
+                confirm_btn = gr.Button("✅確認選擇")
 
-            tank_message = gr.Textbox("選擇日期、地點查看已上載的照片。", label="Tank Summary", interactive=False, lines=2)
+            tank_message = gr.Textbox("ℹ️選擇日期、地點查看已上載的照片。", label="Tank Summary", interactive=False, lines=2)
 
             tank_label1 = gr.Textbox(label="Tank Info 1", interactive=False)
             gallery1 = gr.Gallery(columns=4, elem_id = "gallery1")
