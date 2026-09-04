@@ -1274,7 +1274,6 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)   
                 
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, state2, abnormal_list])
-
             
         # Module 3
         with gr.Tab("下載"):
