@@ -1,21 +1,4 @@
-#Setup environment for running Gradio interface
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-
-app = FastAPI()
-
-# Dummy endpoint to satisfy Gradio frontend
-@app.get("/gradio_api/upload_progress")
-async def upload_progress(upload_id: str):
-    return JSONResponse({
-        "status": "complete",
-        "progress": 1.0,   # float between 0 and 1
-        "eta": 0,
-        "average_speed": 0
-    })
-    
 #================================================================================================
-
 #Library imports
 import os
 import base64
@@ -41,6 +24,46 @@ import time
 import traceback
 import sys
 
+#---------------------------------------------------------------------------------
+#Setup environment for running Gradio interface
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+#---------------------------------------------------------------------------------
+#Warm-up -er
+def safe_request(url, method="get", retries=3, **kwargs):
+    for attempt in range(retries):
+        try:
+            resp = getattr(requests, method)(url, **kwargs)
+            resp.raise_for_status()
+            return resp
+        except Exception as e:
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)  # exponential backoff
+            else:
+                raise
+                
+@app.on_event("startup")
+async def warmup():
+    try:
+        # Example: ping Kudu or your own health endpoint
+        safe_request(ROOT_FOLDER + "/healthcheck", auth=auth)
+    except Exception as e:
+        print("Warmup failed:", e)
+
+#----------------------------------------------------------------------------
+# Dummy endpoint to satisfy Gradio frontend
+@app.get("/gradio_api/upload_progress")
+async def upload_progress(upload_id: str):
+    return JSONResponse({
+        "status": "complete",
+        "progress": 1.0,   # float between 0 and 1
+        "eta": 0,
+        "average_speed": 0
+    })
+    
 #========================================================================================================
 
 # --- CONFIGURATION ---
