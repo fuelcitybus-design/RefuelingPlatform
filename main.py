@@ -610,12 +610,23 @@ def kudu_rename(file_url, new_name):
 
     return new_url
 
-def download_from_kudu(file_url):
-    resp = requests.get(file_url, auth=auth)
-    resp.raise_for_status()
-    file_bytes = np.frombuffer(resp.content, np.uint8)
-    image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-    return image
+#Download from KUDU with no.of retries in case if image fail to show up
+def download_from_kudu(file_url, retries=3):
+    for attempt in range(retries):
+        try:
+            resp = requests.get(file_url, auth=auth, timeout=10)
+            resp.raise_for_status()
+            file_bytes = np.frombuffer(resp.content, np.uint8)
+            image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+            if image is not None:
+                return image
+        except Exception as e:
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)
+            else:
+                print("Image download failed:", e)
+    # fallback placeholder
+    return np.zeros((100, 100, 3), dtype=np.uint8)
 
 # =====================================================================
 # Analysis & Abnormal Extraction
