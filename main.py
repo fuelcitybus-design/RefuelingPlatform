@@ -1207,7 +1207,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             img_tabs.select(sync_tab_index, None, current)
 
-            save_btn = gr.Button("儲存所有相片", variant="primary", size="lg", visible=False)
+            save_btn = gr.Button("✅儲存所有相片", variant="primary", size="lg", visible=False)
 
             output_text = gr.Textbox("ℹ️請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
                 
@@ -1261,7 +1261,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
 
             collect_btn = gr.Button("✅儲存所有修改")
             
-            state2 = gr.Textbox("選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
+            state2 = gr.Textbox("ℹ️選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
         
             # Now wire the button with ALL outputs
             run_btn.click(
