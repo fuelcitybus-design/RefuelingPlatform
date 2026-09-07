@@ -28,7 +28,6 @@ import sys
 #Setup environment for running Gradio interface
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-
 app = FastAPI()
 
 #---------------------------------------------------------------------------------
