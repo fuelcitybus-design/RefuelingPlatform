@@ -43,7 +43,7 @@ def safe_request(url, method="get", retries=3, **kwargs):
                 time.sleep(2 ** attempt)  # exponential backoff
             else:
                 raise
-                
+
 # --- Warm‑up hook ---
 @app.on_event("startup")
 async def warmup():
