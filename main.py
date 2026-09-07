@@ -418,7 +418,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
-        return gr.update(value=result_text), [result_text]
+        return [result_text], [result_text]
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
@@ -771,17 +771,6 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
             num_update += 1
         viewed += 1
         kudu_rename(file_url, new_name)
-
-    
-    #for i in range(len(filled_images)):
-       # file_url = abnormal_list[i][2]
-        #prefix = abnormal_list[i][0]
-        #ocr_original = abnormal_list[i][1]
-        #new_name = f"{prefix}_{text_list[i]}.jpg"
-        #if int(ocr_original) != int(text_list[i]):
-        #    num_update += 1
-        #viewed +=1
-        #kudu_rename(file_url, new_name)
 
     if abnormal_count > 10:
         result = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
@@ -1232,9 +1221,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=[output_text, hidden_state],
-                concurrency_limit=1,
-                show_progress="full"
+                outputs=[output_text, hidden_state]
             )
             
             confirm_btn.click(
