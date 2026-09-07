@@ -287,18 +287,18 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         if not uploaded_tabs:
-            return "⚠️警告：沒有選擇任何照片",""
+            return "⚠️警告：沒有選擇任何照片"
 
         if (
             not location or location == "{請選擇}"
             or not car_id or car_id == "{請選擇}"
             or not tank_id or tank_id == "{請選擇}"
         ):
-            return "⚠️警告：確保已輸入地點，車號，缸號",""
+            return "⚠️警告：確保已輸入地點，車號，缸號"
 
         tank_choices_local = tank_list.get(location, [])
         if not tank_choices_local or tank_id not in tank_choices_local:
-            return f"⚠️警告：無效的缸號 \"{tank_id}\"",""
+            return f"⚠️警告：無效的缸號 \"{tank_id}\""
 
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
@@ -306,7 +306,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
         status, items = http_get_json(base_url)
         if status is None:
-            return "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）",""
+            return "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
         detected_tabs_exist = []
         if status in (200, 201):
             items = items or []
@@ -324,7 +324,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
             for attempt in range(3):
                 put_status = http_put_status(base_url, data=b"")
                 if put_status is None:
-                    return "🛜網絡錯誤：無法建立資料夾（伺服器未響應）",""
+                    return "🛜網絡錯誤：無法建立資料夾（伺服器未響應）"
                 if put_status in (200, 201, 204):
                     created = True
                     break
@@ -334,7 +334,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         else:
             put_status = http_put_status(base_url, data=b"")
             if put_status is None or put_status not in (200, 201, 204):
-                return "❌錯誤：無法建立資料夾", ""
+                return "❌錯誤：無法建立資料夾"
 
         saved = []
         messages_local = []
