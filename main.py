@@ -286,18 +286,21 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         if not uploaded_tabs:
-            return "⚠️警告：沒有選擇任何照片"
+            msg = "⚠️警告：沒有選擇任何照片"
+            return gr.update(value=msg), msg
 
         if (
             not location or location == "{請選擇}"
             or not car_id or car_id == "{請選擇}"
             or not tank_id or tank_id == "{請選擇}"
         ):
-            return "⚠️警告：確保已輸入地點，車號，缸號"
+            msg = "⚠️警告：確保已輸入地點，車號，缸號"
+            return gr.update(value=msg), msg
 
         tank_choices_local = tank_list.get(location, [])
         if not tank_choices_local or tank_id not in tank_choices_local:
-            return f"⚠️警告：無效的缸號 \"{tank_id}\""
+            msg = f"⚠️警告：無效的缸號 \"{tank_id}\""
+            return gr.update(value=msg), msg
 
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
@@ -305,7 +308,8 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
         status, items = http_get_json(base_url)
         if status is None:
-            return "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
+            msg = "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
+            return gr.update(value=msg), msg
         detected_tabs_exist = []
         if status in (200, 201):
             items = items or []
@@ -323,17 +327,20 @@ def save_images(location, car_id, tank_id, *images, request=None):
             for attempt in range(3):
                 put_status = http_put_status(base_url, data=b"")
                 if put_status is None:
-                    return "🛜網絡錯誤：無法建立資料夾（伺服器未響應）"
+                    msg = "🛜網絡錯誤：無法建立資料夾（伺服器未響應）"
+                    return gr.update(value=msg), msg
                 if put_status in (200, 201, 204):
                     created = True
                     break
                 time.sleep(0.4 * (attempt + 1))
             if not created:
-                return "❌錯誤：無法建立資料夾",""
+                mg = "❌錯誤：無法建立資料夾",""
+                return gr.update(value=msg), msg
         else:
             put_status = http_put_status(base_url, data=b"")
             if put_status is None or put_status not in (200, 201, 204):
-                return "❌錯誤：無法建立資料夾"
+                msg = "❌錯誤：無法建立資料夾"
+                return gr.update(value=msg), msg
 
         saved = []
         messages_local = []
@@ -415,7 +422,8 @@ def save_images(location, car_id, tank_id, *images, request=None):
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
-        return gr.update(value=f"❌未知錯誤: {str(e)}")
+        msg = f"❌未知錯誤: {str(e)}"
+        return gr.update(value=msg), msg
 
 def sync_output():
         global result_text
