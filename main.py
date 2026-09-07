@@ -61,14 +61,14 @@ async def healthcheck():
 
 #----------------------------------------------------------------------------
 # Dummy endpoint to satisfy Gradio frontend
-@app.get("/gradio_api/upload_progress")
-async def upload_progress(upload_id: str):
-    return JSONResponse({
-        "status": "complete",
-        "progress": 1.0,   # float between 0 and 1
-        "eta": 0,
-        "average_speed": 0
-    })
+#@app.get("/gradio_api/upload_progress")
+#async def upload_progress(upload_id: str):
+    #return JSONResponse({
+      #  "status": "complete",
+      #  "progress": 1.0,   # float between 0 and 1
+      #  "eta": 0,
+      #  "average_speed": 0
+   # })
 
 #========================================================================================================
 
@@ -1386,7 +1386,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
         
 # Enable Gradio queue (compatibility fallback)
 try:
-    demo.queue(concurrency_count=5, max_size=32)
+    demo.queue(deault_concurrency_count=5, max_size=32)
 except TypeError:
     demo.queue()
 
