@@ -1281,7 +1281,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 inputs=[location_dropdown, date_picker],
                 outputs=[output, state]
             )
-        
+    
         # Module 4
         with gr.Tab("記錄"):
             with gr.Row():
