@@ -1386,7 +1386,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
         
 # Enable Gradio queue (compatibility fallback)
 try:
-    demo.queue(concurrency_count=3)
+    demo.queue(concurrency_count=2)
 except TypeError:
     demo.queue()
 
