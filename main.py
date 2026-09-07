@@ -425,10 +425,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
         msg = f"❌未知錯誤: {str(e)}"
         return gr.update(value=msg), msg
 
-def sync_output():
-        global result_text
-        return result_text
-
 def nearest(gps):
     if "Allow" in gps:
         return "{請選擇}"
@@ -1236,10 +1232,10 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=[output_text, hidden_state]
+                outputs=[output_text, hidden_state],
+                concurrency_limit=1,
+                show_progress="full"
             )
-
-            #save_btn.click(fn=sync_output, inputs=None, outputs=output_text)
             
             confirm_btn.click(
                 fn=toggle_ui_components,
