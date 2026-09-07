@@ -1391,4 +1391,4 @@ try:
 except TypeError:
     demo.queue()
 
-app = gr.mount_gradio_app(app, demo, path="/")
+app = gr.mount_gradio_app(app, demo, path="/",max_file_size="10MB")
