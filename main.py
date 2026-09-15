@@ -70,7 +70,6 @@ async def upload_progress(upload_id: str):
         "average_speed": 0
     })
 
-
 #========================================================================================================
 # Custom JavaScript to inject into the front-end
 # It checks browser online/offline status and attempts to ping the server
