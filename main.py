@@ -68,7 +68,7 @@ async def upload_progress(upload_id: str):
         "progress": 1.0,   # float between 0 and 1
         "eta": 0,
         "average_speed": 0
-   # })
+    })
 
 
 #========================================================================================================
