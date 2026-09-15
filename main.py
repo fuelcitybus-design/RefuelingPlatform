@@ -61,15 +61,59 @@ async def healthcheck():
 
 #----------------------------------------------------------------------------
 # Dummy endpoint to satisfy Gradio frontend
-#@app.get("/gradio_api/upload_progress")
-#async def upload_progress(upload_id: str):
-    #return JSONResponse({
-      #  "status": "complete",
-      #  "progress": 1.0,   # float between 0 and 1
-      #  "eta": 0,
-      #  "average_speed": 0
+@app.get("/gradio_api/upload_progress")
+async def upload_progress(upload_id: str):
+    return JSONResponse({
+        "status": "complete",
+        "progress": 1.0,   # float between 0 and 1
+        "eta": 0,
+        "average_speed": 0
    # })
 
+
+#========================================================================================================
+# Custom JavaScript to inject into the front-end
+# It checks browser online/offline status and attempts to ping the server
+monitor_connection_js = """
+function checkConnection() {
+    const statusBar = document.getElementById("status-bar");
+    if (!statusBar) return;
+
+    function setOnline() {
+        statusBar.innerHTML = "🟢 Connected to Server";
+        statusBar.style.color = "#10B981"; // Green
+    }
+
+    function setOffline() {
+        statusBar.innerHTML = "🔴 Session Disconnected / Offline";
+        statusBar.style.color = "#EF4444"; // Red
+    }
+
+    // 1. Check basic browser connectivity
+    if (!navigator.onLine) {
+        setOffline();
+        return;
+    }
+
+    // 2. Actively ping the backend to confirm the specific Gradio session is alive
+    fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+        .then(response => {
+            if (response.ok) {
+                setOnline();
+            } else {
+                setOffline();
+            }
+        })
+        .catch(() => {
+            setOffline();
+        });
+}
+
+// Start checking every 3 seconds once the application loads
+setInterval(checkConnection, 3000);
+"""
+        
+        
 #========================================================================================================
 
 # --- CONFIGURATION ---
@@ -1147,6 +1191,12 @@ def clear_tanks():
 #============================================================================================================================================================
 
 with gr.Blocks(head=prefer_back_camera()) as demo:
+    gr.HTML(
+        value="🟢 Checking connection...", 
+        elem_id="status-bar",
+        css="#status-bar { font-weight: bold; font-size: 16px; padding: 10px; margin-bottom: 10px; transition: color 0.3s ease; }"
+    )
+    
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
@@ -1391,4 +1441,4 @@ try:
 except TypeError:
     demo.queue()
 
-app = gr.mount_gradio_app(app, demo, path="/",max_file_size="10MB")
+app = gr.mount_gradio_app(app, demo, path="/",max_file_size="10MB", js = monitor_connection_js)
