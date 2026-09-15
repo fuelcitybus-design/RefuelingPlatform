@@ -1193,9 +1193,9 @@ def clear_tanks():
 
 with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; font-size: 16px; padding: 10px; margin-bottom: 10px; transition: color 0.3s ease; }") as demo:
     # Status bar
-    gr.HTML(value='<div id="status-bar">🟢 Checking connection...</div>', elem_id="status-bar")
+    #gr.HTML(value='<div id="status-bar">🟢 Checking connection...</div>', elem_id="status-bar")
     # Inject JS
-    gr.HTML(value=monitor_connection_js)
+    #gr.HTML(value=monitor_connection_js)
     
     gr.Markdown("落油記錄工具")
 
@@ -1272,7 +1272,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
                 outputs=[output_text, hidden_state],
-                concurrency_limit=4
+                concurrency_limit=3
             )
             
             confirm_btn.click(
