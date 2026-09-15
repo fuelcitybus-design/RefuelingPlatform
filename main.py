@@ -1192,10 +1192,10 @@ def clear_tanks():
 #============================================================================================================================================================
 
 with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; font-size: 16px; padding: 10px; margin-bottom: 10px; transition: color 0.3s ease; }") as demo:
-    gr.HTML(
-        value="🟢 Checking connection...",
-        elem_id="status-bar"
-    )
+    # Status bar
+    gr.HTML(value='<div id="status-bar">🟢 Checking connection...</div>', elem_id="status-bar")
+    # Inject JS
+    gr.HTML(value=monitor_connection_js)
     
     gr.Markdown("落油記錄工具")
 
@@ -1441,4 +1441,4 @@ try:
 except TypeError:
     demo.queue()
 
-app = gr.mount_gradio_app(app, demo, path="/",max_file_size="10MB", js = monitor_connection_js)
+app = gr.mount_gradio_app(app, demo, path="/",max_file_size="10MB")
