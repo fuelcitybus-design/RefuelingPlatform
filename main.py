@@ -458,9 +458,9 @@ def save_images(location, car_id, tank_id, *images, request=None):
             if not messages_local:
                 messages_local.append(str("⚠️警告：沒有新照片"))
         global result_text
-        result_text = "\n".join([str(m) for m in messages_local])
+        result_text = "\n".join(messages_local)
         result_text = result_text.encode("utf-8", "ignore").decode("utf-8")
-        result_text=f"{result_text}\n[{datetime.now().isoformat()}]"
+        result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
