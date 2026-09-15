@@ -60,15 +60,17 @@ async def healthcheck():
     return {"status": "ok"}
 
 #----------------------------------------------------------------------------
-# Dummy endpoint to satisfy Gradio frontend
+from fastapi.responses import JSONResponse
+
 @app.get("/gradio_api/upload_progress")
 async def upload_progress(upload_id: str):
     return JSONResponse({
         "status": "complete",
-        "progress": 1.0,   # float between 0 and 1
+        "progress": 1.0,
         "eta": 0,
         "average_speed": 0
     })
+
 
 #========================================================================================================
 # Custom JavaScript to inject into the front-end
