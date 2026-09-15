@@ -1190,11 +1190,10 @@ def clear_tanks():
     
 #============================================================================================================================================================
 
-with gr.Blocks(head=prefer_back_camera()) as demo:
+with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; font-size: 16px; padding: 10px; margin-bottom: 10px; transition: color 0.3s ease; }") as demo:
     gr.HTML(
-        value="🟢 Checking connection...", 
-        elem_id="status-bar",
-        css="#status-bar { font-weight: bold; font-size: 16px; padding: 10px; margin-bottom: 10px; transition: color 0.3s ease; }"
+        value="🟢 Checking connection...",
+        elem_id="status-bar"
     )
     
     gr.Markdown("落油記錄工具")
