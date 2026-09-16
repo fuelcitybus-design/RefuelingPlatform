@@ -71,47 +71,7 @@ async def upload_progress(upload_id: str):
         "average_speed": 0
     })
 
-#========================================================================================================
-# Custom JavaScript to inject into the front-end
-# It checks browser online/offline status and attempts to ping the server
-monitor_connection_js = """
-function checkConnection() {
-    const statusBar = document.getElementById("status-bar");
-    if (!statusBar) return;
 
-    function setOnline() {
-        statusBar.innerHTML = "🟢 Connected to Server";
-        statusBar.style.color = "#10B981"; // Green
-    }
-
-    function setOffline() {
-        statusBar.innerHTML = "🔴 Session Disconnected / Offline";
-        statusBar.style.color = "#EF4444"; // Red
-    }
-
-    // 1. Check basic browser connectivity
-    if (!navigator.onLine) {
-        setOffline();
-        return;
-    }
-
-    // 2. Actively ping the backend to confirm the specific Gradio session is alive
-    fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
-        .then(response => {
-            if (response.ok) {
-                setOnline();
-            } else {
-                setOffline();
-            }
-        })
-        .catch(() => {
-            setOffline();
-        });
-}
-
-// Start checking every 3 seconds once the application loads
-setInterval(checkConnection, 3000);
-"""
         
         
 #========================================================================================================
@@ -313,15 +273,33 @@ active_tabs = []
 global tank_choices
 tank_choices = []
 
-import threading, uuid
+# Single synchronous save handler (no global messages)
+# --- HTTP helpers with credentials ---
+def http_put_status(url, data):
+    try:
+        r = requests.put(url, data=data, auth=auth)
+        return r.status_code
+    except Exception:
+        return None
 
+def http_get_json(url):
+    try:
+        r = requests.get(url, auth=auth)
+        if r.status_code == 200:
+            return r.status_code, r.json()
+        return r.status_code, None
+    except Exception:
+        return None, None
+
+# --- global job status store ---
 job_status = {}
 
+# --- background worker with all your rules ---
 def background_upload(job_id, location, car_id, tank_id, images, request=None):
     messages_local = []
     saved = []
     try:
-        # --- keep all your existing rule checks here ---
+        # Validation rules
         if not location or location == "{請選擇}" or not car_id or car_id == "{請選擇}" or not tank_id or tank_id == "{請選擇}":
             job_status[job_id] = "⚠️警告：確保已輸入地點，車號，缸號"
             return
@@ -336,7 +314,6 @@ def background_upload(job_id, location, car_id, tank_id, images, request=None):
             job_status[job_id] = "⚠️警告：沒有選擇任何照片"
             return
 
-        # --- your existing folder check / creation logic ---
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
@@ -345,35 +322,88 @@ def background_upload(job_id, location, car_id, tank_id, images, request=None):
         if status is None:
             job_status[job_id] = "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
             return
-        # (rest of your folder creation logic unchanged...)
+        elif status == 404:
+            created = False
+            for attempt in range(3):
+                put_status = http_put_status(base_url, data=b"")
+                if put_status in (200, 201, 204):
+                    created = True
+                    break
+                time.sleep(0.4 * (attempt + 1))
+            if not created:
+                job_status[job_id] = "❌錯誤：無法建立資料夾"
+                return
 
-        # --- upload loop unchanged, but append messages_local instead of returning ---
+        # Upload loop
         for i, img in enumerate(images):
             if img is None:
                 continue
             tab_name = tab_names[i]
-            # resizing, saving, uploading logic as before
-            messages_local.append(f"✅已上傳: {tab_name}")
-            saved.append(tab_name)
+
+            try:
+                if hasattr(img, "size"):
+                    original_width, original_height = img.size
+                else:
+                    img = PILImage.fromarray(np.array(img))
+                    original_width, original_height = img.size
+            except Exception:
+                messages_local.append(f"❌錯誤：處理影像 {tab_name} 時發生錯誤")
+                continue
+
+            try:
+                new_width = int(original_width * (400 / float(original_height))) if original_height else 400
+            except Exception:
+                new_width = 400
+            img_resized = img.resize((max(1, new_width), 400))
+            buffer = BytesIO()
+            try:
+                img_resized.save(buffer, format="JPEG", quality=85)
+            except Exception:
+                try:
+                    img_resized = img_resized.convert("RGB")
+                    buffer = BytesIO()
+                    img_resized.save(buffer, format="JPEG", quality=85)
+                except Exception:
+                    messages_local.append(f"❌錯誤：儲存影像 {tab_name} 時發生錯誤")
+                    continue
+            buffer.seek(0)
+            filepath = f"{base_url}{tab_name}.jpg"
+
+            uploaded = False
+            last_status = None
+            for attempt in range(3):
+                last_status = http_put_status(filepath, data=buffer.getvalue())
+                if last_status in (200, 201, 204):
+                    uploaded = True
+                    break
+                time.sleep(0.3 * (attempt + 1))
+            if uploaded:
+                saved.append(tab_name)
+                messages_local.append(f"✅已上傳: {tab_name}")
+            else:
+                messages_local.append(f"❌錯誤：{tab_name} 上傳失敗. HTTP {last_status if last_status is not None else 'N/A'}")
 
         if saved:
             messages_local.append(f"✅已上傳 {len(saved)} 張新照片")
         else:
-            messages_local.append("⚠️警告：沒有新照片")
+            if not messages_local:
+                messages_local.append("⚠️警告：沒有新照片")
 
         result_text = "\n".join(messages_local)
         result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
         job_status[job_id] = result_text
 
     except Exception as e:
+        tb = traceback.format_exc()
+        print(f"[background_upload] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
         job_status[job_id] = f"❌未知錯誤: {str(e)}"
 
+# --- Gradio functions ---
 def save_images(location, car_id, tank_id, *images, request=None):
     job_id = uuid.uuid4().hex
     job_status[job_id] = "📤 Upload started..."
     threading.Thread(target=background_upload, args=(job_id, location, car_id, tank_id, images, request)).start()
-    # return immediately to keep UI responsive
-    return f"📤 Upload task {job_id} started. 請稍候查看狀態。"
+    return f"📤 Upload task {job_id} started. 請稍候查看狀態。", job_id
 
 def check_status(job_id):
     return job_status.get(job_id, "⏳ 尚未完成")
@@ -1144,7 +1174,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     image_inputs = []
                     tab_list_local = []
                     for i, tab_name in enumerate(tab_names):
-                        with gr.Tab(tab_name, id =i, visible=False) as tab:
+                        with gr.Tab(tab_name, id=i, visible=False) as tab:
                             img_input = gr.Image(
                                 type="pil",
                                 label=f"上傳「{tab_name}」相片",
@@ -1155,27 +1185,27 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                             )
                             image_inputs.append(img_input)
                             tab_list_local.append(tab)
-
-            img_tabs.select(sync_tab_index, None, current)
             
-            hidden_state = gr.State("")
-            save_btn.click(
-                fn=save_images,
-                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=output_text,
-                concurrency_limit=1   # safer on mobile
-            )
+                save_btn = gr.Button("✅儲存所有相片", variant="primary", size="lg", visible=False)
+                output_text = gr.Textbox("ℹ️請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
+                result_hidden = gr.Textbox(visible=False)
+                hidden_state = gr.State("")
             
-            # hidden_state can store the job_id
-            status_btn = gr.Button("🔄檢查上傳狀態")
-            status_output = gr.Textbox(label="狀態", lines=6)
+                save_btn.click(
+                    fn=save_images,
+                    inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
+                    outputs=[output_text, hidden_state],
+                    concurrency_limit=1
+                )
             
-            status_btn.click(
-                fn=check_status,
-                inputs=[hidden_state],
-                outputs=status_output
-            )
+                status_btn = gr.Button("🔄檢查上傳狀態")
+                status_output = gr.Textbox(label="狀態", lines=6)
             
+                status_btn.click(
+                    fn=check_status,
+                    inputs=[hidden_state],
+                    outputs=status_output
+                )
                 
             next_btn.click(
                     fn=next_tab,
@@ -1188,8 +1218,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     inputs=[current, location_dropdown],
                     outputs=[img_tabs, current]
                 )
-            
-            result_hidden = gr.Textbox(visible=False)
             
             confirm_btn.click(
                 fn=toggle_ui_components,
