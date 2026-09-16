@@ -739,9 +739,9 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
 
     # Status message
     if len(abnormal_list) <= 10:
-        msg = f"ℹ️{len(abnormal_list)}張照片需要檢查"
+        msg = f"ℹ️{len(abnormal_list)}張照片需要檢查\nℹ️如照片未能展示出來，請刷新網站再按「運行AI」"
     else:
-        msg = f"ℹ️剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
+        msg = f"ℹ️剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續\nℹ️如照片未能展示出來，請刷新網站再按「運行AI」"
 
     # Return: state, status, 10 images, 10 texts
     return abnormal_list_10, msg, msg, *imgs, *txts
