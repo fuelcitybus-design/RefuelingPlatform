@@ -316,11 +316,26 @@ tank_choices = []
 # Single synchronous save handler (no global messages)
 def save_images(location, car_id, tank_id, *images, request=None):
     start_ts = datetime.now().isoformat()
-    messages_local = []
-
     try:
-        # --- Validation ---
-        if not location or location == "{請選擇}" or not car_id or car_id == "{請選擇}" or not tank_id or tank_id == "{請選擇}":
+        client_repr = "unknown"
+        try:
+            if request and getattr(request, "client", None):
+                client_repr = f"{request.client.host}:{request.client.port}"
+        except Exception:
+            client_repr = "unknown"
+
+        print(f"[{start_ts}] save_images START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr, flush=True)
+
+        uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
+        if not uploaded_tabs:
+            msg = "⚠️警告：沒有選擇任何照片"
+            return gr.update(value=msg), msg
+
+        if (
+            not location or location == "{請選擇}"
+            or not car_id or car_id == "{請選擇}"
+            or not tank_id or tank_id == "{請選擇}"
+        ):
             msg = "⚠️警告：確保已輸入地點，車號，缸號"
             return gr.update(value=msg), msg
 
@@ -337,30 +352,40 @@ def save_images(location, car_id, tank_id, *images, request=None):
         if status is None:
             msg = "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
             return gr.update(value=msg), msg
-
-        if status == 404:
+        detected_tabs_exist = []
+        if status in (200, 201):
+            items = items or []
+            existing_files = [item.get("name") for item in items if item.get("name") and item.get("mime") != "inode/directory"]
+            for f in existing_files:
+                name, ext = os.path.splitext(f)
+                if name and name not in detected_tabs_exist:
+                    detected_tabs_exist.append(name)
+                if "油車前" in name and "油車前" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車前")
+                if "油車後" in name and "油車後" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車後")
+        elif status == 404:
             created = False
             for attempt in range(3):
                 put_status = http_put_status(base_url, data=b"")
+                if put_status is None:
+                    msg = "🛜網絡錯誤：無法建立資料夾（伺服器未響應）"
+                    return gr.update(value=msg), msg
                 if put_status in (200, 201, 204):
                     created = True
                     break
                 time.sleep(0.4 * (attempt + 1))
             if not created:
+                mg = "❌錯誤：無法建立資料夾",""
+                return gr.update(value=msg), msg
+        else:
+            put_status = http_put_status(base_url, data=b"")
+            if put_status is None or put_status not in (200, 201, 204):
                 msg = "❌錯誤：無法建立資料夾"
                 return gr.update(value=msg), msg
 
-        # --- Existing files detection ---
-        detected_tabs_exist = []
-        if items:
-            existing_files = [item.get("name") for item in items if item.get("name") and item.get("mime") != "inode/directory"]
-            for f in existing_files:
-                name, _ = os.path.splitext(f)
-                if name and name not in detected_tabs_exist:
-                    detected_tabs_exist.append(name)
-
-        # --- Process each image ---
         saved = []
+        messages_local = []
         for i, img in enumerate(images):
             if img is None:
                 continue
@@ -370,48 +395,75 @@ def save_images(location, car_id, tank_id, *images, request=None):
                 messages_local.append(f"⚠️跳過已上傳照片 {tab_name}")
                 continue
 
+            # Coerce to PILImage if necessary
             try:
-                original_width, original_height = img.size
-                new_width = int(original_width * (400 / float(original_height))) if original_height else 400
-                img_resized = img.resize((max(1, new_width), 400))
-                buffer = BytesIO()
-                img_resized.save(buffer, format="JPEG", quality=85)
-                buffer.seek(0)
+                if hasattr(img, "size"):
+                    original_width, original_height = img.size
+                else:
+                    img = PILImage.fromarray(np.array(img))
+                    original_width, original_height = img.size
             except Exception:
                 messages_local.append(f"❌錯誤：處理影像 {tab_name} 時發生錯誤")
                 continue
 
+            try:
+                new_width = int(original_width * (400 / float(original_height))) if original_height else 400
+            except Exception:
+                new_width = 400
+            img_resized = img.resize((max(1, new_width), 400))
+            buffer = BytesIO()
+            try:
+                img_resized.save(buffer, format="JPEG", quality=85)
+            except Exception:
+                try:
+                    img_resized = img_resized.convert("RGB")
+                    buffer = BytesIO()
+                    img_resized.save(buffer, format="JPEG", quality=85)
+                except Exception:
+                    messages_local.append(f"❌錯誤：儲存影像 {tab_name} 時發生錯誤")
+                    continue
+            buffer.seek(0)
             filepath = f"{base_url}{tab_name}.jpg"
+
             uploaded = False
+            last_status = None
             for attempt in range(3):
-                status = http_put_status(filepath, data=buffer.getvalue())
-                if status in (200, 201, 204):
+                last_status = http_put_status(filepath, data=buffer.getvalue())
+                if last_status is None:
+                    messages_local.append(f"🛜網絡錯誤：上傳 {tab_name} 失敗（未能連線）")
+                    break
+                if last_status in (200, 201, 204):
                     uploaded = True
                     break
                 time.sleep(0.3 * (attempt + 1))
-
             if uploaded:
                 saved.append(tab_name)
                 detected_tabs_exist.append(tab_name)
                 messages_local.append(f"✅已上傳: {tab_name}")
             else:
-                messages_local.append(f"❌錯誤：{tab_name} 上傳失敗")
+                messages_local.append(f"❌錯誤：{tab_name} 上傳失敗. HTTP {last_status if last_status is not None else 'N/A'}")
 
-        # --- Final aggregation ---
         if saved:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
             if missing:
-                messages_local.append(f"✅已上傳 {len(saved)} 張新照片\n請上傳 {', '.join(missing)}.")
+                messages_local.append(str(f"✅已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}."))
             else:
-                messages_local.append(f"✅已上傳 {len(saved)} 張新照片")
-        elif not messages_local:
-            messages_local.append("⚠️警告：沒有新照片")
-
-        result_text = "\n".join(messages_local) + f"\n[{datetime.now().isoformat()}]"
+                messages_local.append(str(f"✅已上傳 {len(saved)} 張新照片"))
+        else:
+            if not messages_local:
+                messages_local.append(str("⚠️警告：沒有新照片"))
+        result_text = "\n".join(messages_local)
+        result_text = result_text.encode("utf-8", "ignore").decode("utf-8")
+        result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
+        print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
+        end_ts = datetime.now().isoformat()
+        print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
+        result_text = "Saved"
         return gr.update(value=result_text), result_text
-
     except Exception as e:
+        tb = traceback.format_exc()
+        print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
         msg = f"❌未知錯誤: {str(e)}"
         return gr.update(value=msg), msg
 
