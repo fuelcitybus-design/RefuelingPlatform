@@ -1268,8 +1268,9 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=[output_text, hidden_state],
-                concurrency_limit=3
+                outputs=[output_text, hidden_state]
+                #,
+                #concurrency_limit=3
             )
             
             confirm_btn.click(
