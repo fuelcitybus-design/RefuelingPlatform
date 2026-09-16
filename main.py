@@ -23,7 +23,7 @@ from datetime import datetime
 import time
 import traceback
 import sys
- 
+
 #---------------------------------------------------------------------------------
 #Setup environment for running Gradio interface
 from fastapi import FastAPI
