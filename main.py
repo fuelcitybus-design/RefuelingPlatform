@@ -313,8 +313,6 @@ active_tabs = []
 global tank_choices
 tank_choices = []
 
-result_text = ""
-
 # Single synchronous save handler (no global messages)
 def save_images(location, car_id, tank_id, *images, request=None):
     start_ts = datetime.now().isoformat()
@@ -455,7 +453,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
         else:
             if not messages_local:
                 messages_local.append(str("⚠️警告：沒有新照片"))
-        global result_text
         result_text = "\n".join(messages_local)
         result_text = result_text.encode("utf-8", "ignore").decode("utf-8")
         result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
