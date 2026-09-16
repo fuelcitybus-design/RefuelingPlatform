@@ -23,7 +23,17 @@ from datetime import datetime
 import time
 import traceback
 import sys
- 
+
+
+python
+import os, sys, time, traceback, uuid, threading
+import numpy as np
+from io import BytesIO
+from datetime import datetime
+from PIL import Image as PILImage
+import requests
+import gradio as gr
+
 #---------------------------------------------------------------------------------
 #Setup environment for running Gradio interface
 from fastapi import FastAPI
@@ -1186,10 +1196,10 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                             image_inputs.append(img_input)
                             tab_list_local.append(tab)
             
-                save_btn = gr.Button("✅儲存所有相片", variant="primary", size="lg", visible=False)
-                output_text = gr.Textbox("ℹ️請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
-                result_hidden = gr.Textbox(visible=False)
-                hidden_state = gr.State("")
+            save_btn = gr.Button("✅儲存所有相片", variant="primary", size="lg", visible=False)
+            output_text = gr.Textbox("ℹ️請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
+            result_hidden = gr.Textbox(visible=False)
+            hidden_state = gr.State("")
             
                 save_btn.click(
                     fn=save_images,
@@ -1198,8 +1208,8 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     concurrency_limit=1
                 )
             
-                status_btn = gr.Button("🔄檢查上傳狀態")
-                status_output = gr.Textbox(label="狀態", lines=6)
+            status_btn = gr.Button("🔄檢查上傳狀態")
+            status_output = gr.Textbox(label="狀態", lines=6)
             
                 status_btn.click(
                     fn=check_status,
