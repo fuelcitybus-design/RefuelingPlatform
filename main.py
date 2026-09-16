@@ -1201,21 +1201,21 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             result_hidden = gr.Textbox(visible=False)
             hidden_state = gr.State("")
             
-                save_btn.click(
-                    fn=save_images,
-                    inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                    outputs=[output_text, hidden_state],
-                    concurrency_limit=1
-                )
+            save_btn.click(
+                fn=save_images,
+                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
+                outputs=[output_text, hidden_state],
+                concurrency_limit=1
+            )
             
             status_btn = gr.Button("🔄檢查上傳狀態")
             status_output = gr.Textbox(label="狀態", lines=6)
             
-                status_btn.click(
-                    fn=check_status,
-                    inputs=[hidden_state],
-                    outputs=status_output
-                )
+            status_btn.click(
+                fn=check_status,
+                inputs=[hidden_state],
+                outputs=status_output
+            )
                 
             next_btn.click(
                     fn=next_tab,
