@@ -1,4 +1,4 @@
-#================================================================================================
+#==============================================================================================
 #Library imports
 import os
 import base64
@@ -43,7 +43,7 @@ def safe_request(url, method="get", retries=3, **kwargs):
                 time.sleep(2 ** attempt)  # exponential backoff
             else:
                 raise
-                
+
 # --- Warm‑up hook ---
 @app.on_event("startup")
 async def warmup():
@@ -60,16 +60,60 @@ async def healthcheck():
     return {"status": "ok"}
 
 #----------------------------------------------------------------------------
-# Dummy endpoint to satisfy Gradio frontend
+from fastapi.responses import JSONResponse
+
 @app.get("/gradio_api/upload_progress")
 async def upload_progress(upload_id: str):
     return JSONResponse({
         "status": "complete",
-        "progress": 1.0,   # float between 0 and 1
+        "progress": 1.0,
         "eta": 0,
         "average_speed": 0
     })
-    
+
+#========================================================================================================
+# Custom JavaScript to inject into the front-end
+# It checks browser online/offline status and attempts to ping the server
+monitor_connection_js = """
+function checkConnection() {
+    const statusBar = document.getElementById("status-bar");
+    if (!statusBar) return;
+
+    function setOnline() {
+        statusBar.innerHTML = "🟢 Connected to Server";
+        statusBar.style.color = "#10B981"; // Green
+    }
+
+    function setOffline() {
+        statusBar.innerHTML = "🔴 Session Disconnected / Offline";
+        statusBar.style.color = "#EF4444"; // Red
+    }
+
+    // 1. Check basic browser connectivity
+    if (!navigator.onLine) {
+        setOffline();
+        return;
+    }
+
+    // 2. Actively ping the backend to confirm the specific Gradio session is alive
+    fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+        .then(response => {
+            if (response.ok) {
+                setOnline();
+            } else {
+                setOffline();
+            }
+        })
+        .catch(() => {
+            setOffline();
+        });
+}
+
+// Start checking every 3 seconds once the application loads
+setInterval(checkConnection, 3000);
+"""
+        
+        
 #========================================================================================================
 
 # --- CONFIGURATION ---
@@ -269,8 +313,6 @@ active_tabs = []
 global tank_choices
 tank_choices = []
 
-result_text = ""
-
 # Single synchronous save handler (no global messages)
 def save_images(location, car_id, tank_id, *images, request=None):
     start_ts = datetime.now().isoformat()
@@ -411,23 +453,19 @@ def save_images(location, car_id, tank_id, *images, request=None):
         else:
             if not messages_local:
                 messages_local.append(str("⚠️警告：沒有新照片"))
-        global result_text
-        result_text = "\n".join([str(m) for m in messages_local])
+        result_text = "\n".join(messages_local)
         result_text = result_text.encode("utf-8", "ignore").decode("utf-8")
-        result_text=f"{result_text}\n[{datetime.now().isoformat()}]"
+        result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         end_ts = datetime.now().isoformat()
         print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
-        return gr.update(value=result_text), [result_text]
+        result_text = "Saved"
+        return gr.update(value=result_text), result_text
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
         msg = f"❌未知錯誤: {str(e)}"
         return gr.update(value=msg), msg
-
-def sync_output():
-        global result_text
-        return result_text
 
 def nearest(gps):
     if "Allow" in gps:
@@ -697,9 +735,9 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
 
     # Status message
     if len(abnormal_list) <= 10:
-        msg = f"ℹ️{len(abnormal_list)}張照片需要檢查"
+        msg = f"ℹ️{len(abnormal_list)}張照片需要檢查\nℹ️如照片未能展示出來，請刷新網站再按「運行AI」"
     else:
-        msg = f"ℹ️剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續"
+        msg = f"ℹ️剩餘{len(abnormal_list)}張照片需要檢查，先檢查首 10 張，然後再按一次分析繼續\nℹ️如照片未能展示出來，請刷新網站再按「運行AI」"
 
     # Return: state, status, 10 images, 10 texts
     return abnormal_list_10, msg, msg, *imgs, *txts
@@ -775,17 +813,6 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
             num_update += 1
         viewed += 1
         kudu_rename(file_url, new_name)
-
-    
-    #for i in range(len(filled_images)):
-       # file_url = abnormal_list[i][2]
-        #prefix = abnormal_list[i][0]
-        #ocr_original = abnormal_list[i][1]
-        #new_name = f"{prefix}_{text_list[i]}.jpg"
-        #if int(ocr_original) != int(text_list[i]):
-        #    num_update += 1
-        #viewed +=1
-        #kudu_rename(file_url, new_name)
 
     if abnormal_count > 10:
         result = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
@@ -1161,7 +1188,12 @@ def clear_tanks():
     
 #============================================================================================================================================================
 
-with gr.Blocks(head=prefer_back_camera()) as demo:
+with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; font-size: 16px; padding: 10px; margin-bottom: 10px; transition: color 0.3s ease; }") as demo:
+    # Status bar
+    #gr.HTML(value='<div id="status-bar">🟢 Checking connection...</div>', elem_id="status-bar")
+    # Inject JS
+    #gr.HTML(value=monitor_connection_js)
+    
     gr.Markdown("落油記錄工具")
 
     with gr.Tabs():
@@ -1236,10 +1268,9 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=[output_text, hidden_state]
+                outputs=[output_text, hidden_state],
+                concurrency_limit=3
             )
-
-            #save_btn.click(fn=sync_output, inputs=None, outputs=output_text)
             
             confirm_btn.click(
                 fn=toggle_ui_components,
@@ -1297,7 +1328,7 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
                 inputs=[location_dropdown, date_picker],
                 outputs=[output, state]
             )
-        
+    
         # Module 4
         with gr.Tab("記錄"):
             with gr.Row():
@@ -1400,11 +1431,11 @@ with gr.Blocks(head=prefer_back_camera()) as demo:
             display: none !important;
         }            
         """
-        
+
 # Enable Gradio queue (compatibility fallback)
 try:
-    demo.queue(concurrency_count=4, max_size=32)
+    demo.queue(concurrency_count=4)
 except TypeError:
     demo.queue()
 
-app = gr.mount_gradio_app(app, demo, path="/")
+app = gr.mount_gradio_app(app, demo, path="/",max_file_size="10MB")
