@@ -318,25 +318,31 @@ def save_images(location, car_id, tank_id, *images, request=None):
     start_ts = datetime.now().isoformat()
     try:
         client_repr = "unknown"
-        if request and getattr(request, "client", None):
-            client_repr = f"{request.client.host}:{request.client.port}"
+        try:
+            if request and getattr(request, "client", None):
+                client_repr = f"{request.client.host}:{request.client.port}"
+        except Exception:
+            client_repr = "unknown"
 
         print(f"[{start_ts}] save_images START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr, flush=True)
 
         uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
         if not uploaded_tabs:
-            return "⚠️警告：沒有選擇任何照片"
+            msg = "⚠️警告：沒有選擇任何照片"
+            return gr.update(value=msg), msg
 
         if (
             not location or location == "{請選擇}"
             or not car_id or car_id == "{請選擇}"
             or not tank_id or tank_id == "{請選擇}"
         ):
-            return "⚠️警告：確保已輸入地點，車號，缸號"
+            msg = "⚠️警告：確保已輸入地點，車號，缸號"
+            return gr.update(value=msg), msg
 
         tank_choices_local = tank_list.get(location, [])
         if not tank_choices_local or tank_id not in tank_choices_local:
-            return f"⚠️警告：無效的缸號 \"{tank_id}\""
+            msg = f"⚠️警告：無效的缸號 \"{tank_id}\""
+            return gr.update(value=msg), msg
 
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
@@ -344,8 +350,8 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
         status, items = http_get_json(base_url)
         if status is None:
-            return "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
-
+            msg = "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
+            return gr.update(value=msg), msg
         detected_tabs_exist = []
         if status in (200, 201):
             items = items or []
@@ -363,17 +369,20 @@ def save_images(location, car_id, tank_id, *images, request=None):
             for attempt in range(3):
                 put_status = http_put_status(base_url, data=b"")
                 if put_status is None:
-                    return "🛜網絡錯誤：無法建立資料夾（伺服器未響應）"
+                    msg = "🛜網絡錯誤：無法建立資料夾（伺服器未響應）"
+                    return gr.update(value=msg), msg
                 if put_status in (200, 201, 204):
                     created = True
                     break
                 time.sleep(0.4 * (attempt + 1))
             if not created:
-                return "❌錯誤：無法建立資料夾"
+                mg = "❌錯誤：無法建立資料夾",""
+                return gr.update(value=msg), msg
         else:
             put_status = http_put_status(base_url, data=b"")
             if put_status is None or put_status not in (200, 201, 204):
-                return "❌錯誤：無法建立資料夾"
+                msg = "❌錯誤：無法建立資料夾"
+                return gr.update(value=msg), msg
 
         saved = []
         messages_local = []
@@ -386,6 +395,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
                 messages_local.append(f"⚠️跳過已上傳照片 {tab_name}")
                 continue
 
+            # Coerce to PILImage if necessary
             try:
                 if hasattr(img, "size"):
                     original_width, original_height = img.size
@@ -437,22 +447,26 @@ def save_images(location, car_id, tank_id, *images, request=None):
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
             if missing:
-                messages_local.append(f"✅已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}.")
+                messages_local.append(str(f"✅已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}."))
             else:
-                messages_local.append(f"✅已上傳 {len(saved)} 張新照片")
+                messages_local.append(str(f"✅已上傳 {len(saved)} 張新照片"))
         else:
             if not messages_local:
-                messages_local.append("⚠️警告：沒有新照片")
-
+                messages_local.append(str("⚠️警告：沒有新照片"))
         result_text = "\n".join(messages_local)
+        result_text = result_text.encode("utf-8", "ignore").decode("utf-8")
         result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
-        return result_text
-
+        end_ts = datetime.now().isoformat()
+        print(f"[{end_ts}] save_images END location={location} saved={len(saved)} client={client_repr}", file=sys.stderr, flush=True)
+        result_text = "Saved"
+        return gr.update(value=result_text), result_text
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
-        return f"❌未知錯誤: {str(e)}"
+        msg = f"❌未知錯誤: {str(e)}"
+        return gr.update(value=msg), msg
+
 def nearest(gps):
     if "Allow" in gps:
         return "{請選擇}"
@@ -1248,10 +1262,14 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     outputs=[img_tabs, current]
                 )
             
+            result_hidden = gr.Textbox(visible=False)
+                
+            hidden_state = gr.State("")
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=output_text
+                outputs=[output_text, hidden_state],
+                concurrency_limit=3
             )
             
             confirm_btn.click(
