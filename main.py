@@ -4,7 +4,7 @@ import os
 import base64
 import requests
 from requests.auth import HTTPBasicAuth
-import requests.exceptions 
+import requests.exceptions
 import gradio as gr
 from datetime import datetime
 from io import BytesIO
@@ -24,18 +24,12 @@ import time
 import traceback
 import sys
 
-import os, sys, time, traceback, uuid, threading
-import numpy as np
-from io import BytesIO
-from datetime import datetime
-import requests
-import gradio as gr
-
 #---------------------------------------------------------------------------------
 #Setup environment for running Gradio interface
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 app = FastAPI()
+
 #---------------------------------------------------------------------------------
 #Warm-up -er
 def safe_request(url, method="get", retries=3, **kwargs):
@@ -77,6 +71,49 @@ async def upload_progress(upload_id: str):
         "average_speed": 0
     })
 
+#========================================================================================================
+# Custom JavaScript to inject into the front-end
+# It checks browser online/offline status and attempts to ping the server
+monitor_connection_js = """
+function checkConnection() {
+    const statusBar = document.getElementById("status-bar");
+    if (!statusBar) return;
+
+    function setOnline() {
+        statusBar.innerHTML = "🟢 Connected to Server";
+        statusBar.style.color = "#10B981"; // Green
+    }
+
+    function setOffline() {
+        statusBar.innerHTML = "🔴 Session Disconnected / Offline";
+        statusBar.style.color = "#EF4444"; // Red
+    }
+
+    // 1. Check basic browser connectivity
+    if (!navigator.onLine) {
+        setOffline();
+        return;
+    }
+
+    // 2. Actively ping the backend to confirm the specific Gradio session is alive
+    fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+        .then(response => {
+            if (response.ok) {
+                setOnline();
+            } else {
+                setOffline();
+            }
+        })
+        .catch(() => {
+            setOffline();
+        });
+}
+
+// Start checking every 3 seconds once the application loads
+setInterval(checkConnection, 3000);
+"""
+        
+        
 #========================================================================================================
 
 # --- CONFIGURATION ---
@@ -276,181 +313,158 @@ active_tabs = []
 global tank_choices
 tank_choices = []
 
-# -------------------------
-# Replace these with your real storage API functions
-# -------------------------
-def http_get_json(url):
-    # Return (status_code, items_list_or_none)
-    # items_list: list of dicts with keys "name" and "mime"
-    return 200, []
-
-def http_put_status(url, data=b"", file_path=None):
-    # Upload data or file to 'url'. If file_path is provided, upload that file.
-    # Return HTTP status code (int) or None on network error.
-    return 201
-
-# -------------------------
-# Global job status store
-# -------------------------
-job_status = {}
-job_lock = threading.Lock()
-
-# -------------------------
-# Background worker
-# -------------------------
-def background_upload(job_id, location, car_id, tank_id, tmp_paths):
+# Single synchronous save handler (no global messages)
+def save_images(location, car_id, tank_id, *images, request=None):
+    start_ts = datetime.now().isoformat()
     try:
-        with job_lock:
-            job_status[job_id] = "🔎 Preparing upload..."
+        client_repr = "unknown"
+        if request and getattr(request, "client", None):
+            client_repr = f"{request.client.host}:{request.client.port}"
 
-        if not location or not car_id or not tank_id:
-            with job_lock:
-                job_status[job_id] = "⚠️ Invalid location/car/tank"
-            return
+        print(f"[{start_ts}] save_images START location={location} car={car_id} tank={tank_id} client={client_repr}", file=sys.stderr, flush=True)
+
+        uploaded_tabs = [tab_names[i] for i, img in enumerate(images) if img is not None]
+        if not uploaded_tabs:
+            return "⚠️警告：沒有選擇任何照片"
+
+        if (
+            not location or location == "{請選擇}"
+            or not car_id or car_id == "{請選擇}"
+            or not tank_id or tank_id == "{請選擇}"
+        ):
+            return "⚠️警告：確保已輸入地點，車號，缸號"
+
+        tank_choices_local = tank_list.get(location, [])
+        if not tank_choices_local or tank_id not in tank_choices_local:
+            return f"⚠️警告：無效的缸號 \"{tank_id}\""
 
         prefix = f"{location}/{car_id}_{tank_id}"
-        today = time.strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
 
         status, items = http_get_json(base_url)
         if status is None:
-            with job_lock:
-                job_status[job_id] = "🛜 Network error: cannot check storage"
-            return
+            return "🛜網絡錯誤：無法連接到儲存伺服器（目錄檢查失敗）"
 
-        if status == 404:
+        detected_tabs_exist = []
+        if status in (200, 201):
+            items = items or []
+            existing_files = [item.get("name") for item in items if item.get("name") and item.get("mime") != "inode/directory"]
+            for f in existing_files:
+                name, ext = os.path.splitext(f)
+                if name and name not in detected_tabs_exist:
+                    detected_tabs_exist.append(name)
+                if "油車前" in name and "油車前" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車前")
+                if "油車後" in name and "油車後" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車後")
+        elif status == 404:
             created = False
             for attempt in range(3):
                 put_status = http_put_status(base_url, data=b"")
+                if put_status is None:
+                    return "🛜網絡錯誤：無法建立資料夾（伺服器未響應）"
                 if put_status in (200, 201, 204):
                     created = True
                     break
                 time.sleep(0.4 * (attempt + 1))
             if not created:
-                with job_lock:
-                    job_status[job_id] = "❌ Failed to create folder"
-                return
+                return "❌錯誤：無法建立資料夾"
+        else:
+            put_status = http_put_status(base_url, data=b"")
+            if put_status is None or put_status not in (200, 201, 204):
+                return "❌錯誤：無法建立資料夾"
 
-        detected_tabs_exist = []
-        if items:
-            existing_files = [item.get("name") for item in items if item.get("name") and item.get("mime") != "inode/directory"]
-            for f in existing_files:
-                name, _ = os.path.splitext(f)
-                if name and name not in detected_tabs_exist:
-                    detected_tabs_exist.append(name)
-
-        messages_local = []
         saved = []
-
-        for i, path in enumerate(tmp_paths):
-            tab_name = tab_names[i] if i < len(tab_names) else f"img_{i}"
-            if path is None:
-                messages_local.append(f"⚠️ No image for {tab_name} or serialization failed")
-                with job_lock:
-                    job_status[job_id] = "\n".join(messages_local[-20:])
+        messages_local = []
+        for i, img in enumerate(images):
+            if img is None:
                 continue
+            tab_name = tab_names[i]
 
             if tab_name in detected_tabs_exist:
-                messages_local.append(f"⚠️ Skipped already uploaded {tab_name}")
-                with job_lock:
-                    job_status[job_id] = "\n".join(messages_local[-20:])
-                try:
-                    os.remove(path)
-                except Exception:
-                    pass
+                messages_local.append(f"⚠️跳過已上傳照片 {tab_name}")
                 continue
 
+            try:
+                if hasattr(img, "size"):
+                    original_width, original_height = img.size
+                else:
+                    img = PILImage.fromarray(np.array(img))
+                    original_width, original_height = img.size
+            except Exception:
+                messages_local.append(f"❌錯誤：處理影像 {tab_name} 時發生錯誤")
+                continue
+
+            # Log original size
+            print(f"[{datetime.now().isoformat()}] {tab_name} original size: {original_width}x{original_height}", file=sys.stderr, flush=True)
+
+            # Resize to fixed height 400, proportional width
+            try:
+                new_width = int(original_width * (400 / float(original_height))) if original_height else 400
+            except Exception:
+                new_width = 400
+            img_resized = img.resize((max(1, new_width), 400))
+
+            # Log resized size
+            resized_width, resized_height = img_resized.size
+            print(f"[{datetime.now().isoformat()}] {tab_name} resized size: {resized_width}x{resized_height}", file=sys.stderr, flush=True)
+
+            buffer = BytesIO()
+            try:
+                img_resized.save(buffer, format="JPEG", quality=85)
+            except Exception:
+                try:
+                    img_resized = img_resized.convert("RGB")
+                    buffer = BytesIO()
+                    img_resized.save(buffer, format="JPEG", quality=85)
+                except Exception:
+                    messages_local.append(f"❌錯誤：儲存影像 {tab_name} 時發生錯誤")
+                    continue
+            buffer.seek(0)
             filepath = f"{base_url}{tab_name}.jpg"
+
             uploaded = False
             last_status = None
             for attempt in range(3):
-                last_status = http_put_status(filepath, file_path=path)
+                last_status = http_put_status(filepath, data=buffer.getvalue())
+                if last_status is None:
+                    messages_local.append(f"🛜網絡錯誤：上傳 {tab_name} 失敗（未能連線）")
+                    break
                 if last_status in (200, 201, 204):
                     uploaded = True
                     break
                 time.sleep(0.3 * (attempt + 1))
-
             if uploaded:
                 saved.append(tab_name)
                 detected_tabs_exist.append(tab_name)
-                messages_local.append(f"✅ Uploaded: {tab_name}")
+                messages_local.append(f"✅已上傳: {tab_name}")
             else:
-                messages_local.append(f"❌ Failed: {tab_name} (HTTP {last_status})")
-
-            with job_lock:
-                job_status[job_id] = "\n".join(messages_local[-20:])
-
-            try:
-                os.remove(path)
-            except Exception:
-                pass
+                messages_local.append(f"❌錯誤：{tab_name} 上傳失敗. HTTP {last_status if last_status is not None else 'N/A'}")
 
         if saved:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
             if missing:
-                messages_local.append(f"✅ Uploaded {len(saved)} new photos. Please upload: {', '.join(missing)}.")
+                messages_local.append(f"✅已上傳 {len(saved)} 張新照片\n請上傳{', '.join(missing)}.")
             else:
-                messages_local.append(f"✅ Uploaded {len(saved)} new photos")
-        elif not messages_local:
-            messages_local.append("⚠️ No new photos uploaded")
+                messages_local.append(f"✅已上傳 {len(saved)} 張新照片")
+        else:
+            if not messages_local:
+                messages_local.append("⚠️警告：沒有新照片")
 
-        with job_lock:
-            job_status[job_id] = "\n".join(messages_local) + f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}]"
+        result_text = "\n".join(messages_local)
+        result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
+        print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
+        return result_text
 
     except Exception as e:
-        with job_lock:
-            job_status[job_id] = f"❌ Background upload error: {str(e)}"
+        tb = traceback.format_exc()
+        print(f"[save_images] Exception: {e}\n{tb}", file=sys.stderr, flush=True)
+        return f"❌未知錯誤: {str(e)}"
 
-# -------------------------
-# Callback: serialize to temp files and start background thread
-# -------------------------
-def save_images(location, car_id, tank_id, *images, request=None):
-    if not location or location == "{請選擇}" or not car_id or car_id == "{請選擇}" or not tank_id or tank_id == "{請選擇}":
-        return "⚠️ Please select location, car, and tank", ""
 
-    tmp_paths = []
-    for img in images:
-        if img is None:
-            tmp_paths.append(None)
-            continue
-        try:
-            if hasattr(img, "save"):
-                pil = img
-            else:
-                pil = PILImage.fromarray(np.array(img))
 
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-            try:
-                pil.save(tmp, format="JPEG", quality=85)
-                tmp.flush()
-            finally:
-                tmp.close()
-            tmp_paths.append(tmp.name)
-        except Exception:
-            tmp_paths.append(None)
-
-    job_id = uuid.uuid4().hex
-    with job_lock:
-        job_status[job_id] = "📤 Upload queued"
-
-    t = threading.Thread(
-        target=background_upload,
-        args=(job_id, location, car_id, tank_id, tmp_paths),
-        daemon=True
-    )
-    t.start()
-
-    return f"📤 Upload started: {job_id}", job_id
-
-# -------------------------
-# Polling function for UI
-# -------------------------
-def check_job_status(job_id):
-    if not job_id:
-        return "No job running"
-    with job_lock:
-        return job_status.get(job_id, "Job not found or still initializing")
 def nearest(gps):
     if "Allow" in gps:
         return "{請選擇}"
@@ -1169,6 +1183,7 @@ def update_all(date, location, car):
 def clear_tanks():
     return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "⚠️警告：請先選取有效車號"
 
+    
 #============================================================================================================================================================
 
 with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; font-size: 16px; padding: 10px; margin-bottom: 10px; transition: color 0.3s ease; }") as demo:
@@ -1215,7 +1230,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     image_inputs = []
                     tab_list_local = []
                     for i, tab_name in enumerate(tab_names):
-                        with gr.Tab(tab_name, id=i, visible=False) as tab:
+                        with gr.Tab(tab_name, id =i, visible=False) as tab:
                             img_input = gr.Image(
                                 type="pil",
                                 label=f"上傳「{tab_name}」相片",
@@ -1226,23 +1241,12 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                             )
                             image_inputs.append(img_input)
                             tab_list_local.append(tab)
-            
+
+            img_tabs.select(sync_tab_index, None, current)
+
             save_btn = gr.Button("✅儲存所有相片", variant="primary", size="lg", visible=False)
+
             output_text = gr.Textbox("ℹ️請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
-            result_hidden = gr.Textbox(visible=False)
-            hidden_state = gr.State("")
-            
-            # Bind save button: outputs must match (output_text, hidden_state)
-            save_btn.click(
-                fn=save_images,
-                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=[output_text, hidden_state]
-            )
-
-            refresh_btn = gr.Button("Refresh status")  # visible and used for polling
-            
-            refresh_btn.click(fn=check_job_status, inputs=[hidden_state], outputs=[output_text])
-
                 
             next_btn.click(
                     fn=next_tab,
@@ -1255,6 +1259,16 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     inputs=[current, location_dropdown],
                     outputs=[img_tabs, current]
                 )
+            
+            result_hidden = gr.Textbox(visible=False)
+                
+            hidden_state = gr.State("")
+            save_btn.click(
+                fn=save_images,
+                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
+                outputs=output_text,
+                concurrency_limit=2
+            )
             
             confirm_btn.click(
                 fn=toggle_ui_components,
@@ -1291,12 +1305,12 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 inputs=[location_dropdownAI],
                 outputs=[abnormal_list, state, state2] + imgs + txts
             )
-    
+                
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)   
                 
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, state2, abnormal_list])
-    
+            
         # Module 3
         with gr.Tab("下載"):
             with gr.Row():
@@ -1383,7 +1397,8 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     tank_message
                 ]
             )
-
+        
+        
         demo.css = """
         #camera_input button {
             transform: scale(1.6);
