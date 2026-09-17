@@ -1432,7 +1432,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 ]
             )
         
-        
         demo.css = """
         #camera_input button {
             transform: scale(1.6);
@@ -1463,7 +1462,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             display: none !important;
         }            
         """
-
+        
 # Enable Gradio queue (compatibility fallback)
 try:
     demo.queue(concurrency_count=4)
