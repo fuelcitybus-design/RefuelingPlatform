@@ -22,6 +22,9 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
+
+
+
 # Set working directory
 WORKDIR /app
 
@@ -30,7 +33,10 @@ COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --upgrade pip setuptools wheel \
-    && pip install -r requirements.txt
+    pip install -r requirements.txt \
+    pip uninstall -y opencv-python opencv-contrib-python opencv-python-headless \
+    && pip install --no-cache-dir opencv-python-headless==4.10.0.84
+    
 
 # Copy application code
 COPY . .
