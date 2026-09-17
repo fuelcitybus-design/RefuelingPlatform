@@ -1172,10 +1172,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             output_text = gr.Textbox("ℹ️請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
             result_hidden = gr.Textbox(visible=False)
             hidden_state = gr.State("")
-
-            
-            status_btn = gr.Button("🔄檢查上傳狀態")
-            status_output = gr.Textbox(label="狀態", lines=6)
             
             # Bind save button: outputs must match (output_text, hidden_state)
             save_btn.click(
@@ -1184,9 +1180,11 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 outputs=[output_text, hidden_state]
             )
         
-            # Timer polls job status every 1.5s and updates output_text
-            poll = gr.Timer(interval=1.5, run_on_start=False)
-            poll.run(fn=check_job_status, inputs=[hidden_state], outputs=[output_text])
+            refresh_btn = gr.Button("Refresh status")
+
+            # Bind the refresh button to check_job_status
+            refresh_btn.click(fn=check_job_status, inputs=[hidden_state], outputs=[output_text])
+
 
                 
             next_btn.click(
