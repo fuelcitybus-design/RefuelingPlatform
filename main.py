@@ -410,6 +410,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
             resized_width, resized_height = img_resized.size
             print(f"[{datetime.now().isoformat()}] {tab_name} resized size: {resized_width}x{resized_height}", file=sys.stderr, flush=True)
 
+            # Always save the resized image into buffer
             buffer = BytesIO()
             try:
                 img_resized.save(buffer, format="JPEG", quality=85)
@@ -422,6 +423,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
                     messages_local.append(f"❌錯誤：儲存影像 {tab_name} 時發生錯誤")
                     continue
             buffer.seek(0)
+
             filepath = f"{base_url}{tab_name}.jpg"
 
             uploaded = False
