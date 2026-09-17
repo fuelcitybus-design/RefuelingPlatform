@@ -28,7 +28,6 @@ import os, sys, time, traceback, uuid, threading
 import numpy as np
 from io import BytesIO
 from datetime import datetime
-from PIL import Image as PILImage
 import requests
 import gradio as gr
 
