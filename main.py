@@ -1249,7 +1249,9 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
                 outputs=[output_text, hidden_state]
             )
-        
+
+            refresh_btn = gr.Button("Refresh status")  # visible and used for polling
+            
             refresh_btn.click(fn=check_job_status, inputs=[hidden_state], outputs=[output_text])
 
                 
