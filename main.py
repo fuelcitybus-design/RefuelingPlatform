@@ -424,60 +424,69 @@ def background_upload(job_id, location, car_id, tank_id, tmp_paths):
 # -------------------------
 # Callback: serialize to temp files and start background thread
 # -------------------------
-max_dim_slider = gr.Slider(label="Max image dimension (px)", minimum=200, maximum=400, value=1200, step=50)
+max_dim_slider = gr.Slider(label="Max image dimension (px)", minimum=200, maximum=2400, value=1200, step=50)
 jpeg_quality_slider = gr.Slider(label="JPEG quality", minimum=30, maximum=95, value=85, step=5)
 
 # --- Updated save_images callback with resizing ---
 def save_images(location, car_id, tank_id, *images, max_dim=None, jpeg_quality=None, request=None):
-    """
-    Defensive save_images:
-    - Coerce max_dim and jpeg_quality to ints with defaults if None or invalid.
-    - Resize images with thumbnail before writing temp files.
-    - Return immediately (short message, job_id).
-    """
-    # Defaults
+    # Debug: print incoming raw slider values
+    print(f"[DEBUG] raw max_dim={max_dim!r}, raw jpeg_quality={jpeg_quality!r}", file=sys.stderr, flush=True)
+
+    # Defaults and coercion
     DEFAULT_MAX_DIM = 1200
     DEFAULT_JPEG_QUALITY = 85
 
-    # Coerce and validate sliders (handle None or wrong types)
+    # Coerce max_dim
     try:
-        max_dim_val = int(max_dim) if max_dim is not None else DEFAULT_MAX_DIM
-    except Exception:
+        if max_dim is None:
+            max_dim_val = DEFAULT_MAX_DIM
+        else:
+            # handle float strings etc.
+            max_dim_val = int(float(max_dim))
+    except Exception as e:
+        print(f"[DEBUG] coercion max_dim failed: {e}", file=sys.stderr, flush=True)
         max_dim_val = DEFAULT_MAX_DIM
 
+    # Coerce jpeg_quality
     try:
-        jpeg_quality_val = int(jpeg_quality) if jpeg_quality is not None else DEFAULT_JPEG_QUALITY
-    except Exception:
+        if jpeg_quality is None:
+            jpeg_quality_val = DEFAULT_JPEG_QUALITY
+        else:
+            jpeg_quality_val = int(float(jpeg_quality))
+    except Exception as e:
+        print(f"[DEBUG] coercion jpeg_quality failed: {e}", file=sys.stderr, flush=True)
         jpeg_quality_val = DEFAULT_JPEG_QUALITY
 
-    # Clamp sensible ranges
+    # Clamp ranges
     if max_dim_val <= 0:
         max_dim_val = DEFAULT_MAX_DIM
+    if max_dim_val < 200:
+        max_dim_val = 200
+    if max_dim_val > 4000:
+        max_dim_val = 4000
+
     if jpeg_quality_val < 30:
         jpeg_quality_val = 30
     if jpeg_quality_val > 95:
         jpeg_quality_val = 95
 
-    # Quick validation for required fields
+    # Log final values
+    print(f"[DEBUG] using max_dim={max_dim_val}, jpeg_quality={jpeg_quality_val}", file=sys.stderr, flush=True)
+
+    # Basic validation for required fields
     if not location or location == "{請選擇}" or not car_id or car_id == "{請選擇}" or not tank_id or tank_id == "{請選擇}":
         return "⚠️ Please select location, car, and tank", ""
 
+    # Serialize images to temp files (resized)
     tmp_paths = []
     for img in images:
         if img is None:
             tmp_paths.append(None)
             continue
         try:
-            # Normalize to PIL.Image
-            if hasattr(img, "save"):
-                pil = img
-            else:
-                pil = PILImage.fromarray(np.array(img))
-
-            # Resize while preserving aspect ratio
+            pil = img if hasattr(img, "save") else PILImage.fromarray(np.array(img))
             pil.thumbnail((max_dim_val, max_dim_val), PILImage.LANCZOS)
 
-            # Save to temp file with chosen JPEG quality
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
             try:
                 pil.save(tmp, format="JPEG", quality=jpeg_quality_val, optimize=True)
@@ -485,13 +494,14 @@ def save_images(location, car_id, tank_id, *images, max_dim=None, jpeg_quality=N
             finally:
                 tmp.close()
 
+            size = os.path.getsize(tmp.name)
+            print(f"[DEBUG] tmp file {tmp.name} size={size}", file=sys.stderr, flush=True)
             tmp_paths.append(tmp.name)
         except Exception as e:
-            # Log server side for debugging, but keep going
-            print(f"[SER_ERR] serialization error: {e}", file=sys.stderr, flush=True)
+            print(f"[DEBUG] serialization error for one image: {e}", file=sys.stderr, flush=True)
             tmp_paths.append(None)
 
-    # Create job and start background thread with file paths only
+    # Start background upload thread (same pattern you already use)
     job_id = uuid.uuid4().hex
     with job_lock:
         job_status[job_id] = "📤 Upload queued"
@@ -503,8 +513,8 @@ def save_images(location, car_id, tank_id, *images, max_dim=None, jpeg_quality=N
     )
     t.start()
 
+    print(f"[DEBUG] started background job {job_id}", file=sys.stderr, flush=True)
     return f"📤 Upload started: {job_id}", job_id
-
 
 # -------------------------
 # Polling function for UI
@@ -1305,6 +1315,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs + [max_dim_slider, jpeg_quality_slider],
                 outputs=[output_text, hidden_state]
             )
+
         
             refresh_btn = gr.Button("Refresh status")
 
