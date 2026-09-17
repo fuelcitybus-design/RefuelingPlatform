@@ -112,8 +112,7 @@ function checkConnection() {
 // Start checking every 3 seconds once the application loads
 setInterval(checkConnection, 3000);
 """
-        
-        
+
 #========================================================================================================
 
 # --- CONFIGURATION ---
