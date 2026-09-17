@@ -412,8 +412,13 @@ def background_upload(job_id, location, car_id, tank_id, images, request=None):
 def save_images(location, car_id, tank_id, *images, request=None):
     job_id = uuid.uuid4().hex
     job_status[job_id] = "📤 Upload started..."
-    threading.Thread(target=background_upload, args=(job_id, location, car_id, tank_id, images, request)).start()
-    return f"📤 Upload task {job_id} started. 請稍候查看狀態。", job_id
+    threading.Thread(
+        target=background_upload,
+        args=(job_id, location, car_id, tank_id, images, request)
+    ).start()
+    # return only the job_id into hidden_state, no visible output
+    return job_id
+
 
 def check_status(job_id):
     return job_status.get(job_id, "⏳ 尚未完成")
@@ -1200,22 +1205,24 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             output_text = gr.Textbox("ℹ️請先選擇地點、車號、缸號，然後按確認準備拍照。", label="狀態", lines=6)
             result_hidden = gr.Textbox(visible=False)
             hidden_state = gr.State("")
-            
-            save_btn.click(
-                fn=save_images,
-                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=[output_text, hidden_state],
-                concurrency_limit=1
-            )
+
             
             status_btn = gr.Button("🔄檢查上傳狀態")
             status_output = gr.Textbox(label="狀態", lines=6)
             
+            save_btn.click(
+                fn=save_images,
+                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
+                outputs=hidden_state,   # only hidden_state, no output_text
+                concurrency_limit=1
+            )
+            
             status_btn.click(
                 fn=check_status,
                 inputs=[hidden_state],
-                outputs=status_output
+                outputs=output_text     # output_text now updated only via check_status
             )
+
                 
             next_btn.click(
                     fn=next_tab,
