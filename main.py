@@ -525,8 +525,6 @@ def check_job_status(job_id):
     with job_lock:
         return job_status.get(job_id, "Job not found or still initializing")
 
-
-
 def nearest(gps):
     if "Allow" in gps:
         return "{請選擇}"
