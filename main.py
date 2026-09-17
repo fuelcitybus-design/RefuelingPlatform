@@ -459,7 +459,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         result_text = "\n".join(messages_local)
         result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
         print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
-        return result_text
+        yield result_text
 
     except Exception as e:
         tb = traceback.format_exc()
