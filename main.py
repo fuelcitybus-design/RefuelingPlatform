@@ -1171,7 +1171,6 @@ def update_all(date, location, car):
 def clear_tanks():
     return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "⚠️警告：請先選取有效車號"
 
-    
 #============================================================================================================================================================
 
 with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; font-size: 16px; padding: 10px; margin-bottom: 10px; transition: color 0.3s ease; }") as demo:
@@ -1294,12 +1293,12 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 inputs=[location_dropdownAI],
                 outputs=[abnormal_list, state, state2] + imgs + txts
             )
-                
+    
             abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
             abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)   
                 
             collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, state2, abnormal_list])
-            
+    
         # Module 3
         with gr.Tab("下載"):
             with gr.Row():
@@ -1386,7 +1385,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     tank_message
                 ]
             )
-        
+
         demo.css = """
         #camera_input button {
             transform: scale(1.6);
@@ -1417,7 +1416,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             display: none !important;
         }            
         """
-        
+
 # Enable Gradio queue (compatibility fallback)
 try:
     demo.queue(concurrency_count=4)
