@@ -400,6 +400,7 @@ def background_upload(job_id, location, car_id, tank_id, images, request=None):
 
         result_text = "\n".join(messages_local)
         result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
+        print(f"[{datetime.now().isoformat()}] RETURNING: {repr(result_text)}", file=sys.stderr, flush=True)
         job_status[job_id] = result_text
 
     except Exception as e:
@@ -410,13 +411,17 @@ def background_upload(job_id, location, car_id, tank_id, images, request=None):
 # --- Gradio functions ---
 def save_images(location, car_id, tank_id, *images, request=None):
     job_id = uuid.uuid4().hex
+    print(f"1", file=sys.stderr, flush=True)
     job_status[job_id] = "📤 Upload started..."
+    print(f"2", file=sys.stderr, flush=True)
     threading.Thread(
         target=background_upload,
         args=(job_id, location, car_id, tank_id, images, request)
     ).start()
+    print(f"3", file=sys.stderr, flush=True)
     # Instead of returning to output_text, update hidden_state internally
     hidden_state.value = job_id   # assign directly
+    print(f"4", file=sys.stderr, flush=True)
     # No return → no frontend payload
 
 def check_status(job_id):
