@@ -296,98 +296,192 @@ def http_get_json(url):
     except Exception:
         return None, None
 
-job_status = {}  # global status store
+job_status = {}   # job_id -> status string
+job_lock = threading.Lock()  # protect job_status updates
 
-def save_images(location, car_id, tank_id, *images, request=None):
-    # quick validation
-    if not location or location == "{請選擇}" or not car_id or car_id == "{請選擇}" or not tank_id or tank_id == "{請選擇}":
-        return "⚠️ Please select location/car/tank", ""
-
-    # Serialize images to bytes here in the callback
-    images_bytes = []
-    for img in images:
-        if img is None:
-            images_bytes.append(None)
-            continue
-        try:
-            # img might be PIL.Image or numpy array; normalize to PIL then bytes
-            if hasattr(img, "save"):
-                pil = img
-            else:
-                pil = PILImage.fromarray(img)
-            buf = BytesIO()
-            pil.save(buf, format="JPEG", quality=85)
-            data = buf.getvalue()
-            buf.close()               # important: close buffer so stream is released
-            images_bytes.append(data)
-        except Exception as e:
-            # keep None for this slot and let background report the error
-            images_bytes.append(None)
-
-    # create job and start background thread with bytes only
-    job_id = uuid.uuid4().hex
-    job_status[job_id] = "📤 Upload queued"
-    t = threading.Thread(
-        target=background_upload,
-        args=(job_id, location, car_id, tank_id, images_bytes),
-        daemon=True
-    )
-    t.start()
-
-    # IMMEDIATELY return a valid payload to the frontend
-    # return values must match your declared outputs exactly
-    return f"📤 Upload started: {job_id}", job_id
-
-def background_upload(job_id, location, car_id, tank_id, images_bytes):
+# -------------------------
+# Background worker
+# -------------------------
+def background_upload(job_id, location, car_id, tank_id, tmp_paths):
+    """
+    tmp_paths: list of file paths (or None) created in the callback.
+    This function performs validation, folder checks, duplicate detection,
+    uploads with retries, and updates job_status[job_id] as it goes.
+    It must NOT rely on request objects or open streams.
+    """
     try:
-        job_status[job_id] = "🔎 Preparing upload..."
-        # perform your full validation and folder checks here
-        # e.g., build base_url, http_get_json, create folder if 404, detect existing files, etc.
+        with job_lock:
+            job_status[job_id] = "🔎 Preparing upload..."
 
-        messages = []
+        # Basic validation (repeat server-side checks)
+        if not location or not car_id or not tank_id:
+            with job_lock:
+                job_status[job_id] = "⚠️ Invalid location/car/tank"
+            return
+
+        # Build base_url and ensure folder exists
+        prefix = f"{location}/{car_id}_{tank_id}"
+        today = time.strftime("%Y-%m-%d")
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
+
+        status, items = http_get_json(base_url)
+        if status is None:
+            with job_lock:
+                job_status[job_id] = "🛜 Network error: cannot check storage"
+            return
+
+        if status == 404:
+            created = False
+            for attempt in range(3):
+                put_status = http_put_status(base_url, data=b"")
+                if put_status in (200, 201, 204):
+                    created = True
+                    break
+                time.sleep(0.4 * (attempt + 1))
+            if not created:
+                with job_lock:
+                    job_status[job_id] = "❌ Failed to create folder"
+                return
+
+        # Detect existing files
+        detected_tabs_exist = []
+        if items:
+            existing_files = [item.get("name") for item in items if item.get("name") and item.get("mime") != "inode/directory"]
+            for f in existing_files:
+                name, _ = os.path.splitext(f)
+                if name and name not in detected_tabs_exist:
+                    detected_tabs_exist.append(name)
+
+        messages_local = []
         saved = []
-        for i, b in enumerate(images_bytes):
-            tab_name = tab_names[i]
-            if b is None:
-                messages.append(f"⚠️ No image for {tab_name} or serialization failed")
+
+        # Process each temp file path
+        for i, path in enumerate(tmp_paths):
+            tab_name = tab_names[i] if i < len(tab_names) else f"img_{i}"
+            if path is None:
+                messages_local.append(f"⚠️ No image for {tab_name} or serialization failed")
+                with job_lock:
+                    job_status[job_id] = "\n".join(messages_local[-20:])
                 continue
 
-            # build filepath
-            filepath = f"{ROOT_FOLDER}/{time.strftime('%Y-%m-%d')}/{location}/{car_id}_{tank_id}/{tab_name}.jpg"
+            if tab_name in detected_tabs_exist:
+                messages_local.append(f"⚠️ Skipped already uploaded {tab_name}")
+                with job_lock:
+                    job_status[job_id] = "\n".join(messages_local[-20:])
+                # remove temp file
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
+                continue
 
-            # upload with retries
+            filepath = f"{base_url}{tab_name}.jpg"
             uploaded = False
+            last_status = None
             for attempt in range(3):
-                status = http_put_status(filepath, data=b)
-                if status in (200, 201, 204):
+                # Use file_path upload if your http_put_status supports it
+                last_status = http_put_status(filepath, file_path=path)
+                if last_status in (200, 201, 204):
                     uploaded = True
                     break
                 time.sleep(0.3 * (attempt + 1))
 
             if uploaded:
                 saved.append(tab_name)
-                messages.append(f"✅ Uploaded {tab_name}")
+                detected_tabs_exist.append(tab_name)
+                messages_local.append(f"✅ Uploaded: {tab_name}")
             else:
-                messages.append(f"❌ Failed {tab_name} HTTP {status}")
+                messages_local.append(f"❌ Failed: {tab_name} (HTTP {last_status})")
 
-            # update short live status so UI can poll
-            job_status[job_id] = "\n".join(messages[-20:])
+            # update short live status for polling
+            with job_lock:
+                job_status[job_id] = "\n".join(messages_local[-20:])
 
-        # final aggregation
+            # remove temp file after attempt
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+
+        # Final aggregation and required tabs check
         if saved:
-            messages.append(f"✅ Uploaded {len(saved)} new photos")
-        else:
-            messages.append("⚠️ No new photos uploaded")
+            location_required_tabs = tab_list_S.get(location, [])
+            missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
+            if missing:
+                messages_local.append(f"✅ Uploaded {len(saved)} new photos. Please upload: {', '.join(missing)}.")
+            else:
+                messages_local.append(f"✅ Uploaded {len(saved)} new photos")
+        elif not messages_local:
+            messages_local.append("⚠️ No new photos uploaded")
 
-        job_status[job_id] = "\n".join(messages) + f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}]"
+        with job_lock:
+            job_status[job_id] = "\n".join(messages_local) + f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}]"
 
     except Exception as e:
-        job_status[job_id] = f"❌ Background upload error: {e}"
-        
+        with job_lock:
+            job_status[job_id] = f"❌ Background upload error: {str(e)}"
+
+# -------------------------
+# Callback: serialize to temp files and start background thread
+# -------------------------
+def save_images(location, car_id, tank_id, *images, request=None):
+    """
+    This callback runs in the Gradio request thread. It must:
+    - serialize each incoming image to a temp file and close it
+    - start a daemon background thread with only file paths
+    - immediately return (status string, job_id)
+    """
+    # Quick validation
+    if not location or location == "{請選擇}" or not car_id or car_id == "{請選擇}" or not tank_id or tank_id == "{請選擇}":
+        return "⚠️ Please select location, car, and tank", ""
+
+    tmp_paths = []
+    for img in images:
+        if img is None:
+            tmp_paths.append(None)
+            continue
+        try:
+            # Normalize to PIL.Image
+            if hasattr(img, "save"):
+                pil = img
+            else:
+                pil = PILImage.fromarray(np.array(img))
+
+            # Write to a NamedTemporaryFile and close it so Gradio can release streams
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+            try:
+                pil.save(tmp, format="JPEG", quality=85)
+                tmp.flush()
+            finally:
+                tmp.close()
+            tmp_paths.append(tmp.name)
+        except Exception as e:
+            # If serialization fails, append None and let background report it
+            tmp_paths.append(None)
+
+    # Create job and start background thread with file paths only
+    job_id = uuid.uuid4().hex
+    with job_lock:
+        job_status[job_id] = "📤 Upload queued"
+
+    t = threading.Thread(
+        target=background_upload,
+        args=(job_id, location, car_id, tank_id, tmp_paths),
+        daemon=True
+    )
+    t.start()
+
+    # Immediately return a short message and the job_id (must match outputs)
+    return f"📤 Upload started: {job_id}", job_id
+
+# -------------------------
+# Polling function for UI
+# -------------------------
 def check_job_status(job_id):
     if not job_id:
-        return "No job"
-    return job_status.get(job_id, "Job not found or still initializing")
+        return "No job running"
+    with job_lock:
+        return job_status.get(job_id, "Job not found or still initializing")
 
 
 
