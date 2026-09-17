@@ -338,7 +338,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
     # return values must match your declared outputs exactly
     return f"📤 Upload started: {job_id}", job_id
 
-
 def background_upload(job_id, location, car_id, tank_id, images_bytes):
     try:
         job_status[job_id] = "🔎 Preparing upload..."
