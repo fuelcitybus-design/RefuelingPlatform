@@ -416,9 +416,9 @@ def save_images(location, car_id, tank_id, *images, request=None):
         target=background_upload,
         args=(job_id, location, car_id, tank_id, images, request)
     ).start()
-    # return only the job_id into hidden_state, no visible output
-    return job_id
-
+    # Instead of returning to output_text, update hidden_state internally
+    hidden_state.value = job_id   # assign directly
+    # No return → no frontend payload
 
 def check_status(job_id):
     return job_status.get(job_id, "⏳ 尚未完成")
@@ -1213,8 +1213,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             save_btn.click(
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
-                outputs=hidden_state,   # only hidden_state, no output_text
-                concurrency_limit=1
+                concurrency_limit=1   # no outputs
             )
             
             status_btn.click(
