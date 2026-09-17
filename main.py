@@ -298,7 +298,6 @@ def http_get_json(url):
 
 # --- global job status store ---
 job_status = {}
-
 # --- background worker with all your rules ---
 def background_upload(job_id, location, car_id, tank_id, images, request=None):
     messages_local = []
