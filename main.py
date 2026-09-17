@@ -424,14 +424,15 @@ def background_upload(job_id, location, car_id, tank_id, tmp_paths):
 # -------------------------
 # Callback: serialize to temp files and start background thread
 # -------------------------
-def save_images(location, car_id, tank_id, *images, request=None):
+max_dim_slider = gr.Slider(label="Max image dimension (px)", minimum=200, maximum=400, value=1200, step=50)
+jpeg_quality_slider = gr.Slider(label="JPEG quality", minimum=30, maximum=95, value=85, step=5)
+
+# --- Updated save_images callback with resizing ---
+def save_images(location, car_id, tank_id, *images, max_dim=1200, jpeg_quality=85, request=None):
     """
-    This callback runs in the Gradio request thread. It must:
-    - serialize each incoming image to a temp file and close it
-    - start a daemon background thread with only file paths
-    - immediately return (status string, job_id)
+    Serializes each incoming image to a temp file after resizing it to fit within
+    (max_dim x max_dim) and saving with jpeg_quality. Returns immediately with job_id.
     """
-    # Quick validation
     if not location or location == "{請選擇}" or not car_id or car_id == "{請選擇}" or not tank_id or tank_id == "{請選擇}":
         return "⚠️ Please select location, car, and tank", ""
 
@@ -447,16 +448,27 @@ def save_images(location, car_id, tank_id, *images, request=None):
             else:
                 pil = PILImage.fromarray(np.array(img))
 
-            # Write to a NamedTemporaryFile and close it so Gradio can release streams
+            # Resize while preserving aspect ratio
+            pil.thumbnail((int(max_dim), int(max_dim)), PILImage.LANCZOS)
+
+            # Save to temp file with chosen JPEG quality
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
             try:
-                pil.save(tmp, format="JPEG", quality=85)
+                pil.save(tmp, format="JPEG", quality=int(jpeg_quality), optimize=True)
                 tmp.flush()
             finally:
                 tmp.close()
+
+            # Optional: log size for debugging
+            try:
+                size = os.path.getsize(tmp.name)
+                print(f"[TMP_CREATED] {tmp.name} size={size}", file=sys.stderr, flush=True)
+            except Exception:
+                pass
+
             tmp_paths.append(tmp.name)
         except Exception as e:
-            # If serialization fails, append None and let background report it
+            print(f"[SER_ERR] {e}", file=sys.stderr, flush=True)
             tmp_paths.append(None)
 
     # Create job and start background thread with file paths only
@@ -471,7 +483,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
     )
     t.start()
 
-    # Immediately return a short message and the job_id (must match outputs)
     return f"📤 Upload started: {job_id}", job_id
 
 # -------------------------
@@ -1270,7 +1281,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             # Bind save button: outputs must match (output_text, hidden_state)
             save_btn.click(
                 fn=save_images,
-                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
+                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs + [max_dim_slider, jpeg_quality_slider],
                 outputs=[output_text, hidden_state]
             )
         
