@@ -4,7 +4,7 @@ import os
 import base64
 import requests
 from requests.auth import HTTPBasicAuth
-import requests.exceptions
+import requests.exceptions 
 import gradio as gr
 from datetime import datetime
 from io import BytesIO
