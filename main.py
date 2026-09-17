@@ -428,11 +428,37 @@ max_dim_slider = gr.Slider(label="Max image dimension (px)", minimum=200, maximu
 jpeg_quality_slider = gr.Slider(label="JPEG quality", minimum=30, maximum=95, value=85, step=5)
 
 # --- Updated save_images callback with resizing ---
-def save_images(location, car_id, tank_id, *images, max_dim=1200, jpeg_quality=85, request=None):
+def save_images(location, car_id, tank_id, *images, max_dim=None, jpeg_quality=None, request=None):
     """
-    Serializes each incoming image to a temp file after resizing it to fit within
-    (max_dim x max_dim) and saving with jpeg_quality. Returns immediately with job_id.
+    Defensive save_images:
+    - Coerce max_dim and jpeg_quality to ints with defaults if None or invalid.
+    - Resize images with thumbnail before writing temp files.
+    - Return immediately (short message, job_id).
     """
+    # Defaults
+    DEFAULT_MAX_DIM = 1200
+    DEFAULT_JPEG_QUALITY = 85
+
+    # Coerce and validate sliders (handle None or wrong types)
+    try:
+        max_dim_val = int(max_dim) if max_dim is not None else DEFAULT_MAX_DIM
+    except Exception:
+        max_dim_val = DEFAULT_MAX_DIM
+
+    try:
+        jpeg_quality_val = int(jpeg_quality) if jpeg_quality is not None else DEFAULT_JPEG_QUALITY
+    except Exception:
+        jpeg_quality_val = DEFAULT_JPEG_QUALITY
+
+    # Clamp sensible ranges
+    if max_dim_val <= 0:
+        max_dim_val = DEFAULT_MAX_DIM
+    if jpeg_quality_val < 30:
+        jpeg_quality_val = 30
+    if jpeg_quality_val > 95:
+        jpeg_quality_val = 95
+
+    # Quick validation for required fields
     if not location or location == "{請選擇}" or not car_id or car_id == "{請選擇}" or not tank_id or tank_id == "{請選擇}":
         return "⚠️ Please select location, car, and tank", ""
 
@@ -449,26 +475,20 @@ def save_images(location, car_id, tank_id, *images, max_dim=1200, jpeg_quality=8
                 pil = PILImage.fromarray(np.array(img))
 
             # Resize while preserving aspect ratio
-            pil.thumbnail((int(max_dim), int(max_dim)), PILImage.LANCZOS)
+            pil.thumbnail((max_dim_val, max_dim_val), PILImage.LANCZOS)
 
             # Save to temp file with chosen JPEG quality
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
             try:
-                pil.save(tmp, format="JPEG", quality=int(jpeg_quality), optimize=True)
+                pil.save(tmp, format="JPEG", quality=jpeg_quality_val, optimize=True)
                 tmp.flush()
             finally:
                 tmp.close()
 
-            # Optional: log size for debugging
-            try:
-                size = os.path.getsize(tmp.name)
-                print(f"[TMP_CREATED] {tmp.name} size={size}", file=sys.stderr, flush=True)
-            except Exception:
-                pass
-
             tmp_paths.append(tmp.name)
         except Exception as e:
-            print(f"[SER_ERR] {e}", file=sys.stderr, flush=True)
+            # Log server side for debugging, but keep going
+            print(f"[SER_ERR] serialization error: {e}", file=sys.stderr, flush=True)
             tmp_paths.append(None)
 
     # Create job and start background thread with file paths only
@@ -484,6 +504,7 @@ def save_images(location, car_id, tank_id, *images, max_dim=1200, jpeg_quality=8
     t.start()
 
     return f"📤 Upload started: {job_id}", job_id
+
 
 # -------------------------
 # Polling function for UI
