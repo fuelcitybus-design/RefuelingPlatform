@@ -292,14 +292,6 @@ def http_put_status(url, data=b"", file_path=None):
     return 201
 
 # -------------------------
-# Domain data (adapt to your app)
-# -------------------------
-tab_names = ["front", "back", "cap", "side"]
-tank_list = {"LocationA": ["T1", "T2"]}
-tab_list_S = {"LocationA": ["front", "back", "cap"]}
-ROOT_FOLDER = "/remote/storage/root"
-
-# -------------------------
 # Global job status store
 # -------------------------
 job_status = {}
