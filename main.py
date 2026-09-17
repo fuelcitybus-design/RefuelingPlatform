@@ -278,48 +278,46 @@ active_tabs = []
 global tank_choices
 tank_choices = []
 
-# Single synchronous save handler (no global messages)
-# --- HTTP helpers with credentials ---
-def http_put_status(url, data):
-    try:
-        r = requests.put(url, data=data, auth=auth, timeout = 2)
-        return r.status_code
-    except Exception:
-        return None
-
+# -------------------------
+# Replace these with your real storage API functions
+# -------------------------
 def http_get_json(url):
-    try:
-        r = requests.get(url, auth=auth)
-        if r.status_code == 200:
-            return r.status_code, r.json()
-        return r.status_code, None
-    except Exception:
-        return None, None
+    # Return (status_code, items_list_or_none)
+    # items_list: list of dicts with keys "name" and "mime"
+    return 200, []
 
-job_status = {}   # job_id -> status string
-job_lock = threading.Lock()  # protect job_status updates
+def http_put_status(url, data=b"", file_path=None):
+    # Upload data or file to 'url'. If file_path is provided, upload that file.
+    # Return HTTP status code (int) or None on network error.
+    return 201
+
+# -------------------------
+# Domain data (adapt to your app)
+# -------------------------
+tab_names = ["front", "back", "cap", "side"]
+tank_list = {"LocationA": ["T1", "T2"]}
+tab_list_S = {"LocationA": ["front", "back", "cap"]}
+ROOT_FOLDER = "/remote/storage/root"
+
+# -------------------------
+# Global job status store
+# -------------------------
+job_status = {}
+job_lock = threading.Lock()
 
 # -------------------------
 # Background worker
 # -------------------------
 def background_upload(job_id, location, car_id, tank_id, tmp_paths):
-    """
-    tmp_paths: list of file paths (or None) created in the callback.
-    This function performs validation, folder checks, duplicate detection,
-    uploads with retries, and updates job_status[job_id] as it goes.
-    It must NOT rely on request objects or open streams.
-    """
     try:
         with job_lock:
             job_status[job_id] = "🔎 Preparing upload..."
 
-        # Basic validation (repeat server-side checks)
         if not location or not car_id or not tank_id:
             with job_lock:
                 job_status[job_id] = "⚠️ Invalid location/car/tank"
             return
 
-        # Build base_url and ensure folder exists
         prefix = f"{location}/{car_id}_{tank_id}"
         today = time.strftime("%Y-%m-%d")
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
@@ -343,7 +341,6 @@ def background_upload(job_id, location, car_id, tank_id, tmp_paths):
                     job_status[job_id] = "❌ Failed to create folder"
                 return
 
-        # Detect existing files
         detected_tabs_exist = []
         if items:
             existing_files = [item.get("name") for item in items if item.get("name") and item.get("mime") != "inode/directory"]
@@ -355,7 +352,6 @@ def background_upload(job_id, location, car_id, tank_id, tmp_paths):
         messages_local = []
         saved = []
 
-        # Process each temp file path
         for i, path in enumerate(tmp_paths):
             tab_name = tab_names[i] if i < len(tab_names) else f"img_{i}"
             if path is None:
@@ -368,7 +364,6 @@ def background_upload(job_id, location, car_id, tank_id, tmp_paths):
                 messages_local.append(f"⚠️ Skipped already uploaded {tab_name}")
                 with job_lock:
                     job_status[job_id] = "\n".join(messages_local[-20:])
-                # remove temp file
                 try:
                     os.remove(path)
                 except Exception:
@@ -379,7 +374,6 @@ def background_upload(job_id, location, car_id, tank_id, tmp_paths):
             uploaded = False
             last_status = None
             for attempt in range(3):
-                # Use file_path upload if your http_put_status supports it
                 last_status = http_put_status(filepath, file_path=path)
                 if last_status in (200, 201, 204):
                     uploaded = True
@@ -393,17 +387,14 @@ def background_upload(job_id, location, car_id, tank_id, tmp_paths):
             else:
                 messages_local.append(f"❌ Failed: {tab_name} (HTTP {last_status})")
 
-            # update short live status for polling
             with job_lock:
                 job_status[job_id] = "\n".join(messages_local[-20:])
 
-            # remove temp file after attempt
             try:
                 os.remove(path)
             except Exception:
                 pass
 
-        # Final aggregation and required tabs check
         if saved:
             location_required_tabs = tab_list_S.get(location, [])
             missing = [tab for tab in location_required_tabs if tab not in detected_tabs_exist]
@@ -424,84 +415,31 @@ def background_upload(job_id, location, car_id, tank_id, tmp_paths):
 # -------------------------
 # Callback: serialize to temp files and start background thread
 # -------------------------
-max_dim_slider = gr.Slider(label="Max image dimension (px)", minimum=200, maximum=2400, value=1200, step=50)
-jpeg_quality_slider = gr.Slider(label="JPEG quality", minimum=30, maximum=95, value=85, step=5)
-
-# --- Updated save_images callback with resizing ---
-def save_images(location, car_id, tank_id, *images, max_dim=None, jpeg_quality=None, request=None):
-    # Debug: print incoming raw slider values
-    print(f"[DEBUG] raw max_dim={max_dim!r}, raw jpeg_quality={jpeg_quality!r}", file=sys.stderr, flush=True)
-
-    # Defaults and coercion
-    DEFAULT_MAX_DIM = 1200
-    DEFAULT_JPEG_QUALITY = 85
-
-    # Coerce max_dim
-    try:
-        if max_dim is None:
-            max_dim_val = DEFAULT_MAX_DIM
-        else:
-            # handle float strings etc.
-            max_dim_val = int(float(max_dim))
-    except Exception as e:
-        print(f"[DEBUG] coercion max_dim failed: {e}", file=sys.stderr, flush=True)
-        max_dim_val = DEFAULT_MAX_DIM
-
-    # Coerce jpeg_quality
-    try:
-        if jpeg_quality is None:
-            jpeg_quality_val = DEFAULT_JPEG_QUALITY
-        else:
-            jpeg_quality_val = int(float(jpeg_quality))
-    except Exception as e:
-        print(f"[DEBUG] coercion jpeg_quality failed: {e}", file=sys.stderr, flush=True)
-        jpeg_quality_val = DEFAULT_JPEG_QUALITY
-
-    # Clamp ranges
-    if max_dim_val <= 0:
-        max_dim_val = DEFAULT_MAX_DIM
-    if max_dim_val < 200:
-        max_dim_val = 200
-    if max_dim_val > 4000:
-        max_dim_val = 4000
-
-    if jpeg_quality_val < 30:
-        jpeg_quality_val = 30
-    if jpeg_quality_val > 95:
-        jpeg_quality_val = 95
-
-    # Log final values
-    print(f"[DEBUG] using max_dim={max_dim_val}, jpeg_quality={jpeg_quality_val}", file=sys.stderr, flush=True)
-
-    # Basic validation for required fields
+def save_images(location, car_id, tank_id, *images, request=None):
     if not location or location == "{請選擇}" or not car_id or car_id == "{請選擇}" or not tank_id or tank_id == "{請選擇}":
         return "⚠️ Please select location, car, and tank", ""
 
-    # Serialize images to temp files (resized)
     tmp_paths = []
     for img in images:
         if img is None:
             tmp_paths.append(None)
             continue
         try:
-            pil = img if hasattr(img, "save") else PILImage.fromarray(np.array(img))
-            pil.thumbnail((max_dim_val, max_dim_val), PILImage.LANCZOS)
+            if hasattr(img, "save"):
+                pil = img
+            else:
+                pil = PILImage.fromarray(np.array(img))
 
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
             try:
-                pil.save(tmp, format="JPEG", quality=jpeg_quality_val, optimize=True)
+                pil.save(tmp, format="JPEG", quality=85)
                 tmp.flush()
             finally:
                 tmp.close()
-
-            size = os.path.getsize(tmp.name)
-            print(f"[DEBUG] tmp file {tmp.name} size={size}", file=sys.stderr, flush=True)
             tmp_paths.append(tmp.name)
-        except Exception as e:
-            print(f"[DEBUG] serialization error for one image: {e}", file=sys.stderr, flush=True)
+        except Exception:
             tmp_paths.append(None)
 
-    # Start background upload thread (same pattern you already use)
     job_id = uuid.uuid4().hex
     with job_lock:
         job_status[job_id] = "📤 Upload queued"
@@ -513,7 +451,6 @@ def save_images(location, car_id, tank_id, *images, max_dim=None, jpeg_quality=N
     )
     t.start()
 
-    print(f"[DEBUG] started background job {job_id}", file=sys.stderr, flush=True)
     return f"📤 Upload started: {job_id}", job_id
 
 # -------------------------
@@ -524,7 +461,6 @@ def check_job_status(job_id):
         return "No job running"
     with job_lock:
         return job_status.get(job_id, "Job not found or still initializing")
-
 def nearest(gps):
     if "Allow" in gps:
         return "{請選擇}"
@@ -1310,16 +1246,11 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             # Bind save button: outputs must match (output_text, hidden_state)
             save_btn.click(
                 fn=save_images,
-                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs + [max_dim_slider, jpeg_quality_slider],
+                inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
                 outputs=[output_text, hidden_state]
             )
-
         
-            refresh_btn = gr.Button("Refresh status")
-
-            # Bind the refresh button to check_job_status
             refresh_btn.click(fn=check_job_status, inputs=[hidden_state], outputs=[output_text])
-
 
                 
             next_btn.click(
