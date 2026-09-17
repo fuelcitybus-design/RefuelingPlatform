@@ -337,7 +337,7 @@ def background_upload(job_id, location, car_id, tank_id, images, request=None):
             if not created:
                 job_status[job_id] = "❌錯誤：無法建立資料夾"
                 return
-
+                
         # Upload loop
         for i, img in enumerate(images):
             if img is None:
