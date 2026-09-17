@@ -282,7 +282,7 @@ tank_choices = []
 # --- HTTP helpers with credentials ---
 def http_put_status(url, data):
     try:
-        r = requests.put(url, data=data, auth=auth)
+        r = requests.put(url, data=data, auth=auth, timeout = 2)
         return r.status_code
     except Exception:
         return None
