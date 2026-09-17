@@ -33,7 +33,7 @@ COPY requirements.txt constraints.txt .
 
 # Install Python dependencies
 RUN pip install --upgrade pip setuptools wheel \
-    RUN pip uninstall -y opencv-python opencv-contrib-python opencv-python-headless \
+    pip uninstall -y opencv-python opencv-contrib-python opencv-python-headless \
     && pip install --no-cache-dir -r requirements.txt -c constraints.txt
     #&& pip install --no-cache-dir opencv-python-headless==4.10.0.84
     
