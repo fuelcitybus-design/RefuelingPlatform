@@ -243,21 +243,8 @@ def prefer_back_camera():
         constraints.video.facingMode = { ideal: "environment" };
       }
 
-      #constraints.video.width = { exact: 400 };
-      #constraints.video.height = { exact: 400 };
-      constraints.video.facingMode = constraints.video.facingMode || {
-          ideal: "environment"
-      };
-        
-      constraints.video.width = {
-          ideal: 400,
-          max: 1280
-      };
-        
-      constraints.video.height = {
-          ideal: 400,
-          max: 1280
-      };
+      constraints.video.width = { exact: 400 };
+      constraints.video.height = { exact: 400 };
       return originalGetUserMedia(constraints);
     };
 
