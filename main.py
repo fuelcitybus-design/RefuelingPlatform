@@ -114,7 +114,6 @@ setInterval(checkConnection, 3000);
 """
 
 #========================================================================================================
-
 # --- CONFIGURATION ---
 # Replace these with your actual Azure App Service credentials
 USERNAME = "$oil-tank-refueling"
@@ -232,7 +231,6 @@ def http_put_status(url, data=None, timeout=HTTP_TIMEOUT, attempts=2, session=No
             time.sleep(0.5)
 
     return None
-
 
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
