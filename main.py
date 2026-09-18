@@ -59,18 +59,6 @@ async def warmup():
 async def healthcheck():
     return {"status": "ok"}
 
-#----------------------------------------------------------------------------
-#from fastapi.responses import JSONResponse
-
-#@app.get("/gradio_api/upload_progress")
-#async def upload_progress(upload_id: str):
-#    return JSONResponse({
-#        "status": "complete",
-#        "progress": 1.0,
-#        "eta": 0,
-#        "average_speed": 0
-#    })
-
 #========================================================================================================
 # Custom JavaScript to inject into the front-end
 # It checks browser online/offline status and attempts to ping the server
@@ -1089,13 +1077,13 @@ def export(request: gr.Request, location, date):
     with open(local_path, "rb") as f:
         wbp = requests.put(save_url, data=f, auth=auth)
     if wbp.status_code in [200, 201]:
-        return local_path, "✅導出成功，已上傳"
+        return local_path, f"✅導出成功，已上傳\n⚠️緊記自行輸入油單數及檢查內容是否齊全"
     else:
         del_resp = requests.delete(save_url, auth=auth, headers={"If-Match": "*"})
         with open(local_path, "rb") as f:
             wbp = requests.put(save_url, data=f, auth=auth)
         if wbp.status_code in [200, 201]:
-            return local_path, "✅導出成功，已更新存檔"
+            return local_path, f"✅導出成功，已更新存檔\n⚠️緊記自行輸入油單數及檢查內容是否齊全"
         else:
             return local_path, f" ✅導出成功，只能從上下載最新版本: {wbp.status_code} {wbp.text}"
         
