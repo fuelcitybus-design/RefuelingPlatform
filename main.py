@@ -573,7 +573,8 @@ def toggle_ui_components(location, car, tank):
     global active_tabs
     active_tabs = tab_list_S.get(location, [])
     msg = ""
-
+    tab_updates = [gr.update(visible=False) for _ in tab_names]
+    
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         tab_updates = []
         for tab in tab_names:
