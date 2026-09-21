@@ -1531,7 +1531,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         
         demo.css = """
         #camera_input button {
-            transform: scale(1.6);
+            transform: scale(2);
         }
         .gradio-container,
         body,
