@@ -312,6 +312,8 @@ active_tabs = []
 global tank_choices
 tank_choices = []
 global confirmed_location
+global confirmed_car
+global confirmed_tank
 
 def prepare_upload_image(img, max_height=400, quality=75):
     """
@@ -385,7 +387,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         ):
             return "⚠️警告：確保已輸入地點，車號，缸號"
 
-        if confirmed_location != location:
+        if confirmed_location != location or confirmed_car != car or confirmed_tank != tank:
             return "⚠️警告：地點/車號/缸號有更改，請按「確認選擇」以便鎖定(不會刪除現存網站上的照片)"
 
         tank_choices_local = tank_list.get(location, [])
@@ -576,7 +578,11 @@ def update_tank_dropdown(location):
 def toggle_ui_components(location, car, tank):
     global active_tabs
     global confirmed_location
+    global confirmed_car
+    global confirmed_tank
     confirmed_location = location
+    confirmed_car = car
+    confirmed_tank = tank
     active_tabs = tab_list_S.get(location, [])
     msg = ""
     tab_updates = [gr.update(visible=False) for _ in tab_names]   
