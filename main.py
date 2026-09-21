@@ -230,7 +230,7 @@ def prefer_back_camera():
       if (!constraints.video.facingMode) {
         constraints.video.facingMode = { ideal: "environment" };
       }
-
+      constraints.video.advanced = [{ zoom: 1.0 }];
       constraints.video.width = { exact: 400 };
       constraints.video.height = { exact: 400 };
       return originalGetUserMedia(constraints);
