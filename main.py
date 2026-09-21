@@ -1026,6 +1026,15 @@ def export(request: gr.Request, location, date):
             f'=SUM(B{row_no}:{get_column_letter(len(tank_list[location]))}{row_no})'
         )
 
+    MAIN.cell(row=1, column=Total_placecol+2).value = "油單數"
+    MAIN.cell(row=1, column=Total_placecol+3).value = "來油相差"
+    for b in range(5):
+        row_no = b + 2
+        MAIN.cell(row=row_no, column=Total_placecol+3).value = (
+            f'=SUM(B{row_no}:{get_column_letter(len(tank_list[location]))}{row_no})-{row_no}{Total_placecol+3}'
+        )
+    
+    
     #Place images
     items = SUBR.json()
     # Extract only subfolders
