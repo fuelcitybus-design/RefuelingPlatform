@@ -995,6 +995,21 @@ def export(request: gr.Request, location, date):
     if SUBR.status_code != 200:
         return [], f"❌ Error {SUBR.status_code}: {SUBR.text}"
 
+    #Setup template by choosen depot
+    for tankshead in tank_list.get(location):
+      col_no = tank_list[location].index(tankshead)
+      col_letter = get_column_letter(tank_list[location].index(tankshead))
+      MAIN.cell(row=1, column=col_no).value = tankshead
+      for k in range(5):
+        formula = f'=IFERROR(INDEX(RAW!$F:$F,MATCH(1,(RAW!$B:$B=$A{row})*(RAW!$C:$C={col_no}$1),0)),0)'
+        MAIN.cell(row=1+k+1, column=tank_list[location].index(tankshead)).value = formula
+      MAIN.cell(row=7, column=col_no).value = f'=SUM({col_letter}2:{col_letter}6)'
+    Total_placecol = tank_list[location].index(tankshead) + 1
+    MAIN.cell(row=1, column=Total_placerow).value = "每車總數"
+    for b in range(5):
+      MAIN.cell(row=1+k+1, column=Total_placecol).value = f'=SUM(B{b+2}:{get_column_letter(len(tank_list[location]))}{b+2}'
+
+    
     items = SUBR.json()
     # Extract only subfolders
     subfolders = [item["name"] for item in items if item.get("mime") == "inode/directory"]
