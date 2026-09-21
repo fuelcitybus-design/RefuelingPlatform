@@ -311,6 +311,7 @@ global active_tabs
 active_tabs = []
 global tank_choices
 tank_choices = []
+global confirmed_location
 
 def prepare_upload_image(img, max_height=400, quality=75):
     """
@@ -383,6 +384,9 @@ def save_images(location, car_id, tank_id, *images, request=None):
             or tank_id == "{請選擇}"
         ):
             return "⚠️警告：確保已輸入地點，車號，缸號"
+
+        if confirmed_location != location:
+            return "⚠️警告：地點/車號/缸號有更改，請按「確認選擇」以便鎖定(不會刪除現存網站上的照片)"
 
         tank_choices_local = tank_list.get(location, [])
         if not tank_choices_local or tank_id not in tank_choices_local:
@@ -571,57 +575,30 @@ def update_tank_dropdown(location):
 
 def toggle_ui_components(location, car, tank):
     global active_tabs
+    global confirmed_location
+    confirmed_location = location
     active_tabs = tab_list_S.get(location, [])
     msg = ""
-    tab_updates = [gr.update(visible=False) for _ in tab_names]
+    tab_updates = [gr.update(visible=False) for _ in tab_names]   
     
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        tab_updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
+        tab_updates = []
+        for tab in tab_names:
+            tab_updates.append(gr.update(visible=(tab in active_tabs)))
 
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
 
-        # Reset selection to the first *visible* tab
-        first_idx = None
-        for i, tab in enumerate(tab_names):
-            if tab in active_tabs:
-                first_idx = i
-                break
-                
-    
-    #if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-     #   tab_updates = []
-      #  for tab in tab_names:
-       #     tab_updates.append(gr.update(visible=(tab in active_tabs)))
+        #Reset selection to the first valid tab of the new location
+        if active_tabs:
+            try:
+                first_idx = tab_names.index(active_tabs[0])
+            except ValueError:
+                first_idx = None
+        else:
+            first_idx = None
 
-        #save_btn_update = gr.update(visible=True)
-        #prev_btn_update = gr.update(visible=True)
-        #next_btn_update = gr.update(visible=True)
-
-        # Reset selection to the first valid tab of the new location
-        #if active_tabs:
-         #   try:
-          #      first_idx = tab_names.index(active_tabs[0])
-           # except ValueError:
-            #    first_idx = None
-        #else:
-         #   first_idx = None
-
-    
-    #if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        #tab_updates = []
-        #for i, tab in enumerate(tab_names):
-            #if active_tabs and tab == active_tabs[0]:
-               # tab_updates.append(gr.update(visible=True))
-           # else:
-               # tab_updates.append(gr.update(visible=(tab in active_tabs)))
-
-       # save_btn_update = gr.update(visible=True)
-       # prev_btn_update = gr.update(visible=True)
-        #next_btn_update = gr.update(visible=True)
-
-     #   first_idx = tab_names.index(active_tabs[0]) if active_tabs else None
         tabs_update = gr.update(selected=first_idx)
         msg = "ℹ️在以上方格拍照或上載相關相片，上載前務必確認地點、車號、缸號正確，可分開多次上載"
     else:
@@ -654,7 +631,7 @@ def set_current(idx):
     return idx
 
 def next_tab(current, location):
-    active_tabs_local = tab_list_S.get(location, [])
+    active_tabs_local = tab_list_S.get(confirmed_location, [])
     if not active_tabs_local:
         return gr.Tabs(selected=None), current
     active_indices = [tab_names.index(tab) for tab in active_tabs_local]
@@ -666,7 +643,7 @@ def next_tab(current, location):
     return gr.Tabs(selected=nxt), nxt
 
 def prev_tab(current, location):
-    active_tabs_local = tab_list_S.get(location, [])
+    active_tabs_local = tab_list_S.get(confirmed_location, [])
     if not active_tabs_local:
         return gr.Tabs(selected=None), current
     active_indices = [tab_names.index(tab) for tab in active_tabs_local]
