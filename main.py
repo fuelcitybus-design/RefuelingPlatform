@@ -996,19 +996,37 @@ def export(request: gr.Request, location, date):
         return [], f"❌ Error {SUBR.status_code}: {SUBR.text}"
 
     #Setup template by choosen depot
-    for tankshead in tank_list.get(location):
-      col_no = tank_list[location].index(tankshead)+1
-      col_letter = get_column_letter(col_no)
-      MAIN.cell(row=1, column=col_no).value = tankshead
-      for k in range(5):
-        formula = f'=IFERROR(INDEX(RAW!$F:$F,MATCH(1,(RAW!$B:$B=$A{row})*(RAW!$C:$C={col_no}$1),0)),0)'
-        MAIN.cell(row=1+k+1, column=tank_list[location].index(tankshead)+2).value = formula
-      MAIN.cell(row=7, column=col_no).value = f'=SUM({col_letter}1:{col_letter}6)'
-    Total_placecol = tank_list[location].index(tankshead) + 1
-    MAIN.cell(row=1, column=Total_placerow).value = "每車總數"
-    for b in range(5):
-      MAIN.cell(row=1+k+1, column=Total_placecol).value = f'=SUM(B{b+2}:{get_column_letter(len(tank_list[location]))}{b+2}'
+    # Skip the first element by slicing [1:]
+    for idx, tankshead in enumerate(tank_list[location][1:], start=1):
+        col_no = idx + 1   # +1 because Excel columns are 1-based
+        col_letter = get_column_letter(col_no)
     
+        # Place header
+        MAIN.cell(row=1, column=col_no).value = tankshead
+    
+        # Place formulas for rows 2–6
+        for k in range(5):
+            formula = (
+                f'=IFERROR(INDEX(RAW!$F:$F,'
+                f'MATCH(1,(RAW!$B:$B=$A{2+k})*(RAW!$C:$C={col_letter}$1),0)),0)'
+            )
+            MAIN.cell(row=2 + k, column=col_no).value = formula
+    
+        # Column total at row 7
+        MAIN.cell(row=7, column=col_no).value = f'=SUM({col_letter}2:{col_letter}6)'
+    
+    # Add "每車總數" header in the next column
+    Total_placecol = len(tank_list[location]) + 1
+    MAIN.cell(row=1, column=Total_placecol).value = "每車總數"
+    
+    # Add row totals across all tank columns
+    for b in range(5):
+        row_no = b + 2
+        MAIN.cell(row=row_no, column=Total_placecol).value = (
+            f'=SUM(B{row_no}:{get_column_letter(len(tank_list[location]))}{row_no})'
+        )
+
+    #Place images
     items = SUBR.json()
     # Extract only subfolders
     subfolders = [item["name"] for item in items if item.get("mime") == "inode/directory"]
