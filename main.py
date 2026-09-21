@@ -582,13 +582,12 @@ def toggle_ui_components(location, car, tank):
     confirmed_tank = tank
     active_tabs = tab_list_S.get(location, [])
     msg = ""
-    tab_updates = [gr.update(visible=False, interactive=False) for _ in tab_names]  
+    tab_updates = [gr.update(visible=False) for _ in tab_names]  
     
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         tab_updates = []
         for tab in tab_names:
             tab_updates.append(gr.update(visible=(tab in active_tabs)))
-            tab_updates.append(gr.update(interactive=(tab in active_tabs)))
             
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
