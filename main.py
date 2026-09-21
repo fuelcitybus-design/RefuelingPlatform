@@ -576,36 +576,48 @@ def update_tank_dropdown(location):
     )
 
 def toggle_ui_components(location, car, tank):
-    global active_tabs
-    global confirmed_location
-    global confirmed_car
-    global confirmed_tank
+    global active_tabs, confirmed_location, confirmed_car, confirmed_tank
     confirmed_location = location
     confirmed_car = car
     confirmed_tank = tank
     active_tabs = tab_list_S.get(location, [])
     msg = ""
-    tab_updates = [gr.update(visible=False) for _ in tab_names]   
-    
+    tab_updates = [gr.update(visible=False) for _ in tab_names]  
+
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
-        tab_updates = []
-        for tab in tab_names:
-            tab_updates.append(gr.update(visible=(tab in active_tabs)))
+        tab_updates = [gr.update(visible=(tab in active_tabs)) for tab in tab_names]
 
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
 
-        #Reset selection to the first valid tab of the new location
+        # ✅ Reset selection to first valid tab
         if active_tabs:
-            try:
-                first_idx = tab_names.index(active_tabs[0])
-            except ValueError:
-                first_idx = None
+            first_idx = tab_names.index(active_tabs[0])
+            tabs_update = gr.update(selected=first_idx)
         else:
-            first_idx = None
+            tabs_update = gr.update(selected=None)
 
-        tabs_update = gr.update(selected=first_idx)
+    
+    #if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
+     #   tab_updates = []
+      #  for tab in tab_names:
+       #     tab_updates.append(gr.update(visible=(tab in active_tabs)))
+
+        #save_btn_update = gr.update(visible=True)
+        #prev_btn_update = gr.update(visible=True)
+        #next_btn_update = gr.update(visible=True)
+
+        #Reset selection to the first valid tab of the new location
+        #if active_tabs:
+         #   try:
+          #      first_idx = tab_names.index(active_tabs[0])
+           # except ValueError:
+            #    first_idx = None
+        #else:
+         #   first_idx = None
+
+        #tabs_update = gr.update(selected=first_idx)
         msg = "ℹ️在以上方格拍照或上載相關相片，上載前務必確認地點、車號、缸號正確，可分開多次上載"
     else:
         tab_updates = [gr.update(visible=False) for _ in tab_names]
