@@ -1031,7 +1031,7 @@ def export(request: gr.Request, location, date):
     for b in range(5):
         row_no = b + 2
         MAIN.cell(row=row_no, column=Total_placecol+3).value = (
-            f'=SUM(B{row_no}:{get_column_letter(len(tank_list[location]))}{row_no})-{row_no}{get_column_letter(Total_placecol+3)}'
+            f'=SUM(B{row_no}:{get_column_letter(len(tank_list[location]))}{row_no})-{get_column_letter(Total_placecol+3)}{row_no}'
         )
     
     
