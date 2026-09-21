@@ -997,13 +997,13 @@ def export(request: gr.Request, location, date):
 
     #Setup template by choosen depot
     for tankshead in tank_list.get(location):
-      col_no = tank_list[location].index(tankshead)+2
-      col_letter = get_column_letter(tank_list[location].index(tankshead))
+      col_no = tank_list[location].index(tankshead)+1
+      col_letter = get_column_letter(col_no)
       MAIN.cell(row=1, column=col_no).value = tankshead
       for k in range(5):
         formula = f'=IFERROR(INDEX(RAW!$F:$F,MATCH(1,(RAW!$B:$B=$A{row})*(RAW!$C:$C={col_no}$1),0)),0)'
-        MAIN.cell(row=1+k+1, column=tank_list[location].index(tankshead)).value = formula
-      MAIN.cell(row=7, column=col_no).value = f'=SUM({col_letter}2:{col_letter}6)'
+        MAIN.cell(row=1+k+1, column=tank_list[location].index(tankshead)+2).value = formula
+      MAIN.cell(row=7, column=col_no).value = f'=SUM({col_letter}1:{col_letter}6)'
     Total_placecol = tank_list[location].index(tankshead) + 1
     MAIN.cell(row=1, column=Total_placerow).value = "每車總數"
     for b in range(5):
