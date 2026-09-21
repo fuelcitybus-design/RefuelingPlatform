@@ -1033,7 +1033,11 @@ def export(request: gr.Request, location, date):
         MAIN.cell(row=row_no, column=Total_placecol+3).value = (
             f'=SUM(B{row_no}:{get_column_letter(len(tank_list[location]))}{row_no})-{get_column_letter(Total_placecol+3)}{row_no}'
         )
-    
+
+    MAIN.cell(row=7, column=Total_placecol+1).value = "總數"
+    MAIN.cell(row=7, column=Total_placecol+2).value = f'=SUM({get_column_letter(Total_placecol+2)}2:{get_column_letter(Total_placecol+2)}6'
+    MAIN.cell(row=7, column=Total_placecol+3).value = f'=SUM({get_column_letter(Total_placecol+3)}2:{get_column_letter(Total_placecol+3)}6'
+
     
     #Place images
     items = SUBR.json()
