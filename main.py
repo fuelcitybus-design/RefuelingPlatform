@@ -594,7 +594,7 @@ def toggle_ui_components(location, car, tank):
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
 
-        Reset selection to the first valid tab of the new location
+        #Reset selection to the first valid tab of the new location
         if active_tabs:
             try:
                 first_idx = tab_names.index(active_tabs[0])
