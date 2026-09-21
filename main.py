@@ -1031,7 +1031,7 @@ def export(request: gr.Request, location, date):
     for b in range(5):
         row_no = b + 2
         MAIN.cell(row=row_no, column=Total_placecol+3).value = (
-            f'=SUM(B{row_no}:{get_column_letter(len(tank_list[location]))}{row_no})-{row_no}{Total_placecol+3}'
+            f'=SUM(B{row_no}:{get_column_letter(len(tank_list[location]))}{row_no})-{row_no}{get_column_letter(Total_placecol+3)}'
         )
     
     
@@ -1444,7 +1444,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 date_picker = gr.DateTime(label="日期", include_time=False, value=str(datetime.now().date()))
 
             output = gr.File(label="下載")
-            state = gr.Textbox("ℹ️選擇日期、地點以便輸出落油紀錄", label="狀態")
+            state = gr.Textbox("ℹ️選擇日期、地點以便輸出落油紀錄", label="狀態", lines=2)
 
             export_btn = gr.Button("✅下載")
             export_btn.click(
