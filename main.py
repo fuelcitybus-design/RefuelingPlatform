@@ -997,7 +997,7 @@ def export(request: gr.Request, location, date):
 
     #Setup template by choosen depot
     for tankshead in tank_list.get(location):
-      col_no = tank_list[location].index(tankshead)
+      col_no = tank_list[location].index(tankshead)+2
       col_letter = get_column_letter(tank_list[location].index(tankshead))
       MAIN.cell(row=1, column=col_no).value = tankshead
       for k in range(5):
@@ -1008,7 +1008,6 @@ def export(request: gr.Request, location, date):
     MAIN.cell(row=1, column=Total_placerow).value = "每車總數"
     for b in range(5):
       MAIN.cell(row=1+k+1, column=Total_placecol).value = f'=SUM(B{b+2}:{get_column_letter(len(tank_list[location]))}{b+2}'
-
     
     items = SUBR.json()
     # Extract only subfolders
