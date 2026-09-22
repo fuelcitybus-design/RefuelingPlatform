@@ -387,7 +387,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         ):
             return "⚠️警告：確保已輸入地點，車號，缸號"
 
-        if confirmed_location != location or confirmed_car != car or confirmed_tank != tank:
+        if confirmed_location != location or confirmed_car != car_id or confirmed_tank != tank_id:
             return "⚠️警告：地點/車號/缸號有更改，請按「確認選擇」以便鎖定(不會刪除現存網站上的照片)"
 
         tank_choices_local = tank_list.get(location, [])
