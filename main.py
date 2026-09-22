@@ -514,15 +514,15 @@ def save_images(location, car_id, tank_id, *images, request=None):
                         f"❌錯誤：{tab_name} 上傳失敗. "
                         f"HTTP {upload_status or 'N/A'}"
                     )
+        
+        
+        location_required_tabs = tab_list_S.get(location, [])
         missing = [
                         tab
                         for tab in location_required_tabs
                         if tab not in detected_tabs_exist
                     ]
         if saved:
-            location_required_tabs = tab_list_S.get(location, [])
-            
-
             if missing:
                 messages_local.append(
                     f"✅已上傳 {len(saved)} 張新照片\n"
