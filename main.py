@@ -1028,8 +1028,8 @@ def export(request: gr.Request, location, date):
     
         # Place formulas for rows 2–6
         for k in range(5):
-            formula = (
-                f'{=IFERROR(INDEX(RAW!$F:$F,'
+            formula = (f'{',
+                f'=IFERROR(INDEX(RAW!$F:$F,'
                 f'MATCH(1,(RAW!$B:$B=$A{2+k})*(RAW!$C:$C={col_letter}$1),0)),0)}'
             )
             MAIN.cell(row=2 + k, column=col_no).value = formula
