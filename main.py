@@ -931,6 +931,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
 def add_data(wb, car, tank, before, after, img_list, rowcount):
     RAW = wb['RAW']
     MAIN = wb['Main']
+    wb.calcProperties.fullCalcOnLoad = True
     i = rowcount + 2
     RAW.cell(row=i, column=2).value = car
     RAW.cell(row=i, column=3).value = tank
