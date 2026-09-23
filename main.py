@@ -1038,8 +1038,8 @@ def export(request: gr.Request, location, date):
                 f'MATCH(1,(RAW!$B:$B=$A{2+k})*(RAW!$C:$C={col_letter}$1),0)),0)'
             )
 
-# 3. Assign it to the sheet as an ArrayFormula by passing the cell coordinate twice
-ws[cell_coord] = ArrayFormula(f"{cell_coord}:{cell_coord}", formula_string)
+            # 3. Assign it to the sheet as an ArrayFormula by passing the cell coordinate twice
+            ws[cell_coord] = ArrayFormula(f"{cell_coord}:{cell_coord}", formula_string)
     
         # Column total at row 7
         MAIN.cell(row=7, column=col_no).value = f'=SUM({col_letter}2:{col_letter}6)'
