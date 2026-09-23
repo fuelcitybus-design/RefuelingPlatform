@@ -30,7 +30,6 @@ import sys
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 app = FastAPI()
-
 #---------------------------------------------------------------------------------
 #Warm-up -er
 def safe_request(url, method="get", retries=3, **kwargs):
