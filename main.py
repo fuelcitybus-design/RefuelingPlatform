@@ -1041,8 +1041,8 @@ def export(request: gr.Request, location, date):
             # 3. Assign it to the sheet as an ArrayFormula by passing the cell coordinate twice
             ws[cell_coord] = ArrayFormula(f"{cell_coord}:{cell_coord}", formula_string)
     
-        # Column total at row 7
-        MAIN.cell(row=7, column=col_no).value = f'=SUM({col_letter}2:{col_letter}6)'
+            # Column total at row 7
+            MAIN.cell(row=7, column=col_no).value = f'=SUM({col_letter}2:{col_letter}6)'
     
     # Add "每車總數" header in the next column
     Total_placecol = len(tank_list[location]) + 1
