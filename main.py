@@ -17,7 +17,7 @@ from PIL import Image as PILImage
 import fnmatch
 
 from openpyxl import Workbook, load_workbook
-from openpyxl.formula import ArrayFormula
+from openpyxl.worksheet.formula import ArrayFormula
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image as XLImage
 from datetime import datetime
