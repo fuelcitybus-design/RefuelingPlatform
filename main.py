@@ -17,6 +17,7 @@ from PIL import Image as PILImage
 import fnmatch
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.formula import ArrayFormula
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image as XLImage
 from datetime import datetime
@@ -1028,11 +1029,17 @@ def export(request: gr.Request, location, date):
     
         # Place formulas for rows 2–6
         for k in range(5):
-            formula = (f'{{',
+            # 1. Define the target cell coordinate (e.g., "B3", "C4")
+            cell_coord = f"{col_letter}{2+k}"
+            
+            # 2. Build the formula string WITHOUT manual curly brackets
+            formula_string = (
                 f'=IFERROR(INDEX(RAW!$F:$F,'
-                f'MATCH(1,(RAW!$B:$B=$A{2+k})*(RAW!$C:$C={col_letter}$1),0)),0)}}'
+                f'MATCH(1,(RAW!$B:$B=$A{2+k})*(RAW!$C:$C={col_letter}$1),0)),0)'
             )
-            MAIN.cell(row=2 + k, column=col_no).value = formula
+
+# 3. Assign it to the sheet as an ArrayFormula by passing the cell coordinate twice
+ws[cell_coord] = ArrayFormula(f"{cell_coord}:{cell_coord}", formula_string)
     
         # Column total at row 7
         MAIN.cell(row=7, column=col_no).value = f'=SUM({col_letter}2:{col_letter}6)'
