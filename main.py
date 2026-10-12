@@ -622,7 +622,16 @@ def toggle_ui_components(location, car, tank):
                 first_idx = None
         else:
             first_idx = None
-        
+
+        if car == "每日開油單":
+            try:
+                first_idx = tab_names.index("每日開油單")
+            except ValueError:
+                first_idx = None
+        else:
+            first_idx = None
+
+            
         tabs_update = gr.update(selected=first_idx)
         msg = "ℹ️在以上方格拍照或上載相關相片，上載前務必確認地點、車號、缸號正確，可分開多次上載"
     else:
