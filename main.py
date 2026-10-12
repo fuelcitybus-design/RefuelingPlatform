@@ -609,7 +609,6 @@ def toggle_ui_components(location, car, tank):
         else:
             for tab in tab_names:
                 tab_updates.append(gr.update(visible=(tab in active_tabs)))
-                tab_updates.append(gr.update(visible=(tab in active_tabs)))
             
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
