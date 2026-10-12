@@ -144,7 +144,7 @@ tank_list = {"CFD創富": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4
         "WCD黃竹坑": ["{請選擇}", "第1缸(廠外)", "第2缸(廠外)", "第3缸(廠內)"],
         "WKD西九": ["{請選擇}", "第1缸", "第2缸", "第3缸"]}
 
-tab_names = ["車牌","油錶前", "油尺前", "封條(旗仔)", "封條1", "封條2", "油車前","開始入缸", "入盡餘油", "完成入缸", "油車後", "油錶後", "油尺後", "收據"]
+tab_names = ["每日開油單","車牌","油錶前", "油尺前", "封條(旗仔)", "封條1", "封條2", "油車前","開始入缸", "入盡餘油", "完成入缸", "油車後", "油錶後", "油尺後", "收據"]
 tab_list_S = {
         "{請選擇}": [],
         "CFD創富": ["油錶前", "油尺前", "封條1", "封條2", "油車前", "油車後", "油錶後", "油尺後", "收據"],
@@ -598,8 +598,11 @@ def toggle_ui_components(location, car, tank):
     
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         tab_updates = []
-        for tab in tab_names:
-            tab_updates.append(gr.update(visible=(tab in active_tabs)))
+        if car == "每日開油單":
+            tab_updates.append(gr.update(visible=("每日開油單")))
+        else:
+            for tab in tab_names:
+                tab_updates.append(gr.update(visible=(tab in active_tabs)))
             
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
