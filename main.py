@@ -600,12 +600,11 @@ def toggle_ui_components(location, car, tank):
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         tab_updates = []
         if car == "每日開油單":   
-                    tab_updates.append(
-                        gr.update(visible=(tab not in tab_names))
-                    )
-                    tab_updates.append(
-                        gr.update(visible=(car == "每日開油單"))
-                    )
+            for tab in tab_names:
+                if tab == "每日開油單":
+                    tab_updates.append(gr.update(visible=True))
+                else:
+                    tab_updates.append(gr.update(visible=False))
                 
         else:
             for tab in tab_names:
