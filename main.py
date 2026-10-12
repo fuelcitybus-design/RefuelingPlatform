@@ -495,8 +495,9 @@ def save_images(location, car_id, tank_id, *images, request=None):
                     messages_local.append(f"⚠️跳過已上傳照片 {tab_name}")
                     continue
                 if tab_name not in tab_list_S.get(location):
-                    messages_local.append(f"⚠️{location}不需要照片 {tab_name}")
-                    continue
+                    if not(car_id == "每日開油單" and tank_id == "每日開油單"):
+                        messages_local.append(f"⚠️{location}不需要照片 {tab_name}")
+                        continue
                 filepath = f"{base_url}{tab_name}.jpg"
 
                 upload_status = http_put_status(
