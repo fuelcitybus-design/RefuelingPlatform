@@ -606,7 +606,7 @@ def toggle_ui_components(location, car, tank):
                     )
                 else:
                     tab_updates.append(
-                        gr.update(visible=(tab not in active_tabs))
+                        gr.update(visible=(tab not in tab_names))
                     )
                 
         else:
