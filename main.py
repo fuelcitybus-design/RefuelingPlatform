@@ -392,7 +392,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
         tank_choices_local = tank_list.get(location, [])
         if not tank_choices_local or tank_id not in tank_choices_local:
-            if not(car == "每日開油單" and tank == "每日開油單"):
+            if not(car_id == "每日開油單" and tank_id == "每日開油單"):
                 return f"⚠️警告：無效的缸號 \"{tank_id}\""
 
         # Prepare all images before network operations.
