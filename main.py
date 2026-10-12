@@ -600,14 +600,11 @@ def toggle_ui_components(location, car, tank):
     if location != "{請選擇}" and car != "{請選擇}" and tank != "{請選擇}":
         tab_updates = []
         if car == "每日開油單":   
-            for tab in tab_names:
-                if tab == "每日開油單":
-                    tab_updates.append(
-                        gr.update(visible=(car == "每日開油單"))
-                    )
-                else:
                     tab_updates.append(
                         gr.update(visible=(tab not in tab_names))
+                    )
+                    tab_updates.append(
+                        gr.update(visible=(car == "每日開油單"))
                     )
                 
         else:
@@ -627,6 +624,8 @@ def toggle_ui_components(location, car, tank):
         else:
             first_idx = None
 
+        if car == "每日開油單": 
+        
         tabs_update = gr.update(selected=first_idx)
         msg = "ℹ️在以上方格拍照或上載相關相片，上載前務必確認地點、車號、缸號正確，可分開多次上載"
     else:
