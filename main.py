@@ -479,7 +479,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
             if put_status not in (200, 201, 204):
                 return "❌錯誤：無法建立資料夾"
-
+                
         saved = []
         messages_local = []
 
@@ -528,18 +528,24 @@ def save_images(location, car_id, tank_id, *images, request=None):
             if missing:
                 messages_local.append(
                     f"✅已上傳 {len(saved)} 張新照片\n"
+                    f"已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
                     f"請上傳{', '.join(missing)}."
                 )
             else:
                 messages_local.append(
                     f"✅已上傳 {len(saved)} 張新照片"
+                    f"已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
                 )
         elif not messages_local:
-            messages_local.append("⚠️警告：沒有新照片")
+            messages_local.append(f"⚠️警告：沒有新照片\n"
+                                  f"已為此車上傳總共{len(detected_tabs_exist)} 張照片\n")
+            
         if not saved and missing:
-            messages_local.append(
-                    f"請上傳{', '.join(missing)}."
-                )
+            if not(car_id == "每日開油單" and tank_id == "每日開油單"):
+                messages_local.append(
+                        f"請上傳{', '.join(missing)}.\n"
+                        f"已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
+                    )
 
         result_text = "\n".join(messages_local)
         result_text = f"{result_text}\n[{datetime.now().isoformat()}]"
