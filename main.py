@@ -617,7 +617,7 @@ def toggle_ui_components(location, car, tank):
 
         #Reset selection to the first valid tab of the new location
         
-
+        first_idx = ""
         if car == "每日開油單":
             try:
                 first_idx = tab_names.index("每日開油單")
