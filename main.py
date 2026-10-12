@@ -609,23 +609,23 @@ def toggle_ui_components(location, car, tank):
         else:
             for tab in tab_names:
                 tab_updates.append(gr.update(visible=(tab in active_tabs)))
+                tab_updates.append(gr.update(visible=(tab in active_tabs)))
             
         save_btn_update = gr.update(visible=True)
         prev_btn_update = gr.update(visible=True)
         next_btn_update = gr.update(visible=True)
 
         #Reset selection to the first valid tab of the new location
-        if active_tabs:
-            try:
-                first_idx = tab_names.index(active_tabs[0])
-            except ValueError:
-                first_idx = None
-        else:
-            first_idx = None
+        
 
         if car == "每日開油單":
             try:
                 first_idx = tab_names.index("每日開油單")
+            except ValueError:
+                first_idx = None
+        elif active_tabs:
+            try:
+                first_idx = tab_names.index(active_tabs[0])
             except ValueError:
                 first_idx = None
         else:
