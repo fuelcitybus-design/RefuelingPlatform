@@ -82,7 +82,7 @@ function checkConnection() {
         setOffline();
         return;
     }
-
+    
     // 2. Actively ping the backend to confirm the specific Gradio session is alive
     fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
         .then(response => {
