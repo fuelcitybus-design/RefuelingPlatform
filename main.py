@@ -572,7 +572,7 @@ def nearest(gps):
 def update_tank_dropdown(location, car):
     global tank_choices
     tank_choices = tank_list.get(location, ["{請選擇}"])
-    if car = "每日開油單":
+    if car == "每日開油單":
         return gr.update(
             choices="每日開油單",
             value="每日開油單",
