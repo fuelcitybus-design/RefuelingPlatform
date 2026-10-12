@@ -131,7 +131,7 @@ depot_gps = [("CFD創富", 22.272764832109846, 114.24250389449965),
         ("WCD黃竹坑", 22.248418440612717, 114.16227259618798),
         ("WKD西九", 22.329873814418242, 114.14657657248228)]
 
-car_ids = ["{請選擇}", "第1車", "第2車", "第3車", "第4車", "第5車"]
+car_ids = ["{請選擇}","每日開油單", "第1車", "第2車", "第3車", "第4車", "第5車"]
 
 tank_ids = ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸", "第7缸", "第8缸"]
 tank_list = {"CFD創富": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4缸", "第5缸", "第6缸", "第7缸", "第8缸"],
@@ -569,15 +569,23 @@ def nearest(gps):
     d = lambda c: (lat-c[1])**2 + (lon-c[2])**2
     return min(depot_gps, key=d)[0]
 
-def update_tank_dropdown(location):
+def update_tank_dropdown(location, car):
     global tank_choices
     tank_choices = tank_list.get(location, ["{請選擇}"])
-    return gr.update(
-        choices=tank_choices,
-        value=tank_choices[0],
-        label="缸號",
-        interactive=True
-    )
+    if car = "每日開油單":
+        return gr.update(
+            choices="每日開油單",
+            value="每日開油單",
+            label="缸號",
+            interactive=True
+        )
+    else:
+        return gr.update(
+            choices=tank_choices,
+            value=tank_choices[0],
+            label="缸號",
+            interactive=True
+        )
 
 def toggle_ui_components(location, car, tank):
     global active_tabs, confirmed_location, confirmed_car, confirmed_tank
@@ -1361,7 +1369,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
 
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
-                car_dropdown = gr.Dropdown(choices=car_ids, label="車號", value=car_ids[0], allow_custom_value=False, filterable=False)
+                car_dropdown = gr.Dropdown(choices=car_ids, label="車號/每日開油單", value=car_ids[0], allow_custom_value=False, filterable=False)
                 tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=True, filterable=True, interactive=True, elem_id="tank_dropdown_uploader")
                 confirm_btn = gr.Button("✅確認選擇")
 
@@ -1371,7 +1379,10 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     () => r("[Tap Allow Location]"), {enableHighAccuracy:true}))""")
                 raw_gps.change(fn=nearest, inputs=raw_gps, outputs=location_dropdown)
                 location_dropdown.change(fn=update_tank_dropdown,
-                                         inputs=location_dropdown,
+                                         inputs=[location_dropdown, car_dropdown],
+                                         outputs=tank_dropdown)
+                car_dropdown.change(fn=update_tank_dropdown,
+                                         inputs=[location_dropdown, car_dropdown],
                                          outputs=tank_dropdown)
 
             gr.Markdown("---")
