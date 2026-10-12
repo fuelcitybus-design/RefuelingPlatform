@@ -575,7 +575,7 @@ def update_tank_dropdown(location, car):
     tank_choices = tank_list.get(location, ["{請選擇}"])
     if car == "每日開油單":
         return gr.update(
-            choices="每日開油單",
+            choices=["每日開油單"],
             value="每日開油單",
             label="缸號",
             interactive=True
