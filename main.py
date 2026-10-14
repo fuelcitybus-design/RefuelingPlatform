@@ -25,11 +25,17 @@ import time
 import traceback
 import sys
 
+import pytz
+
 #---------------------------------------------------------------------------------
 #Setup environment for running Gradio interface
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 app = FastAPI()
+
+# Hong Kong timezone
+hk_tz = pytz.timezone("Asia/Hong_Kong")
+
 #---------------------------------------------------------------------------------
 #Warm-up -er
 def safe_request(url, method="get", retries=3, **kwargs):
@@ -314,6 +320,12 @@ tank_choices = []
 global confirmed_location
 global confirmed_car
 global confirmed_tank
+
+def record_timestamp(img):
+    if img is None:
+        return None
+
+    return datetime.now(hk_tz).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + " HKT"
 
 def prepare_upload_image(img, max_height=400, quality=75):
     """
@@ -1430,8 +1442,17 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                                 mirror_webcam=False,
                                 sources=['webcam','upload']
                             )
+                            
                             image_inputs.append(img_input)
                             tab_list_local.append(tab)
+                            #Timestamp of image taken
+                            ts_state = gr.State()
+                            img.change(
+                                fn=record_timestamp,
+                                inputs=img,
+                                outputs=ts_state
+                            )
+                            timestamp_states.append(ts_state)
 
             img_tabs.select(sync_tab_index, None, current)
 
