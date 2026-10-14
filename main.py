@@ -1399,6 +1399,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         #Module 1
         with gr.Tab("拍照"):
             
+            timestamp_states = []
             current = gr.State(0)
 
             with gr.Row():
