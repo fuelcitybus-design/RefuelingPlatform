@@ -349,16 +349,12 @@ def process_image(filepath):
     # Try EXIF first
     exif_time = get_exif_datetime(filepath)
     if exif_time:
-        return {
-            "timestamp": exif_time
-        }
+        return exif_time
     # Fallback to current HK time
     hk_time = datetime.now(HK_TZ).strftime(
         "%Y-%m-%d %H:%M:%S"
     )
-    return {
-        "timestamp": hk_time
-    }
+    return hk_time
 
 
 def prepare_upload_image(img, max_height=400, quality=75):
