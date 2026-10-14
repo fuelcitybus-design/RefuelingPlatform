@@ -323,6 +323,8 @@ tank_choices = []
 global confirmed_location
 global confirmed_car
 global confirmed_tank
+global capture_times
+capture_times = {}
 
 #Extract image metadata under "upload" mode for timestamp
 def get_exif_datetime(filepath):
@@ -343,18 +345,20 @@ def get_exif_datetime(filepath):
     return None
 
 #Timestamp extraction
-def process_image(filepath):
+def process_image(filepath, tab_name):
+
     if filepath is None:
         return None
-    # Try EXIF first
     exif_time = get_exif_datetime(filepath)
     if exif_time:
-        return exif_time
-    # Fallback to current HK time
-    hk_time = datetime.now(HK_TZ).strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
-    return hk_time
+        timestamp = exif_time
+    else:
+        timestamp = datetime.now(HK_TZ).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+    capture_times[tab_name] = timestamp
+    return timestamp
 
 
 def prepare_upload_image(img, max_height=400, quality=75):
@@ -1542,12 +1546,12 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                             record_state = gr.State()
 
                             img_input.change(
-                                fn=process_image,
-                                inputs=img_input,
+                                fn=process_image
+                                inputs=[img_input, tab_name],
                                 outputs=record_state
                             )
                 
-                            metadata_states.append({record_state})
+                            metadata_states.append(record_state)
                             #Uploaded images and corresponding tab names saving
                             image_inputs.append(img_input)
                             tab_list_local.append(tab)
