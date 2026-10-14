@@ -406,7 +406,7 @@ def add_timestamp(image_bytes, timestamp):
         )
     except:
         font = ImageFont.load_default()
-    text = capture_times[tab_name]
+    text = timestamp
     bbox = draw.textbbox(
         (0, 0),
         text,
@@ -613,7 +613,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
                 #Uploading watermarked image
                 filepath = f"{base_url_WM}{tab_name}.jpg"             
-                jpeg_data_WM = add_timestamp(jpeg_data, metadata_states[tab_names.index(tab_name)])
+                jpeg_data_WM = add_timestamp(jpeg_data, capture_times.get(tab_name, ""))
                 upload_status = http_put_status(
                     filepath,
                     data=jpeg_data_WM,
@@ -1547,7 +1547,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                             record_state = gr.State()
 
                             img_input.change(
-                                fn=process_image,
+                                fn=lambda fp, tn=tab_name: process_image(fp, tn),
                                 inputs=[img_input, tab_name],
                                 outputs=record_state
                             )
