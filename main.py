@@ -401,8 +401,8 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     draw = ImageDraw.Draw(img)
     try:
         font = ImageFont.truetype(
-            "DejaVuSans.ttf",
-            14
+            "DejaVuSans-Bold.ttf",
+            16
         )
     except:
         font = ImageFont.load_default()
@@ -432,7 +432,6 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
         fill="white",
         font=font
     )
-
     buffer = BytesIO()
     img.save(
         buffer,
@@ -441,7 +440,6 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
         optimize=True,
         progressive=True
     )
-    
     return buffer.getvalue()
 
 # Single synchronous save handler (no global messages)
@@ -620,13 +618,9 @@ def save_images(location, car_id, tank_id, *images, request=None):
                     attempts=2,
                     session=upload_session
                 )
-                if upload_status in (200, 201, 204):
-                    saved.append(tab_name)
-                    detected_tabs_exist.append(tab_name)
-                    messages_local.append(f"✅已上傳: {tab_name}")
-                else:
+                if not(upload_status in (200, 201, 204)):
                     messages_local.append(
-                        f"❌錯誤：{tab_name} 上傳失敗. "
+                        f"❌錯誤：{tab_name} 時間紀錄上傳失敗. "
                         f"HTTP {upload_status or 'N/A'}"
                     )
         
@@ -1309,7 +1303,7 @@ def export(request: gr.Request, location, date):
 def get_car_ids(date, location):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER}/{date_str}/{location}/"
+        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/"
         candidates = requests.get(BASE_URL, auth=auth, timeout=10)
         car_id = []
         if candidates.status_code == 200:
@@ -1330,7 +1324,7 @@ def get_car_ids(date, location):
 def get_tank_names(date, location, id):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER}/{date_str}/{location}/"
+        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/"
         candidates = requests.get(BASE_URL, auth=auth, timeout=10)
         tank = []
         if candidates.status_code == 200:
@@ -1350,7 +1344,7 @@ def get_tank_names(date, location, id):
 def find_jpg_images(date, location, id, tank):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        url = f"{ROOT_FOLDER}/{date_str}/{location}/{id}_{tank}/"
+        url = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{id}_{tank}/"
         gallery_items = []
 
         response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
@@ -1505,7 +1499,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
                 car_dropdown = gr.Dropdown(choices=car_ids, label="車號/每日開油單", value=car_ids[0], allow_custom_value=False, filterable=False)
-                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=True, interactive=True, elem_id="tank_dropdown_uploader")
+                tank_dropdown = gr.Dropdown(choices=["{請選擇}"], label="缸號", value="{請選擇}", allow_custom_value=False, filterable=False, elem_id="tank_dropdown_uploader")
                 confirm_btn = gr.Button("✅確認選擇")
 
                 raw_gps = gr.Textbox(visible=False)
