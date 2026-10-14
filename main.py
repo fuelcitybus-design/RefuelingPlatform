@@ -393,7 +393,7 @@ def prepare_upload_image(img, max_height=400, quality=75):
         progressive=True
     )
 
-    return buffer.getvalue()
+    return buffer.getvalue(), (original_width, original_height), img.size
 
 def add_timestamp(image_bytes, timestamp):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
