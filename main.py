@@ -496,7 +496,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
                     continue
                 if tab_name not in tab_list_S.get(location):
                     if not(car_id == "每日開油單" and tank_id == "每日開油單"):
-                        messages_local.append(f"⚠️{location}不需要照片 {tab_name}")
+                        #messages_local.append(f"⚠️{location}不需要照片 {tab_name}")
                         continue
                 filepath = f"{base_url}{tab_name}.jpg"
 
