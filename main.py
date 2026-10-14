@@ -1547,7 +1547,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                             record_state = gr.State()
 
                             img_input.change(
-                                fn=process_image
+                                fn=process_image,
                                 inputs=[img_input, tab_name],
                                 outputs=record_state
                             )
