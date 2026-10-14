@@ -27,7 +27,6 @@ import time
 import traceback
 import sys
 
-import pytz
 
 #---------------------------------------------------------------------------------
 #Setup environment for running Gradio interface
@@ -36,7 +35,9 @@ from fastapi.responses import JSONResponse
 app = FastAPI()
 
 # Hong Kong timezone
-hk_tz = pytz.timezone("Asia/Hong_Kong")
+from zoneinfo import ZoneInfo
+
+HK_TZ = ZoneInfo("Asia/Hong_Kong")
 
 #---------------------------------------------------------------------------------
 #Warm-up -er
@@ -359,9 +360,6 @@ def process_image(filepath):
     return {
         "timestamp": hk_time
     }
-
-
-
 
 
 def prepare_upload_image(img, max_height=400, quality=75):
