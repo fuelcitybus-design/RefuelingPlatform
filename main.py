@@ -14,6 +14,7 @@ import cv2
 from paddleocr import PaddleOCR
 import tempfile
 from PIL import Image as PILImage
+from PIL import ImageDraw, ImageFont
 from PIL.ExifTags import TAGS
 import fnmatch
 
