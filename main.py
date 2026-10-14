@@ -1547,7 +1547,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                                 outputs=record_state
                             )
                 
-                            metadata_states.append(record_state)
+                            metadata_states.append({record_state})
                             #Uploaded images and corresponding tab names saving
                             image_inputs.append(img_input)
                             tab_list_local.append(tab)
