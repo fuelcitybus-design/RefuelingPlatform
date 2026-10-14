@@ -396,7 +396,7 @@ def prepare_upload_image(img, max_height=400, quality=75):
 
     return buffer.getvalue(), (original_width, original_height), img.size
 
-def add_timestamp(image_bytes, timestamp):
+def add_timestamp(image_bytes, timestamp, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
