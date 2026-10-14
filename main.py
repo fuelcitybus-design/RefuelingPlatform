@@ -1446,7 +1446,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                             ts_state = gr.State()
                             img_input.change(
                                 fn=record_timestamp,
-                                inputs=img,
+                                inputs=img_input,
                                 outputs=ts_state
                             )
                             timestamp_states.append(ts_state)
