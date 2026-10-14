@@ -14,6 +14,7 @@ import cv2
 from paddleocr import PaddleOCR
 import tempfile
 from PIL import Image as PILImage
+from PIL.ExifTags import TAGS
 import fnmatch
 
 from openpyxl import Workbook, load_workbook
@@ -166,6 +167,7 @@ tab_list_S = {
 required_tabs = ["油車前", "油車後"]
 forced_check = False
 ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
+ROOT_FOLDER_WM = f"https://{KUDU_HOST}/api/vfs/data_WM"
 
 # =========================================================================================================================
 
@@ -372,7 +374,43 @@ def prepare_upload_image(img, max_height=400, quality=75):
 
     return buffer.getvalue(), (original_width, original_height), img.size
 
-
+def add_timestamp(img, timestamp):
+    img = img.convert("RGB")
+    draw = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype(
+            "DejaVuSans.ttf",
+            14
+        )
+    except:
+        font = ImageFont.load_default()
+    text = timestamp
+    bbox = draw.textbbox(
+        (0, 0),
+        text,
+        font=font
+    )
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    # Bottom-left corner
+    x = 10
+    y = img.height - text_height - 10
+    draw.rectangle(
+        (
+            x - 4,
+            y - 2,
+            x + text_width + 4,
+            y + text_height + 2
+        ),
+        fill="black"
+    )
+    draw.text(
+        (x, y),
+        text,
+        fill="white",
+        font=font
+    )
+    return img
 
 # Single synchronous save handler (no global messages)
 def save_images(location, car_id, tank_id, *images, request=None):
@@ -452,6 +490,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
+        base_url_WM = f"{ROOT_FOLDER_WM}/{today}/{prefix}/"
 
         status, items = http_get_json(base_url)
 
@@ -521,15 +560,15 @@ def save_images(location, car_id, tank_id, *images, request=None):
                     if not(car_id == "每日開油單" and tank_id == "每日開油單"):
                         #messages_local.append(f"⚠️{location}不需要照片 {tab_name}")
                         continue
-                filepath = f"{base_url}{tab_name}.jpg"
 
+                #Upload normal image
+                filepath = f"{base_url}{tab_name}.jpg" 
                 upload_status = http_put_status(
                     filepath,
                     data=jpeg_data,
                     attempts=2,
                     session=upload_session
                 )
-
                 if upload_status in (200, 201, 204):
                     saved.append(tab_name)
                     detected_tabs_exist.append(tab_name)
@@ -539,7 +578,25 @@ def save_images(location, car_id, tank_id, *images, request=None):
                         f"❌錯誤：{tab_name} 上傳失敗. "
                         f"HTTP {upload_status or 'N/A'}"
                     )
-        
+
+                #Uploading watermarked image
+                filepath = f"{base_url_WM}{tab_name}.jpg"             
+                jpeg_data_WM = add_timestamp(jpeg_data, metadata_states[tab_names.index(tab_name)])
+                upload_status = http_put_status(
+                    filepath,
+                    data=jpeg_data_WM,
+                    attempts=2,
+                    session=upload_session
+                )
+                if upload_status in (200, 201, 204):
+                    saved.append(tab_name)
+                    detected_tabs_exist.append(tab_name)
+                    messages_local.append(f"✅已上傳: {tab_name}")
+                else:
+                    messages_local.append(
+                        f"❌錯誤：{tab_name} 上傳失敗. "
+                        f"HTTP {upload_status or 'N/A'}"
+                    )
         
         location_required_tabs = tab_list_S.get(location, [])
         missing = [
