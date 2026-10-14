@@ -1442,17 +1442,18 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                                 mirror_webcam=False,
                                 sources=['webcam','upload']
                             )
-                            
-                            image_inputs.append(img_input)
-                            tab_list_local.append(tab)
                             #Timestamp of image taken
                             ts_state = gr.State()
-                            img.change(
+                            img_input.change(
                                 fn=record_timestamp,
                                 inputs=img,
                                 outputs=ts_state
                             )
                             timestamp_states.append(ts_state)
+                            #Uploaded images and corresponding tab names saving
+                            image_inputs.append(img_input)
+                            tab_list_local.append(tab)
+                            
 
             img_tabs.select(sync_tab_index, None, current)
 
