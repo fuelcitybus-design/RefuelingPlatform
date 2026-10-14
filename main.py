@@ -229,6 +229,7 @@ def http_put_status(url, data=None, timeout=HTTP_TIMEOUT, attempts=2, session=No
 
     return None
 
+
 ###Module 1/O: Uploader camera forced setting
 def prefer_back_camera():
     custom_html = """
