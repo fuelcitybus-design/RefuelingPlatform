@@ -400,10 +400,7 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
-        font = ImageFont.truetype(
-            "DejaVuSans-Bold.ttf",
-            32
-        )
+        font = ImageFont.truetype("Roboto-Bold.ttf", 48)
     except:
         font = ImageFont.load_default()
     text = timestamp
@@ -1124,6 +1121,7 @@ def export(request: gr.Request, location, date):
     username = request.username if request and hasattr(request, "username") else "anonymous"
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
     folder_url = f"{ROOT_FOLDER}/{date}/{location}/"
+    folder_url_WM = f"{ROOT_FOLDER_WM}/{date}/{location}/"
     template_url = f"{ROOT_FOLDER}/template.xlsx"
 
     if not location or location == "{請選擇}":
@@ -1147,11 +1145,20 @@ def export(request: gr.Request, location, date):
         info_msg = "⚠️警告：沒有相關記錄"
         info_log = "Warning: No record avaliable"
         return None, info_msg
+    folder_WM = requests.get(folder_url_WM, auth=auth, timeout=15)    
+    if folder_WM.status_code != 200:
+        info_msg = "⚠️警告：沒有相關記錄"
+        info_log = "Warning: No record avaliable"
+        return None, info_msg
     RAW = wb['RAW']
     MAIN = wb['Main']
+    
     SUBR = requests.get(folder_url+"/", auth=auth)
     if SUBR.status_code != 200:
         return [], f"❌ Error {SUBR.status_code}: {SUBR.text}"
+    SUBR_WM = requests.get(folder_url_WM"/", auth=auth)
+    if SUBR_WM.status_code != 200:
+        return [], f"❌ Error {SUBR_WM.status_code}: {SUBR_WM.text}"
 
     #Setup template by choosen depot
     # Skip the first element by slicing [1:]
@@ -1205,10 +1212,14 @@ def export(request: gr.Request, location, date):
     
     #Place images
     items = SUBR.json()
+    items_WM = SUBR_WM.json()
     # Extract only subfolders
     subfolders = [item["name"] for item in items if item.get("mime") == "inode/directory"]
+    subfolders_WM = [item_WM["name"] for item in items if item.get("mime") == "inode/directory"]
     print(f"{subfolders}", file=sys.stderr, flush=True)
+    print(f"{subfolders_WM}", file=sys.stderr, flush=True)
     data_count = len(subfolders)
+    data_count_WM = len(subfolders_WM)
     for i in range(data_count):
         MAIN.cell(row=10+10*(i), column=1).value = i+1
         for j in range(len(tab_list_S[location])):
@@ -1218,11 +1229,16 @@ def export(request: gr.Request, location, date):
 
     for i in range(data_count):
         subfolder_name = subfolders[i]
+        subfolder_name_WM = subfolders_WM[i]
         print(f"{subfolder_name}", file=sys.stderr, flush=True)
+        print(f"{subfolder_name_WM}", file=sys.stderr, flush=True)
         carid, tankid = subfolder_name.split("_")
+        carid_WM, tankid_WM = subfolder_name_WM.split("_")
         print(f"{carid},{tankid}", file=sys.stderr, flush=True)
+        print(f"{carid_WM},{tankid_WM}", file=sys.stderr, flush=True)
         subfolder_url = f"{folder_url}{subfolder_name}/"
-        
+        subfolder_url_WM = f"{folder_url_WM}{subfolder_name_WM}/"
+#Processed to here        
         before = None
         after = None
         sort_list = []
@@ -1266,8 +1282,10 @@ def export(request: gr.Request, location, date):
             return None, info_msg
 
         sort_list = [before[0], after[0]] + sort_list
+        sort_list_WM = [before_WM, after_WM] + sort_list_WM
         # Build a fixed-length list aligned to tab_names
         aligned_list = []
+        aligned_list_WM = []
         for label in tab_list_S[location]:
             # Find the first image whose filename contains the label
             match = next((img for img in sort_list if label in img), None)
@@ -1276,7 +1294,8 @@ def export(request: gr.Request, location, date):
         # aligned_list now has the same length as tab_names
         # Each position corresponds to the label order, with None if missing
         sort_list = aligned_list
-        add_data(wb, carid, tankid, before[1], after[1], sort_list, i)
+        sort_list_WM = aligned_list_WM
+        add_data(wb, carid, tankid, before[1], after[1], sort_list, sort_list_WM, i)
         
     save_url = f"{folder_url}/{location}_{date}.xlsx"
     local_path = f"/tmp/{location}_{date}.xlsx"
