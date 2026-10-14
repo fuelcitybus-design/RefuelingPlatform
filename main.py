@@ -396,8 +396,8 @@ def prepare_upload_image(img, max_height=400, quality=75):
 
     return buffer.getvalue(), (original_width, original_height), img.size
 
-def add_timestamp(img, timestamp):
-    img = img.convert("RGB")
+def add_timestamp(image_bytes, timestamp):
+    img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
         font = ImageFont.truetype(
@@ -432,7 +432,17 @@ def add_timestamp(img, timestamp):
         fill="white",
         font=font
     )
-    return img
+
+    buffer = BytesIO()
+    img.save(
+        buffer,
+        format="JPEG",
+        quality=quality,
+        optimize=True,
+        progressive=True
+    )
+    
+    return buffer.getvalue()
 
 # Single synchronous save handler (no global messages)
 def save_images(location, car_id, tank_id, *images, request=None):
