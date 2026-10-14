@@ -402,7 +402,7 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     try:
         font = ImageFont.truetype(
             "DejaVuSans-Bold.ttf",
-            16
+            32
         )
     except:
         font = ImageFont.load_default()
@@ -631,7 +631,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
                         if tab not in detected_tabs_exist
                     ]
         if saved:
-            if missing:
+            if missing and car_id != "每日開油單":
                 messages_local.append(
                     f"✅已上傳 {len(saved)} 張新照片\n"
                     f"已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
