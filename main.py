@@ -324,6 +324,25 @@ global confirmed_location
 global confirmed_car
 global confirmed_tank
 
+#Extract image metadata under "upload" mode for timestamp
+def get_exif_datetime(filepath):
+    try:
+        img = PILImage.open(filepath)
+        exif = img.getexif()
+        if exif:
+            for tag_id, value in exif.items():
+                tag = TAGS.get(tag_id, tag_id)
+                if tag == "DateTimeOriginal":
+                    return str(value)
+                if tag == "DateTime":
+                    fallback = str(value)
+            if "fallback" in locals():
+                return fallback
+    except Exception as e:
+        print(e)
+    return None
+
+#Timestamp extraction
 def process_image(filepath):
     if filepath is None:
         return None
@@ -340,6 +359,10 @@ def process_image(filepath):
     return {
         "timestamp": hk_time
     }
+
+
+
+
 
 def prepare_upload_image(img, max_height=400, quality=75):
     """
