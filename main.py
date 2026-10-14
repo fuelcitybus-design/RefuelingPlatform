@@ -321,11 +321,22 @@ global confirmed_location
 global confirmed_car
 global confirmed_tank
 
-def record_timestamp(img):
-    if img is None:
+def process_image(filepath):
+    if filepath is None:
         return None
-
-    return datetime.now(hk_tz).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + " HKT"
+    # Try EXIF first
+    exif_time = get_exif_datetime(filepath)
+    if exif_time:
+        return {
+            "timestamp": exif_time
+        }
+    # Fallback to current HK time
+    hk_time = datetime.now(HK_TZ).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+    return {
+        "timestamp": hk_time
+    }
 
 def prepare_upload_image(img, max_height=400, quality=75):
     """
@@ -1399,7 +1410,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         #Module 1
         with gr.Tab("拍照"):
             
-            timestamp_states = []
+            metadata_states = []
             current = gr.State(0)
 
             with gr.Row():
@@ -1444,13 +1455,15 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                                 sources=['webcam','upload']
                             )
                             #Timestamp of image taken
-                            ts_state = gr.State()
+                            record_state = gr.State()
+
                             img_input.change(
-                                fn=record_timestamp,
+                                fn=process_image,
                                 inputs=img_input,
-                                outputs=ts_state
+                                outputs=record_state
                             )
-                            timestamp_states.append(ts_state)
+                
+                            metadata_states.append(record_state)
                             #Uploaded images and corresponding tab names saving
                             image_inputs.append(img_input)
                             tab_list_local.append(tab)
