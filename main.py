@@ -405,7 +405,7 @@ def add_timestamp(image_bytes, timestamp):
         )
     except:
         font = ImageFont.load_default()
-    text = timestamp
+    text = capture_times[tab_name]
     bbox = draw.textbbox(
         (0, 0),
         text,
