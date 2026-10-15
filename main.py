@@ -18,11 +18,14 @@ from PIL import ImageDraw, ImageFont
 from PIL.ExifTags import TAGS
 import fnmatch
 
-FONT_PATH = os.path.join(
-    os.path.dirname(__file__),
-    "fonts",
-    "Roboto-Bold.ttf"
-)
+from pathlib import Path
+
+FONT_PATH = Path(__file__).resolve().parent / "Roboto-Regular.ttf"
+
+print("Font path:", FONT_PATH)
+print("Exists:", FONT_PATH.exists())
+
+
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.formula import ArrayFormula
@@ -406,7 +409,7 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
-        ImageFont.truetype("/usr/share/Roboto-Regular.ttf", 24)
+        font = ImageFont.truetype(str(FONT_PATH), 24)
     except:
         font = ImageFont.load_default()
     text = timestamp
@@ -1791,7 +1794,14 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         }
         #camera_input button[aria-label="select input source"] {
             display: none !important;
-        }            
+        }
+        #camera_input button[aria-label="Upload file"] svg {
+                transform: translateX(-5px);
+        }
+        #camera_input button[aria-label="Capture from camera"] svg {
+                transform: translateX(5px);
+        }
+        
         """
 
 # Enable Gradio queue (compatibility fallback)
