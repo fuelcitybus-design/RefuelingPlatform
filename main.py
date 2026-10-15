@@ -406,7 +406,7 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
-        font = ImageFont.truetype(FONT_PATH, 24)
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
     except:
         font = ImageFont.load_default()
     text = timestamp
@@ -1776,7 +1776,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         textarea,
         input,
         select {
-            font-size: 24px !important;
+            font-size: 22px !important;
         }
 
         
