@@ -1074,7 +1074,7 @@ def add_data(wb, car, tank, before, after, img_list, img_list_WM, rowcount):
     MAIN.cell(row=10 * (i - 1) + 1, column=1).value = car
     MAIN.cell(row=10 * (i - 1) + 2, column=1).value = tank
 
-    for j, img in enumerate(img_list):
+    for j, img in enumerate(img_list_WM):
         if img is None:
             MAIN.cell(row=10 * (i - 1)+1, column=2+3*j).value = "N/A"  # leave blank
             continue
@@ -1308,6 +1308,10 @@ def export(request: gr.Request, location, date):
             # Find the first image whose filename contains the label
             match = next((img for img in sort_list if label in img), None)
             aligned_list.append(match)
+        for label in tab_list_S[location]:
+            # Find the first image whose filename contains the label
+            match = next((img for img in sort_list_WM if label in img), None)
+            aligned_list_WM.append(match)
         
         # aligned_list now has the same length as tab_names
         # Each position corresponds to the label order, with None if missing
