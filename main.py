@@ -1215,7 +1215,7 @@ def export(request: gr.Request, location, date):
     items_WM = SUBR_WM.json()
     # Extract only subfolders
     subfolders = [item["name"] for item in items if item.get("mime") == "inode/directory"]
-    subfolders_WM = [item_WM["name"] for item in items if item.get("mime") == "inode/directory"]
+    subfolders_WM = [item["name"] for item in items_WM if item.get("mime") == "inode/directory"]
     print(f"{subfolders}", file=sys.stderr, flush=True)
     print(f"{subfolders_WM}", file=sys.stderr, flush=True)
     data_count = len(subfolders)
