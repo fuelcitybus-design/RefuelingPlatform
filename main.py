@@ -525,7 +525,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
                 return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。"
             if missing:
                 return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片\n⚠️請上傳{', '.join(missing)}."
-            else
+            else:
                 return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。"
 
         
