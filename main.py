@@ -1604,7 +1604,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                             record_state = gr.State()
 
                             img_input.change(
-                                fn=lambda fp, tn=tab_name: process_image(fp, tn),
+                                fn=process_image,
                                 inputs=img_input,
                                 outputs=record_state
                             )
@@ -1803,12 +1803,12 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             display: none !important;
         }
         #camera_input button[aria-label="Upload file"] {
-                transform: translateX(-7px);
-                transform: scale(2);
+                position: relative;
+                left: -5px;
         }
         #camera_input button[aria-label="Capture from camera"] {
-                transform: translateX(7px);
-                transform: scale(2);
+                position: relative;
+                left: 5px;
         }
         
         """
