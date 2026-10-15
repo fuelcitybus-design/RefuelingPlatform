@@ -1776,8 +1776,10 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         textarea,
         input,
         select {
-            font-size: 16px !important;
+            font-size: 24px !important;
         }
+
+        
         #camera_input label {
             font-size: 20px !important;
         }
