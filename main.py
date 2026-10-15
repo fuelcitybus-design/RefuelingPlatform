@@ -400,9 +400,9 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
-        font = ImageFont.truetype("Roboto-Bold.ttf", 48)
+        font = ImageFont.truetype("Roboto-Bold.ttf", 24)
     except:
-        font = ImageFont.load_default()
+        font = ImageFont.truetype("Roboto-Bold.ttf", 24)
     text = timestamp
     bbox = draw.textbbox(
         (0, 0),
@@ -581,7 +581,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
             for tab_name, jpeg_data in prepared_images.items():
                 if tab_name in detected_tabs_exist:
-                    messages_local.append(f"⚠️跳過已上傳照片 {tab_name}")
+                    messages_local.append(f"⚠️跳過已上傳照片 {tab_name}\n")
                     continue
                 if tab_name not in tab_list_S.get(location):
                     if not(car_id == "每日開油單" and tank_id == "每日開油單"):
@@ -631,23 +631,29 @@ def save_images(location, car_id, tank_id, *images, request=None):
             if missing and car_id != "每日開油單":
                 messages_local.append(
                     f"✅已上傳 {len(saved)} 張新照片\n"
-                    f"已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
-                    f"請上傳{', '.join(missing)}."
+                    f"ℹ️已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
+                    f"⚠️請上傳{', '.join(missing)}."
                 )
             else:
                 messages_local.append(
-                    f"✅已上傳 {len(saved)} 張新照片"
-                    f"已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
+                    f"✅已上傳 {len(saved)} 張新照片\n"
+                    f"✅已為此車上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。\n"
                 )
         elif not messages_local:
-            messages_local.append(f"⚠️警告：沒有新照片\n"
-                                  f"已為此車上傳總共{len(detected_tabs_exist)} 張照片\n")
-            
-        if not saved and missing:
+            if len(location_required_tabs) != len(detected_tabs_exist):
+                messages_local.append(f"⚠️警告：沒有新照片\n"
+                                      f"ℹ️已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
+                                      f"⚠️請上傳{', '.join(missing)}.")
+            else:
+                messages_local.append(f"⚠️警告：沒有新照片\n"
+                                      f"✅已為此車上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。")
+                                      
+                                      
+                                      if not saved and missing:
             if not(car_id == "每日開油單" and tank_id == "每日開油單"):
                 messages_local.append(
-                        f"請上傳{', '.join(missing)}.\n"
-                        f"已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
+                        f"⚠️請上傳{', '.join(missing)}.\n"
+                        f"ℹ️已為此車上傳總共{len(detected_tabs_exist)} 張照片\n"
                     )
 
         result_text = "\n".join(messages_local)
@@ -1691,7 +1697,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 )
                 car_dropdown2 = gr.Dropdown(
                     choices=[], label="車號", value=None,
-                    allow_custom_value=True, filterable=True,
                     interactive=True, elem_id="tank_dropdown_history"
                 )
                 confirm_btn = gr.Button("✅確認選擇")
