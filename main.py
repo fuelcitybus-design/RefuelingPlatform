@@ -1153,10 +1153,10 @@ def export(request: gr.Request, location, date):
     RAW = wb['RAW']
     MAIN = wb['Main']
     
-    SUBR = requests.get(folder_url+"/", auth=auth)
+    SUBR = requests.get(folder_url + "/", auth=auth)
     if SUBR.status_code != 200:
         return [], f"❌ Error {SUBR.status_code}: {SUBR.text}"
-    SUBR_WM = requests.get(folder_url_WM"/", auth=auth)
+    SUBR_WM = requests.get(folder_url_WM + "/", auth=auth)
     if SUBR_WM.status_code != 200:
         return [], f"❌ Error {SUBR_WM.status_code}: {SUBR_WM.text}"
 
