@@ -464,23 +464,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         if request and getattr(request, "client", None):
             client_repr = f"{request.client.host}:{request.client.port}"
 
-        print(
-            f"[{start_ts}] save_images START "
-            f"location={location} car={car_id} tank={tank_id} "
-            f"client={client_repr}",
-            file=sys.stderr,
-            flush=True
-        )
-
-        uploaded_tabs = [
-            tab_names[i]
-            for i, img in enumerate(images)
-            if img is not None
-        ]
-
-        if not uploaded_tabs:
-            return "⚠️警告：沒有選擇任何照片"
-
+        #Initial info selection validation
         if (
             not location
             or location == "{請選擇}"
@@ -498,7 +482,64 @@ def save_images(location, car_id, tank_id, *images, request=None):
         if not tank_choices_local or tank_id not in tank_choices_local:
             if not(car_id == "每日開油單" and tank_id == "每日開油單"):
                 return f"⚠️警告：無效的缸號 \"{tank_id}\""
+        
+        uploaded_tabs = [
+            tab_names[i]
+            for i, img in enumerate(images)
+            if img is not None
+        ]
+        #Initial check for status without uploading
+        prefix = f"{location}/{car_id}_{tank_id}"
+        today = datetime.now().strftime("%Y-%m-%d")
+        base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
+        base_url_WM = f"{ROOT_FOLDER_WM}/{today}/{prefix}/"
+        status, items = http_get_json(base_url)
+        detected_tabs_exist = []
+        if status in (200, 201):
+            items = items or []
+            existing_files = [
+                item.get("name")
+                for item in items
+                if item.get("name")
+                and item.get("mime") != "inode/directory"
+            ]
+            for filename in existing_files:
+                name, _ = os.path.splitext(filename)
+                if name:
+                    detected_tabs_exist.append(name)
+                if "油車前" in name and "油車前" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車前")
+                if "油車後" in name and "油車後" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車後")
+        location_required_tabs = tab_list_S.get(location, [])
+        missing = [
+                        tab
+                        for tab in location_required_tabs
+                        if tab not in detected_tabs_exist
+                    ]
 
+        if not uploaded_tabs:
+            if car_id == "每日開油單" and detected_tabs_exist == []:
+                return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片\n⚠️請上傳 每日開油單.")"
+            else:
+                return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。}.")"
+            if missing:
+                return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片\n⚠️請上傳{', '.join(missing)}.")"
+            else
+                return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。}.")"
+
+        
+
+
+
+        print(
+            f"[{start_ts}] save_images START "
+            f"location={location} car={car_id} tank={tank_id} "
+            f"client={client_repr}",
+            file=sys.stderr,
+            flush=True
+        )
+        
         # Prepare all images before network operations.
         prepared_images = {}
 
