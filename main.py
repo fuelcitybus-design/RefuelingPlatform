@@ -492,7 +492,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
         prefix = f"{location}/{car_id}_{tank_id}"
         today = datetime.now().strftime("%Y-%m-%d")
         base_url = f"{ROOT_FOLDER}/{today}/{prefix}/"
-        base_url_WM = f"{ROOT_FOLDER_WM}/{today}/{prefix}/"
         status, items = http_get_json(base_url)
         detected_tabs_exist = []
         if status in (200, 201):
@@ -523,7 +522,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
                 return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片\n⚠️請上傳 每日開油單."
             else:
                 return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。"
-            if len(detected_tabs_exist) != len(location_required_tabs):
+            if car_id != "每日開油單" and len(detected_tabs_exist) != len(location_required_tabs):
                 return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片\n⚠️請上傳{', '.join(missing)}."
             else:
                 return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。"
