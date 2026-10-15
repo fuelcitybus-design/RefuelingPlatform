@@ -18,6 +18,12 @@ from PIL import ImageDraw, ImageFont
 from PIL.ExifTags import TAGS
 import fnmatch
 
+FONT_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "fonts",
+    "Roboto-Bold.ttf"
+)
+
 from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.formula import ArrayFormula
 from openpyxl.utils import get_column_letter
@@ -400,9 +406,9 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
-        font = ImageFont.truetype("Roboto-Bold.ttf", 24)
+        font = ImageFont.truetype(FONT_PATH, 24)
     except:
-        font = ImageFont.truetype("Roboto-Bold.ttf", 24)
+        font = ImageFont.load_default()
     text = timestamp
     bbox = draw.textbbox(
         (0, 0),
