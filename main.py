@@ -1074,12 +1074,7 @@ def add_data(wb, car, tank, before, after, img_list, img_list_WM, rowcount):
     MAIN.cell(row=10 * (i - 1) + 1, column=1).value = car
     MAIN.cell(row=10 * (i - 1) + 2, column=1).value = tank
 
-    for j, img in enumerate(img_list_WM):
-        print(
-            f"{img}",
-            file=sys.stderr,
-            flush=True
-        )
+    for j, img in enumerate(img_list):
         if img is None:
             MAIN.cell(row=10 * (i - 1)+1, column=2+3*j).value = "N/A"  # leave blank
             continue
