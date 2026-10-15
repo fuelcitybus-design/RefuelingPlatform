@@ -26,7 +26,6 @@ print("Font path:", FONT_PATH)
 print("Exists:", FONT_PATH.exists())
 
 
-
 from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.formula import ArrayFormula
 from openpyxl.utils import get_column_letter
@@ -413,31 +412,39 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     except:
         font = ImageFont.load_default()
     text = timestamp
-    bbox = draw.textbbox(
-        (0, 0),
-        text,
-        font=font
-    )
+    # Get text size first
+    bbox = draw.textbbox((0, 0), text, font=font)
+    
     text_width = bbox[2] - bbox[0]
     text_height = bbox[3] - bbox[1]
-    # Bottom-left corner
+    
+    # Bottom-left placement
+    padding_x = 6
+    padding_y = 4
+    
     x = 10
     y = img.height - text_height - 10
+    
+    # Recalculate bbox at actual draw position
+    bbox = draw.textbbox((x, y), text, font=font)
+    
     draw.rectangle(
         (
-            x - 4,
-            y - 2,
-            x + text_width + 4,
-            y + text_height + 2
+            bbox[0] - padding_x,
+            bbox[1] - padding_y,
+            bbox[2] + padding_x,
+            bbox[3] + padding_y,
         ),
-        fill="black"
+        fill="black",
     )
+    
     draw.text(
         (x, y),
         text,
         fill="white",
-        font=font
+        font=font,
     )
+    
     buffer = BytesIO()
     img.save(
         buffer,
@@ -1795,11 +1802,11 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         #camera_input button[aria-label="select input source"] {
             display: none !important;
         }
-        #camera_input button[aria-label="Upload file"] svg {
-                transform: translateX(-5px);
+        #camera_input button[aria-label="Upload file"] {
+                transform: translateX(-7px);
         }
-        #camera_input button[aria-label="Capture from camera"] svg {
-                transform: translateX(5px);
+        #camera_input button[aria-label="Capture from camera"] {
+                transform: translateX(7px);
         }
         
         """
