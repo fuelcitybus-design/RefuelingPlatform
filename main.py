@@ -649,7 +649,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
                                       f"✅已為此車上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。")
                                       
                                       
-                                      if not saved and missing:
+        if not saved and missing:
             if not(car_id == "每日開油單" and tank_id == "每日開油單"):
                 messages_local.append(
                         f"⚠️請上傳{', '.join(missing)}.\n"
