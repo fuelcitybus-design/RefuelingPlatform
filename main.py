@@ -1061,7 +1061,7 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
 
 #===========================================================================================
 ##Module 3: Exporter
-def add_data(wb, car, tank, before, after, img_list, rowcount):
+def add_data(wb, car, tank, before, after, img_list, img_list_WM, rowcount):
     RAW = wb['RAW']
     MAIN = wb['Main']
     i = rowcount + 2
@@ -1074,7 +1074,7 @@ def add_data(wb, car, tank, before, after, img_list, rowcount):
     MAIN.cell(row=10 * (i - 1) + 1, column=1).value = car
     MAIN.cell(row=10 * (i - 1) + 2, column=1).value = tank
 
-    for j, img in enumerate(img_list):
+    for j, img in enumerate(img_list_WM):
         if img is None:
             MAIN.cell(row=10 * (i - 1)+1, column=2+3*j).value = "N/A"  # leave blank
             continue
@@ -1280,9 +1280,27 @@ def export(request: gr.Request, location, date):
             info_msg = "⚠️警告：缺少圖片，請確保已拍照並儲存"
             info_log = "Warning: Image missing. Please Upload your image by image recorder."
             return None, info_msg
+            
+#Just get watermarked images
+        sort_list_WM = []
+        images_WM = []
+        imagesr_WM = requests.get(subfolder_url_WM, auth=auth)
+        if imagesr_WM.status_code == 200:
+            items = imagesr_WM.json()
+            for item in items:
+                if item.get("mime") != "inode/directory":  # only files
+                    images_WM.append(item["name"])
+        else:
+                info_msg = "Can't access image"
+                return None, info_msg
+
+        for img in images_WM:
+            file_url = f"{subfolder_url_WM}{img}"
+            sort_list_WM.append(file_url)
+     
+        
 
         sort_list = [before[0], after[0]] + sort_list
-        sort_list_WM = [before_WM, after_WM] + sort_list_WM
         # Build a fixed-length list aligned to tab_names
         aligned_list = []
         aligned_list_WM = []
