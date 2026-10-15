@@ -406,7 +406,7 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
-        font = ImageFont.truetype("Roboto-Bold.ttf", 24)
+        ImageFont.truetype("/usr/share/Roboto-Regular.ttf", 24)
     except:
         font = ImageFont.load_default()
     text = timestamp
