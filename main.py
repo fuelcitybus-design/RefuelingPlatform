@@ -406,7 +406,7 @@ def add_timestamp(image_bytes, timestamp, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        font = ImageFont.truetype("Roboto-Bold.ttf", 24)
     except:
         font = ImageFont.load_default()
     text = timestamp
@@ -1703,7 +1703,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 )
                 car_dropdown2 = gr.Dropdown(
                     choices=[], label="車號", value=None,
-                    interactive=True, elem_id="tank_dropdown_history"
+                    elem_id="tank_dropdown_history"
                 )
                 confirm_btn = gr.Button("✅確認選擇")
 
