@@ -516,22 +516,12 @@ def save_images(location, car_id, tank_id, *images, request=None):
                         for tab in location_required_tabs
                         if tab not in detected_tabs_exist
                     ]
-        print(
-            f"[{location_required_tabs}] save_images START "
-            f"Asd {len(location_required_tabs)} "
-            f"Missing: {', '.join(missing)}"
-            f"client={car_id != '每日開油單' and (len(detected_tabs_exist) != len(location_required_tabs))}",
-            file=sys.stderr,
-            flush=True
-        )
+        
         if not uploaded_tabs:
             if car_id == "每日開油單" and detected_tabs_exist == []:
                 return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片\n⚠️請上傳 每日開油單."
-            else:
-                return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。"
-                
-            if not(not(car_id != "每日開油單") and missing):
-                return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片\n⚠️請上傳."
+            elif car_id != "每日開油單" and missing:
+                return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片\n⚠️請上傳{', '.join(missing)}."
             else:
                 return f"Why⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。"
 
