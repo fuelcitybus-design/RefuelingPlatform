@@ -519,6 +519,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
         print(
             f"[{location_required_tabs}] save_images START "
             f"Asd {len(location_required_tabs)} "
+            f"Missing: {', '.join(missing)}"
             f"client={len(detected_tabs_exist) != len(location_required_tabs)}",
             file=sys.stderr,
             flush=True
