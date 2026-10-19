@@ -401,7 +401,6 @@ def prepare_upload_image(img, max_height=400, quality=75):
         optimize=True,
         progressive=True
     )
-
     return buffer.getvalue(), (original_width, original_height), img.size
 
 def add_timestamp(image_bytes, timestamp, quality = 75):
