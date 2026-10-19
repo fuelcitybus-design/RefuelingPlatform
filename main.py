@@ -1841,10 +1841,10 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             display: none !important;
         }
         #camera_input button[aria-label="Upload file"] {
-                transform: translateX(-5px) scale(2);
+                transform: translateX(-10px) scale(4);
         }
         #camera_input button[aria-label="Capture from camera"] {
-                transform: translateX(5px) scale(2);
+                transform: translateX(10px) scale(4);
         }
         
         """
