@@ -414,7 +414,7 @@ def add_timestamp(image_bytes, timestamp, location, quality = 75):
         font = ImageFont.truetype(str(FONT_PATH), 24)
     except:
         font = ImageFont.load_default()
-    text = f"{location} ** {timestamp}"
+    text = f"{location[:3]} ** {timestamp}"
     # Get text size first
     bbox = draw.textbbox((0, 0), text, font=font)
     
