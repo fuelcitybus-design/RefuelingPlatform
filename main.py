@@ -336,39 +336,43 @@ global capture_times
 capture_times = {}
 
 #Extract image metadata under "upload" mode for timestamp
-def get_exif_datetime(filepath):
+def get_exif_datetime(img_or_path):
     try:
-        img = PILImage.open(filepath)
+        if isinstance(img_or_path, PILImage.Image):
+            img = img_or_path
+        else:
+            img = PILImage.open(img_or_path)
+
         exif = img.getexif()
-        if exif:
-            for tag_id, value in exif.items():
-                tag = TAGS.get(tag_id, tag_id)
-                if tag == "DateTimeOriginal":
-                    return str(value)
-                if tag == "DateTime":
-                    fallback = str(value)
-            if "fallback" in locals():
-                return fallback
+        if not exif:
+            return None
+
+        # EXIF tag IDs
+        dt_original = exif.get(36867)  # DateTimeOriginal
+        if dt_original:
+            return str(dt_original)
+
+        dt = exif.get(306)  # DateTime
+        if dt:
+            return str(dt)
+
+        return None
     except Exception as e:
-        print(e)
-    return None
+        print(f"[EXIF] {e}")
+        return None
 
 #Timestamp extraction
-def process_image(filepath, tab_name):
-
-    if filepath is None:
+def process_image(img, tab_name):
+    if img is None:
         return None
-    exif_time = get_exif_datetime(filepath)
-    if exif_time:
-        timestamp = exif_time
-    else:
-        timestamp = datetime.now(HK_TZ).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+
+    timestamp = get_exif_datetime(img)
+    if not timestamp:
+        timestamp = datetime.now(HK_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
     capture_times[tab_name] = timestamp
     return timestamp
-
+    
 
 def prepare_upload_image(img, max_height=400, quality=75):
     """
