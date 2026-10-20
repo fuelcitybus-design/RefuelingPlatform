@@ -407,14 +407,14 @@ def prepare_upload_image(img, max_height=400, quality=75):
     )
     return buffer.getvalue(), (original_width, original_height), img.size
 
-def add_timestamp(image_bytes, timestamp, quality = 75):
+def add_timestamp(image_bytes, timestamp, location, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
         font = ImageFont.truetype(str(FONT_PATH), 24)
     except:
         font = ImageFont.load_default()
-    text = timestamp
+    text = f"{location} ** {timestamp}"
     # Get text size first
     bbox = draw.textbbox((0, 0), text, font=font)
     
@@ -527,10 +527,6 @@ def save_images(location, car_id, tank_id, *images, request=None):
                 return f"⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片\n⚠️請上傳{', '.join(missing)}."
             else:
                 return f"Why⚠️警告：沒有選擇任何照片\nℹ️此車已上傳總共{len(detected_tabs_exist)} 張照片，所需照片已全部上載。"
-
-        
-
-
 
         print(
             f"[{start_ts}] save_images START "
@@ -665,7 +661,7 @@ def save_images(location, car_id, tank_id, *images, request=None):
 
                 #Uploading watermarked image
                 filepath = f"{base_url_WM}{tab_name}.jpg"             
-                jpeg_data_WM = add_timestamp(jpeg_data, capture_times.get(tab_name, ""))
+                jpeg_data_WM = add_timestamp(jpeg_data, capture_times.get(tab_name, ""), location)
                 upload_status = http_put_status(
                     filepath,
                     data=jpeg_data_WM,
