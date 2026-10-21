@@ -1275,8 +1275,6 @@ def export(request: gr.Request, location, date):
     # Extract only subfolders
     subfolders = [item["name"] for item in items if item.get("mime") == "inode/directory"]
     subfolders_WM = [item["name"] for item in items_WM if item.get("mime") == "inode/directory"]
-    print(f"{subfolders}", file=sys.stderr, flush=True)
-    print(f"{subfolders_WM}", file=sys.stderr, flush=True)
     data_count = len(subfolders)
     data_count_WM = len(subfolders_WM)
     for i in range(data_count):
@@ -1320,6 +1318,7 @@ def export(request: gr.Request, location, date):
                 except:
                     info_msg = "⚠️警告：缺少圖片，請確保已運行AI並儲存修改"
                     info_log = "Warning: Image undetected. Remember to run AI analysis before exporting."
+                    print(f"{subfolders_WM}{油車前}", file=sys.stderr, flush=True)
                     return None, info_msg
                 before = [file_url, value]
 
@@ -1329,6 +1328,7 @@ def export(request: gr.Request, location, date):
                 except:
                     info_msg = "⚠️警告：缺少圖片，請確保已運行AI並儲存修改"
                     info_log = "Warning: Image undetected. Remember to run AI analysis before exporting."
+                    print(f"{subfolders_WM}{油車後}", file=sys.stderr, flush=True)
                     return None, info_msg
 
                 after = [file_url, value]
