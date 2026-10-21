@@ -1287,8 +1287,9 @@ def export(request: gr.Request, location, date):
     for i in range(data_count):
         subfolder_name = subfolders[i]
         subfolder_name_WM = subfolders_WM[i]
-        print(f"{subfolder_name}", file=sys.stderr, flush=True)
-        print(f"{subfolder_name_WM}", file=sys.stderr, flush=True)
+        if "每日開油單" in subfolder_name:
+            continue
+        print(f"Processing {subfolder_name}", file=sys.stderr, flush=True)
         carid, tankid = subfolder_name.split("_")
         carid_WM, tankid_WM = subfolder_name_WM.split("_")
         print(f"{carid},{tankid}", file=sys.stderr, flush=True)
