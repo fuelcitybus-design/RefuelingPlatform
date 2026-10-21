@@ -160,20 +160,20 @@ tank_list = {"CFD創富": ["{請選擇}", "第1缸", "第2缸", "第3缸", "第4
         "WCD黃竹坑": ["{請選擇}", "第1缸(廠外)", "第2缸(廠外)", "第3缸(廠內)"],
         "WKD西九": ["{請選擇}", "第1缸", "第2缸", "第3缸"]}
 
-tab_names = ["每日開油單","車牌","油錶前", "油尺前", "封條(旗仔)", "封條1", "封條2", "油車前","開始入缸", "入盡餘油", "完成入缸", "油車後", "油錶後", "油尺後", "收據"]
+tab_names = ["每日開油單","車牌","車廠油錶前", "油尺前", "封條(旗仔)", "油車油錶前","開始入缸", "入盡餘油", "完成入缸", "油車油錶後", "車廠油錶後", "油尺後", "收據"]
 tab_list_S = {
         "{請選擇}": [],
-        "CFD創富": ["油錶前", "油尺前", "封條1", "封條2", "油車前", "油車後", "油錶後", "油尺後", "收據"],
-        "CWD柴灣": ["車牌", "油錶前",  "封條(旗仔)", "油車前", "開始入缸", "入盡餘油", "完成入缸", "油車後",  "油錶後", "收據"],
-        "SHD小蠔灣": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
-        "SWD上環": ["油錶前",  "封條1", "封條2", "油車前", "油車後", "油錶後", "收據"],
-        "TCD東涌": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
-        "TKD將軍澳": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
-        "TMD屯門": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
-        "WCD黃竹坑": ["油尺前", "封條1", "封條2", "油車前", "油車後", "油尺後", "收據"],
-        "WKD西九": ["油錶前",  "封條1", "封條2", "油車前", "油車後", "油錶後", "收據"]}
+        "CFD創富": ["車廠油錶前", "油尺前", "封條(旗仔)", "油車油錶前", "油車油錶後", "車廠油錶後", "油尺後", "收據"],
+        "CWD柴灣": ["車牌", "車廠油錶前",  "封條(旗仔)", "油車油錶前", "開始入缸", "入盡餘油", "完成入缸", "油車油錶後",  "車廠油錶後", "收據"],
+        "SHD小蠔灣": ["油尺前", "封條(旗仔)", "油車油錶前", "油車油錶後", "油尺後", "收據"],
+        "SWD上環": ["車廠油錶前",  "封條(旗仔)", "油車油錶前", "油車油錶後", "車廠油錶後", "收據"],
+        "TCD東涌": ["油尺前", "封條(旗仔)", "油車油錶前", "油車油錶後", "油尺後", "收據"],
+        "TKD將軍澳": ["油尺前", "封條(旗仔)", "油車油錶前", "油車油錶後", "油尺後", "收據"],
+        "TMD屯門": ["油尺前", "封條(旗仔)", "油車油錶前", "油車油錶後", "油尺後", "收據"],
+        "WCD黃竹坑": ["油尺前", "封條(旗仔)", "油車油錶前", "油車油錶後", "油尺後", "收據"],
+        "WKD西九": ["車廠油錶前", "封條(旗仔)", "油車油錶前", "油車油錶後", "車廠油錶後", "收據"]}
 
-required_tabs = ["油車前", "油車後"]
+required_tabs = ["油車油錶前", "油車油錶後"]
 forced_check = False
 ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 ROOT_FOLDER_WM = f"https://{KUDU_HOST}/api/vfs/data_WM"
@@ -411,7 +411,7 @@ def add_timestamp(image_bytes, timestamp, location, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
-        font = ImageFont.truetype(str(FONT_PATH), 24)
+        font = ImageFont.truetype(str(FONT_PATH), 20)
     except:
         font = ImageFont.load_default()
     text = f"{location[:3]} ** {timestamp}"
@@ -509,10 +509,10 @@ def save_images(location, car_id, tank_id, *images, request=None):
                 name, _ = os.path.splitext(filename)
                 if name:
                     detected_tabs_exist.append(name)
-                if "油車前" in name and "油車前" not in detected_tabs_exist:
-                    detected_tabs_exist.append("油車前")
-                if "油車後" in name and "油車後" not in detected_tabs_exist:
-                    detected_tabs_exist.append("油車後")
+                if "油車油錶前" in name and "油車油錶前" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車油錶前")
+                if "油車油錶後" in name and "油車油錶後" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車油錶後")
         location_required_tabs = tab_list_S.get(location, [])
         missing = [
                         tab
@@ -595,11 +595,11 @@ def save_images(location, car_id, tank_id, *images, request=None):
                 if name:
                     detected_tabs_exist.append(name)
 
-                if "油車前" in name and "油車前" not in detected_tabs_exist:
-                    detected_tabs_exist.append("油車前")
+                if "油車油錶前" in name and "油車油錶前" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車油錶前")
 
-                if "油車後" in name and "油車後" not in detected_tabs_exist:
-                    detected_tabs_exist.append("油車後")
+                if "油車油錶後" in name and "油車後" not in detected_tabs_exist:
+                    detected_tabs_exist.append("油車油錶後")
 
         elif status == 404:
             created = False
@@ -985,21 +985,21 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
     num_analysis = 0
        
     # 油車前
-    for file_url in kudu_list_files(root_folder, location, "油車前.jpg"):
+    for file_url in kudu_list_files(root_folder, location, "油車油錶前.jpg"):
         ocr_number = ocr_from_kudu(file_url)
-        new_name = f"X_油車前_{ocr_number}.jpg" if int(ocr_number) != 0 else f"油車前_{ocr_number}.jpg"
+        new_name = f"X_油車油錶前_{ocr_number}.jpg" if int(ocr_number) != 0 else f"油車油錶前_{ocr_number}.jpg"
         kudu_rename(file_url, new_name)
         num_analysis += 1
 
     # 油車後
-    for file_url in kudu_list_files(root_folder, location, "油車後.jpg"):
+    for file_url in kudu_list_files(root_folder, location, "油車油錶後.jpg"):
         ocr_number = ocr_from_kudu(file_url)
-        new_name = f"X_油車後_{ocr_number}.jpg" if int(ocr_number) < 6000 else f"油車後_{ocr_number}.jpg"
+        new_name = f"X_油車油錶後_{ocr_number}.jpg" if int(ocr_number) < 6000 else f"油車油錶後_{ocr_number}.jpg"
         kudu_rename(file_url, new_name)
         num_analysis += 1
 
     # Collect abnormal entries
-    pattern = re.compile(r'^X_(油車前|油車後)_(.+)\.jpg$', re.IGNORECASE)
+    pattern = re.compile(r'^X_(油車油錶前|油車油錶後)_(.+)\.jpg$', re.IGNORECASE)
     for file_url in kudu_list_files(root_folder, location, "*.jpg"):
         fname = file_url.split("/")[-1]
         match = pattern.match(fname)
@@ -1314,7 +1314,7 @@ def export(request: gr.Request, location, date):
 
         for img in images:
             file_url = f"{subfolder_url}{img}"
-            if "油車前" in img:
+            if "油車油錶前" in img:
                 try:
                     name, value, _ = img.replace('.', '_').split("_")
                 except:
@@ -1323,7 +1323,7 @@ def export(request: gr.Request, location, date):
                     return None, info_msg
                 before = [file_url, value]
 
-            elif "油車後" in img:
+            elif "油車油錶後" in img:
                 try:
                     name, value, _ = img.replace('.', '_').split("_")
                 except:
@@ -1542,10 +1542,10 @@ def update_car_dropdown(date, location):
             car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
         tank_reset = [
-            [], "⚠️沒沒有紀錄",
-            [], "⚠️沒沒有紀錄",
-            [], "⚠️沒沒有紀錄",
-            [], "⚠️沒沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
             "⚠️警告：請先選取有效車號"
         ]
 
