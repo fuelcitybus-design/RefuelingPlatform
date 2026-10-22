@@ -1313,7 +1313,7 @@ def export(request: gr.Request, location, date):
 
         for img in images:
             file_url = f"{subfolder_url}{img}"
-            if "油車前" in img:
+            if "油車油錶前" in img:
                 try:
                     name, value, _ = img.replace('.', '_').split("_")
                 except:
@@ -1323,7 +1323,7 @@ def export(request: gr.Request, location, date):
                     return None, info_msg
                 before = [file_url, value]
 
-            elif "油車後" in img:
+            elif "油車油錶後" in img:
                 try:
                     name, value, _ = img.replace('.', '_').split("_")
                 except:
