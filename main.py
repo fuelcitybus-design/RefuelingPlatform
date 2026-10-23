@@ -179,7 +179,6 @@ ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
 ROOT_FOLDER_WM = f"https://{KUDU_HOST}/api/vfs/data_WM"
 
 # =========================================================================================================================
-
 HTTP_TIMEOUT = 12  # seconds
 
 def http_get_json(url, timeout=HTTP_TIMEOUT, attempts=2):
