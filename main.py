@@ -1747,7 +1747,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     elem_id = "date_history",
                 )
                 location_dropdown2 = gr.Dropdown(
-                    choices=locations, label="地點", value=locations[0]
+                    choices=locations, label="地點", value=locations[0],
                     allow_custom_value=False, filterable=False
                 )
                 car_dropdown2 = gr.Dropdown(
