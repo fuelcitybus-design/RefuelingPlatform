@@ -1752,7 +1752,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 )
                 car_dropdown2 = gr.Dropdown(
                     choices=[], label="車號", value=None,
-                    elem_id="tank_dropdown_history"
+                    elem_id="tank_dropdown_history",
                     allow_custom_value=False, filterable=False
                 )
                 confirm_btn = gr.Button("✅確認選擇")
