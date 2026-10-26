@@ -1726,7 +1726,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         with gr.Tab("下載"):
             with gr.Row():
                 location_dropdown = gr.Dropdown(choices=locations, label="地點", value=locations[0], allow_custom_value=False, filterable=False)
-                date_picker = gr.DateTime(label="日期", include_time=False, value=str(datetime.now().date()))
+                date_picker = gr.DateTime(label="日期", include_time=False, value=str(datetime.now(HK_TZ).date().isoformat()))
 
             output = gr.File(label="下載")
             state = gr.Textbox("ℹ️選擇日期、地點以便輸出落油紀錄", label="狀態", lines=2)
@@ -1743,15 +1743,17 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             with gr.Row():
                 date_picker = gr.DateTime(
                     label="日期", include_time=False,
-                    value=datetime.now().date().isoformat(),
-                    elem_id = "date_history"
+                    value = datetime.now(HK_TZ).date().isoformat(),
+                    elem_id = "date_history",
                 )
                 location_dropdown2 = gr.Dropdown(
                     choices=locations, label="地點", value=locations[0]
+                    allow_custom_value=False, filterable=False
                 )
                 car_dropdown2 = gr.Dropdown(
                     choices=[], label="車號", value=None,
                     elem_id="tank_dropdown_history"
+                    allow_custom_value=False, filterable=False
                 )
                 confirm_btn = gr.Button("✅確認選擇")
 
