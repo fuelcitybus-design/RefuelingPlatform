@@ -1041,10 +1041,10 @@ def clear_tanks():
 
 
 ###Module 3: Adjustor
-def get_image_ids(date, location, cartank):
+def get_image_ids(date, location, car, tank):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{cartank}/"
+        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}/{tank}/"
         response = requests.get(BASE_URL, auth=auth, timeout=10)
         if response.status_code == 200:
             items = response.json()
@@ -1059,8 +1059,29 @@ def get_image_ids(date, location, cartank):
     except Exception:
         return []
 
+def get_tank_ids(date, location, car):
+    try:
+        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}/"
+        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
+        car_id = []
+        if candidates.status_code == 200:
+            items = candidates.json()
+            for item in items:
+                if item.get("mime") == "inode/directory":
+                    folder_name = item.get("name", "")
+                    parts = folder_name.split("_")
+                    if len(parts) >= 1:
+                        car_id.append(parts[0])
+            return sorted(set(car_id))
+        else:
+            return []
+    except Exception:
+        return []
 
-def update_cartank_dropdown(date, location):
+
+
+def update_caradjust_dropdown(date, location):
     try:
         car_ids_list = get_car_ids(date, location)
         if car_ids_list:
@@ -1074,9 +1095,23 @@ def update_cartank_dropdown(date, location):
             gr.update(choices=["錯誤"], value="錯誤")
         )
 
-def update_image_dropdown(date, location, cartank):
+def update_tankadjust_dropdown(date, location, car):
     try:
-        image_ids_list = get_image_ids(date, location, cartank)
+        car_ids_list = get_tank_ids(date, location, car)
+        if car_ids_list:
+            car_update = gr.update(choices=["請選擇"] + car_ids_list, value="請選擇")
+        else:
+            car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
+
+        return (car_update)
+    except Exception:
+        return (
+            gr.update(choices=["錯誤"], value="錯誤")
+        )
+
+def update_image_dropdown(date, location, car, tank):
+    try:
+        image_ids_list = get_image_ids(date, location, car, tank)
         if image_ids_list:
             image_update = gr.update(choices=["請選擇"] + image_ids_list, value="請選擇")
         else:
@@ -1842,9 +1877,14 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     choices=locations, label="地點", value=locations[0],
                     allow_custom_value=False, filterable=False
                 )
-                cartank_dropdown2 = gr.Dropdown(
-                    choices=[], label="車+缸號", value=None,
-                    elem_id="cartank_dropdown_adjust",
+                car_dropdown2 = gr.Dropdown(
+                    choices=[], label="車號", value=None,
+                    elem_id="car_dropdown_adjust",
+                    allow_custom_value=False, filterable=False
+                )
+                tank_dropdown2 = gr.Dropdown(
+                    choices=[], label="缸號", value=None,
+                    elem_id="tank_dropdown_adjust",
                     allow_custom_value=False, filterable=False
                 )
                 image_dropdown2 = gr.Dropdown(
@@ -1865,7 +1905,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             
             confirm_btn.click(
                 fn=option_director,
-                inputs=[date_picker, location_dropdown2, cartank_dropdown2,image_dropdown2,option_dropdown2],
+                inputs=[date_picker, location_dropdown2, car_dropdown2, tank_dropdown2, image_dropdown2,option_dropdown2],
                 outputs=[
                     adjust_message
                 ]
@@ -1880,16 +1920,24 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             )
 
             location_dropdown2.change(
-                fn=update_cartank_dropdown,
+                fn=update_caradjust_dropdown,
                 inputs=[date_picker, location_dropdown2],
                 outputs=[
-                    cartank_dropdown2
+                    car_dropdown2
                 ]
             )
 
-            cartank_dropdown2.change(
+            car_dropdown2.changen(
+                fn=update_tankadjust_dropdown,
+                inputs=[date_picker, location_dropdown2,car_dropdown2],
+                outputs=[
+                    tank_dropdown2
+                ]
+            )
+            
+            tank_dropdown2.change(
                 fn=update_image_dropdown,
-                inputs=[date_picker, location_dropdown2,cartank_dropdown2],
+                inputs=[date_picker, location_dropdown2,car_dropdown2,tank_dropdown2],
                 outputs=[
                     image_dropdown2
                 ]
