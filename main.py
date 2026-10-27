@@ -1110,15 +1110,20 @@ def update_image_dropdown(date, location, car):
 
 def option_director(date, location, cartank, image, option):
     if option == "更改照片":
-        return "ℹ️更改照片"
+        return "ℹ️更改照片：上載新照片然後確認"
     elif option == "調換照片":
-        return "ℹ️調換照片"
+        return "ℹ️調換照片：選擇調換對象"
     elif option == "改數值":
-        return "ℹ️改數值"
+        if not("油車油錶" in image):
+            return "⚠️警告：此照片並非此修正方法適用對象"
+        else
+            return "ℹ️改數值：輸入新油數"
     elif option == "刪除照片":
-        return "ℹ️刪除照片"
+        return "ℹ️刪除照片：確認刪除這張相片？"
     else:
         return "⚠️警告：請選擇修改方法"
+
+
 #=========================================================================================================================
 
 
@@ -1880,6 +1885,13 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 
             with gr.Row():
                 confirm_btn = gr.Button("✅確認選擇")
+            with gr.Row():
+                old_photo = gr.gallery(columns=4, elem_id = "old_photo", visible=False)
+            with gr.Row():
+                confirmReal_btn = gr.Button(
+                    value = "✅確認修改", 
+                    visible=False
+                )
 
             adjust_message = gr.Textbox("ℹ️選擇照片詳情及修改方法。", label="Adjust Summary", interactive=False, lines=2)
             
