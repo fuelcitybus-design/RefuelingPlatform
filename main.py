@@ -1743,7 +1743,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             with gr.Row():
                 date_picker = gr.DateTime(
                     label="日期", include_time=False,
-                    value = datetime.now(HK_TZ).date().isoformat(),
+                    value = datetime.now(HK_TZ),
                     elem_id = "date_history",
                 )
                 location_dropdown2 = gr.Dropdown(
@@ -1807,6 +1807,41 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     gallery3, tank_label3,
                     gallery4, tank_label4,
                     tank_message
+                ]
+            )
+
+        # Module 5
+        with gr.Tab("修正"):
+            with gr.Row():
+                date_picker = gr.DateTime(
+                    label="日期", include_time=False,
+                    value = datetime.now(HK_TZ),
+                    elem_id = "date_adjust",
+                )
+                location_dropdown2 = gr.Dropdown(
+                    choices=locations, label="地點", value=locations[0],
+                    allow_custom_value=False, filterable=False
+                )
+                cartank_dropdown2 = gr.Dropdown(
+                    choices=[], label="車_缸號", value=None,
+                    elem_id="cartank_dropdown_adjust",
+                    allow_custom_value=False, filterable=False
+                )
+                image_dropdown2 = gr.Dropdown(
+                    choices=[], label="照名", value=None,
+                    elem_id="image_dropdown_adjust",
+                    allow_custom_value=False, filterable=False
+                )
+                option_dropdown2 = gr.Dropdown(
+                    choices=["{請選擇}", "更改照片", "調換照片"], label="修改方法", value="{請選擇}",
+                    elem_id="option_adjust",
+                    allow_custom_value=False, filterable=False
+                )
+                confirm_btn = gr.Button("✅確認選擇")
+
+            adjust_message = gr.Textbox("ℹ️選擇照片詳情及修改方法。", label="Adjust Summary", interactive=False, lines=2)
+
+    
                 ]
             )
         
