@@ -1041,10 +1041,10 @@ def clear_tanks():
 
 
 ###Module 3: Adjustor
-def get_image_ids(date, location, car, tank):
+def get_image_ids(date, location, car):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}/{tank}/"
+        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}/"
         response = requests.get(BASE_URL, auth=auth, timeout=10)
         if response.status_code == 200:
             items = response.json()
@@ -1059,10 +1059,10 @@ def get_image_ids(date, location, car, tank):
     except Exception:
         return []
 
-def get_tank_ids(date, location, car):
+def get_caradjust_ids(date, location, car):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}/"
+        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/"
         candidates = requests.get(BASE_URL, auth=auth, timeout=10)
         car_id = []
         if candidates.status_code == 200:
@@ -1083,7 +1083,7 @@ def get_tank_ids(date, location, car):
 
 def update_caradjust_dropdown(date, location):
     try:
-        car_ids_list = get_car_ids(date, location)
+        car_ids_list = get_caradjust_ids(date, location)
         if car_ids_list:
             car_update = gr.update(choices=["請選擇"] + car_ids_list, value="請選擇")
         else:
@@ -1095,23 +1095,10 @@ def update_caradjust_dropdown(date, location):
             gr.update(choices=["錯誤"], value="錯誤")
         )
 
-def update_tankadjust_dropdown(date, location, car):
-    try:
-        car_ids_list = get_tank_ids(date, location, car)
-        if car_ids_list:
-            car_update = gr.update(choices=["請選擇"] + car_ids_list, value="請選擇")
-        else:
-            car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
-        return (car_update)
-    except Exception:
-        return (
-            gr.update(choices=["錯誤"], value="錯誤")
-        )
-
-def update_image_dropdown(date, location, car, tank):
+def update_image_dropdown(date, location, car):
     try:
-        image_ids_list = get_image_ids(date, location, car, tank)
+        image_ids_list = get_image_ids(date, location, car)
         if image_ids_list:
             image_update = gr.update(choices=["請選擇"] + image_ids_list, value="請選擇")
         else:
@@ -1882,11 +1869,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     elem_id="car_dropdown_adjust",
                     allow_custom_value=False, filterable=False
                 )
-                tank_dropdown2 = gr.Dropdown(
-                    choices=[], label="缸號", value=None,
-                    elem_id="tank_dropdown_adjust",
-                    allow_custom_value=False, filterable=False
-                )
                 image_dropdown2 = gr.Dropdown(
                     choices=[], label="照名", value=None,
                     elem_id="image_dropdown_adjust",
@@ -1928,20 +1910,13 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             )
 
             car_dropdown2.change(
-                fn=update_tankadjust_dropdown,
-                inputs=[date_picker, location_dropdown2,car_dropdown2],
-                outputs=[
-                    tank_dropdown2
-                ]
-            )
-            
-            tank_dropdown2.change(
                 fn=update_image_dropdown,
-                inputs=[date_picker, location_dropdown2,car_dropdown2,tank_dropdown2],
+                inputs=[date_picker, location_dropdown2,car_dropdown2],
                 outputs=[
                     image_dropdown2
                 ]
             )
+    
 
         
         #Module 4
