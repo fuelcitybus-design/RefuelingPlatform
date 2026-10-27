@@ -1318,7 +1318,6 @@ def export(request: gr.Request, location, date):
                 except:
                     info_msg = "⚠️警告：缺少圖片，請確保已運行AI並儲存修改"
                     info_log = "Warning: Image undetected. Remember to run AI analysis before exporting."
-                    print(f"{subfolders_WM}{油車前}", file=sys.stderr, flush=True)
                     return None, info_msg
                 before = [file_url, value]
 
@@ -1328,7 +1327,6 @@ def export(request: gr.Request, location, date):
                 except:
                     info_msg = "⚠️警告：缺少圖片，請確保已運行AI並儲存修改"
                     info_log = "Warning: Image undetected. Remember to run AI analysis before exporting."
-                    print(f"{subfolders_WM}{油車後}", file=sys.stderr, flush=True)
                     return None, info_msg
 
                 after = [file_url, value]
