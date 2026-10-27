@@ -1058,13 +1058,13 @@ def update_cartank_dropdown(date, location):
 def option_director(date, location, cartank, image, option):
     if option == "更改照片":
         return "ℹ️更改照片"
-    else if option == "調換照片":
+    elif option == "調換照片":
         return "ℹ️調換照片"
-    else if option == "改數值":
+    elif option == "改數值":
         return "ℹ️改數值"
-    else if option == "刪除照片"
+    elif option == "刪除照片":
         return "ℹ️刪除照片"
-    else
+    else:
         return "⚠️警告：請選擇修改方法"
 #=========================================================================================================================
 
