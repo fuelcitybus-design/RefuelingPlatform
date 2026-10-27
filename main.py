@@ -1041,6 +1041,25 @@ def clear_tanks():
 
 
 ###Module 3: Adjustor
+def get_image_ids(date, location, cartank):
+    try:
+        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{cartank}/"
+        response = requests.get(BASE_URL, auth=auth, timeout=10)
+        if response.status_code == 200:
+            items = response.json()
+            filenames = [
+                item["name"]
+                for item in items
+                if item.get("mime") != "inode/directory"
+            ]
+            return sorted(set(filenames))
+        return []
+
+    except Exception:
+        return []
+
+
 def update_cartank_dropdown(date, location):
     try:
         car_ids_list = get_car_ids(date, location)
@@ -1050,6 +1069,20 @@ def update_cartank_dropdown(date, location):
             car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
         return (car_update)
+    except Exception:
+        return (
+            gr.update(choices=["錯誤"], value="錯誤")
+        )
+
+def update_image_dropdown(date, location, cartank):
+    try:
+        image_ids_list = get_image_ids(date, location, cartank)
+        if image_ids_list:
+            image_update = gr.update(choices=["請選擇"] + image_ids_list, value="請選擇")
+        else:
+            image_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
+
+        return (image_update)
     except Exception:
         return (
             gr.update(choices=["錯誤"], value="錯誤")
@@ -1824,6 +1857,8 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     elem_id="option_adjust",
                     allow_custom_value=False, filterable=False
                 )
+                
+            with gr.Row():
                 confirm_btn = gr.Button("✅確認選擇")
 
             adjust_message = gr.Textbox("ℹ️選擇照片詳情及修改方法。", label="Adjust Summary", interactive=False, lines=2)
@@ -1849,6 +1884,14 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 inputs=[date_picker, location_dropdown2],
                 outputs=[
                     cartank_dropdown2
+                ]
+            )
+
+            cartank_dropdown2.change(
+                fn=update_image_dropdown,
+                inputs=[date_picker, location_dropdown2,cartank_dropdown2],
+                outputs=[
+                    image_dropdown2
                 ]
             )
 
