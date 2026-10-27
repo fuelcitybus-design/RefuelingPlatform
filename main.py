@@ -1312,7 +1312,7 @@ def export(request: gr.Request, location, date):
 
         for img in images:
             file_url = f"{subfolder_url}{img}"
-            if "油車油錶前" in img:
+            if ("油車油錶前" or "油錶前") in img:
                 try:
                     name, value, _ = img.replace('.', '_').split("_")
                 except:
@@ -1322,7 +1322,7 @@ def export(request: gr.Request, location, date):
                     return None, info_msg
                 before = [file_url, value]
 
-            elif "油車油錶後" in img:
+            elif ("油車油錶後" or "油錶後") in img:
                 try:
                     name, value, _ = img.replace('.', '_').split("_")
                 except:
@@ -1840,10 +1840,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 confirm_btn = gr.Button("✅確認選擇")
 
             adjust_message = gr.Textbox("ℹ️選擇照片詳情及修改方法。", label="Adjust Summary", interactive=False, lines=2)
-
-    
-                ]
-            )
         
         
         demo.css = """
