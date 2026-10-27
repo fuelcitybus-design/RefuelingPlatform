@@ -1116,7 +1116,7 @@ def option_director(date, location, cartank, image, option):
     elif option == "改數值":
         if not("油車油錶" in image):
             return "⚠️警告：此照片並非此修正方法適用對象"
-        else
+        else:
             return "ℹ️改數值：輸入新油數"
     elif option == "刪除照片":
         return "ℹ️刪除照片：確認刪除這張相片？"
