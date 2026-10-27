@@ -1070,9 +1070,7 @@ def get_caradjust_ids(date, location):
             for item in items:
                 if item.get("mime") == "inode/directory":
                     folder_name = item.get("name", "")
-                    parts = folder_name.split("_")
-                    if len(parts) >= 1:
-                        car_id.append(parts[0])
+                    car_id.append(folder_name)
             return sorted(set(car_id))
         else:
             return []
