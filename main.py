@@ -1927,7 +1927,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 ]
             )
 
-            car_dropdown2.changen(
+            car_dropdown2.change(
                 fn=update_tankadjust_dropdown,
                 inputs=[date_picker, location_dropdown2,car_dropdown2],
                 outputs=[
