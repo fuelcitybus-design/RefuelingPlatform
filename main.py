@@ -1912,7 +1912,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             )
 
             date_picker.change(
-                fn=update_cartank_dropdown,
+                fn=update_caradjust_dropdown,
                 inputs=[date_picker, location_dropdown2],
                 outputs=[
                     cartank_dropdown2
