@@ -1055,7 +1055,7 @@ def update_cartank_dropdown(date, location):
             gr.update(choices=["錯誤"], value="錯誤")
         )
 
-def option_director(date, location, cartank. image, option):
+def option_director(date, location, cartank, image, option):
     if option == "更改照片":
         return "ℹ️更改照片"
     else if option == "調換照片":
