@@ -1059,7 +1059,7 @@ def get_image_ids(date, location, car):
     except Exception:
         return []
 
-def get_caradjust_ids(date, location, car):
+def get_caradjust_ids(date, location):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
         BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/"
