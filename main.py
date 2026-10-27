@@ -852,9 +852,224 @@ def prev_tab(current, location):
     nxt = active_indices[(pos - 1) % len(active_indices)]
     return gr.Tabs(selected=nxt), nxt
         
+
+
+#============================================================================================================================================================
+
+
+# Module 2: History functions
+
+def get_car_ids(date, location):
+    try:
+        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/"
+        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
+        car_id = []
+        if candidates.status_code == 200:
+            items = candidates.json()
+            for item in items:
+                if item.get("mime") == "inode/directory":
+                    folder_name = item.get("name", "")
+                    parts = folder_name.split("_")
+                    if len(parts) >= 1:
+                        car_id.append(parts[0])
+            return sorted(set(car_id))
+        else:
+            return []
+    except Exception:
+        return []
+
+
+def get_tank_names(date, location, id):
+    try:
+        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/"
+        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
+        tank = []
+        if candidates.status_code == 200:
+            items = candidates.json()
+            for item in items:
+                if item.get("mime") == "inode/directory":
+                    folder_name = item.get("name", "")
+                    parts = folder_name.split("_")
+                    if len(parts) >= 2 and id == parts[0]:
+                        tank.append(parts[1])
+            return tank
+        else:
+            return []
+    except Exception:
+        return []
+
+def find_jpg_images(date, location, id, tank):
+    try:
+        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+        url = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{id}_{tank}/"
+        gallery_items = []
+
+        response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
+        if response.status_code != 200:
+            return [], f"❌ 錯誤：無法存取儲存伺服器: HTTP {response.status_code}"
+
+        files_json = response.json()
+        os.makedirs("kudu_cache", exist_ok=True)
+
+        for item in files_json:
+            if item.get("mime") == "inode/directory":
+                continue
+
+            filename = item.get("name", "")
+            file_url = url + filename
+
+            file_response = requests.get(file_url, auth=auth, timeout=10)
+            if file_response.status_code == 200:
+                local_cache_path = os.path.join("kudu_cache", filename)
+                with open(local_cache_path, "wb") as f:
+                    f.write(file_response.content)
+                gallery_items.append((local_cache_path, filename))
+
+        if not gallery_items:
+            return [], "⚠️連接成功，但這資料來沒有相片"
+
+        return gallery_items, f"✅成功從儲存伺服器存取 {len(gallery_items)}組相片"
+
+    except Exception as e:
+        return [], f"❌錯誤：存取檔案結構時出錯: {str(e)}"
+
+
+def assign_tanks(date, location, id):
+    # Validate inputs early
+    if not id or id in ["請選擇", "沒有記錄"]:
+        return (
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            "⚠️警告：請先選取有效車號"
+        )
+
+    tanks = get_tank_names(date, location, id)
+
+    if isinstance(tanks, str):
+        return (
+            [], "❌錯誤信號",
+            [], "❌錯誤信號",
+            [], "❌錯誤信號",
+            [], "❌錯誤信號",
+            tanks
+        )
+
+    if not tanks:
+        # No tanks found: return empty galleries immediately
+        return (
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            "⚠️警告：沒有相關紀錄"
+        )
+
+    galleries_data = []
+    labels = []
+
+    for i in range(4):
+        if i < len(tanks):
+            tank_name = tanks[i]
+            gallery_items, msg = find_jpg_images(date, location, id, tank_name)
+            galleries_data.append(gallery_items)
+            labels.append(f"Tank: {tank_name}")
+        else:
+            galleries_data.append([])
+            labels.append("沒有紀錄")
+
+    tank_names_str = ", ".join(tanks)
+    msg = f"✅找到 {len(tanks)} 組紀錄: {tank_names_str}"
+
+    return (
+        galleries_data[0], labels[0],
+        galleries_data[1], labels[1],
+        galleries_data[2], labels[2],
+        galleries_data[3], labels[3],
+        msg
+    )
+
+def update_car_dropdown(date, location):
+    try:
+        car_ids_list = get_car_ids(date, location)
+        if car_ids_list:
+            car_update = gr.update(choices=["請選擇"] + car_ids_list, value="請選擇")
+        else:
+            car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
+
+        tank_reset = [
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            [], "⚠️沒有紀錄",
+            "⚠️警告：請先選取有效車號"
+        ]
+
+        return (car_update, *tank_reset)
+    except Exception:
+        return (
+            gr.update(choices=["錯誤"], value="錯誤"),
+            [], "❌錯誤",
+            [], "❌錯誤",
+            [], "❌錯誤",
+            [], "❌錯誤",
+            "❌錯誤：無法載入資料"
+        )
+
+
+def update_all(date, location, car):
+    try:
+        g1, l1, g2, l2, g3, l3, g4, l4, msg = assign_tanks(date, location, car)
+        return g1, l1, g2, l2, g3, l3, g4, l4, msg
+    except Exception:
+        return (
+            [], "❌錯誤",
+            [], "❌錯誤",
+            [], "❌錯誤",
+            [], "❌錯誤",
+            "❌錯誤：無法載入資料"
+        )
+
+def clear_tanks():
+    return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "⚠️警告：請先選取有效車號"
+
+
 #=========================================================================================================================
 
-###Module 2: AI proessor function
+
+###Module 3: Adjustor
+def update_cartank_dropdown(date, location):
+    try:
+        car_ids_list = get_car_ids(date, location)
+        if car_ids_list:
+            car_update = gr.update(choices=["請選擇"] + car_ids_list, value="請選擇")
+        else:
+            car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
+
+        return (car_update)
+    except Exception:
+        return (
+            gr.update(choices=["錯誤"], value="錯誤")
+        )
+
+def option_director(date, location, cartank. image, option):
+    if option == "更改照片":
+        return "ℹ️更改照片"
+    else if option == "調換照片":
+        return "ℹ️調換照片"
+    else if option == "改數值":
+        return "ℹ️改數值"
+    else if option == "刪除照片"
+        return "ℹ️刪除照片"
+    else
+        return "⚠️警告：請選擇修改方法"
+#=========================================================================================================================
+
+
+###Module 4: AI proessor function
 abnormal_count = 0
 
 # Image Enhancement
@@ -1117,8 +1332,11 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
     else:
         return f"✅儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", f"儲存成功，共確認了{viewed} 張照片，更新 {num_update} 張照片", []
 
-#===========================================================================================
-##Module 3: Exporter
+
+#===========================================================================================================================
+
+
+##Module 5: Exporter
 def add_data(wb, car, tank, before, after, img_list, img_list_WM, rowcount):
     RAW = wb['RAW']
     MAIN = wb['Main']
@@ -1394,188 +1612,7 @@ def export(request: gr.Request, location, date):
         else:
             return local_path, f" ✅導出成功，只能從上下載最新版本: {wbp.status_code} {wbp.text}"
         
-#============================================================================================================================================================
 
-# Module 4: History functions
-
-def get_car_ids(date, location):
-    try:
-        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/"
-        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
-        car_id = []
-        if candidates.status_code == 200:
-            items = candidates.json()
-            for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    parts = folder_name.split("_")
-                    if len(parts) >= 1:
-                        car_id.append(parts[0])
-            return sorted(set(car_id))
-        else:
-            return []
-    except Exception:
-        return []
-
-
-def get_tank_names(date, location, id):
-    try:
-        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        BASE_URL = f"{ROOT_FOLDER_WM}/{date_str}/{location}/"
-        candidates = requests.get(BASE_URL, auth=auth, timeout=10)
-        tank = []
-        if candidates.status_code == 200:
-            items = candidates.json()
-            for item in items:
-                if item.get("mime") == "inode/directory":
-                    folder_name = item.get("name", "")
-                    parts = folder_name.split("_")
-                    if len(parts) >= 2 and id == parts[0]:
-                        tank.append(parts[1])
-            return tank
-        else:
-            return []
-    except Exception:
-        return []
-
-def find_jpg_images(date, location, id, tank):
-    try:
-        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        url = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{id}_{tank}/"
-        gallery_items = []
-
-        response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
-        if response.status_code != 200:
-            return [], f"❌ 錯誤：無法存取儲存伺服器: HTTP {response.status_code}"
-
-        files_json = response.json()
-        os.makedirs("kudu_cache", exist_ok=True)
-
-        for item in files_json:
-            if item.get("mime") == "inode/directory":
-                continue
-
-            filename = item.get("name", "")
-            file_url = url + filename
-
-            file_response = requests.get(file_url, auth=auth, timeout=10)
-            if file_response.status_code == 200:
-                local_cache_path = os.path.join("kudu_cache", filename)
-                with open(local_cache_path, "wb") as f:
-                    f.write(file_response.content)
-                gallery_items.append((local_cache_path, filename))
-
-        if not gallery_items:
-            return [], "⚠️連接成功，但這資料來沒有相片"
-
-        return gallery_items, f"✅成功從儲存伺服器存取 {len(gallery_items)}組相片"
-
-    except Exception as e:
-        return [], f"❌錯誤：存取檔案結構時出錯: {str(e)}"
-
-
-def assign_tanks(date, location, id):
-    # Validate inputs early
-    if not id or id in ["請選擇", "沒有記錄"]:
-        return (
-            [], "⚠️沒有紀錄",
-            [], "⚠️沒有紀錄",
-            [], "⚠️沒有紀錄",
-            [], "⚠️沒有紀錄",
-            "⚠️警告：請先選取有效車號"
-        )
-
-    tanks = get_tank_names(date, location, id)
-
-    if isinstance(tanks, str):
-        return (
-            [], "❌錯誤信號",
-            [], "❌錯誤信號",
-            [], "❌錯誤信號",
-            [], "❌錯誤信號",
-            tanks
-        )
-
-    if not tanks:
-        # No tanks found: return empty galleries immediately
-        return (
-            [], "⚠️沒有紀錄",
-            [], "⚠️沒有紀錄",
-            [], "⚠️沒有紀錄",
-            [], "⚠️沒有紀錄",
-            "⚠️警告：沒有相關紀錄"
-        )
-
-    galleries_data = []
-    labels = []
-
-    for i in range(4):
-        if i < len(tanks):
-            tank_name = tanks[i]
-            gallery_items, msg = find_jpg_images(date, location, id, tank_name)
-            galleries_data.append(gallery_items)
-            labels.append(f"Tank: {tank_name}")
-        else:
-            galleries_data.append([])
-            labels.append("沒有紀錄")
-
-    tank_names_str = ", ".join(tanks)
-    msg = f"✅找到 {len(tanks)} 組紀錄: {tank_names_str}"
-
-    return (
-        galleries_data[0], labels[0],
-        galleries_data[1], labels[1],
-        galleries_data[2], labels[2],
-        galleries_data[3], labels[3],
-        msg
-    )
-
-def update_car_dropdown(date, location):
-    try:
-        car_ids_list = get_car_ids(date, location)
-        if car_ids_list:
-            car_update = gr.update(choices=["請選擇"] + car_ids_list, value="請選擇")
-        else:
-            car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
-
-        tank_reset = [
-            [], "⚠️沒有紀錄",
-            [], "⚠️沒有紀錄",
-            [], "⚠️沒有紀錄",
-            [], "⚠️沒有紀錄",
-            "⚠️警告：請先選取有效車號"
-        ]
-
-        return (car_update, *tank_reset)
-    except Exception:
-        return (
-            gr.update(choices=["錯誤"], value="錯誤"),
-            [], "❌錯誤",
-            [], "❌錯誤",
-            [], "❌錯誤",
-            [], "❌錯誤",
-            "❌錯誤：無法載入資料"
-        )
-
-
-def update_all(date, location, car):
-    try:
-        g1, l1, g2, l2, g3, l3, g4, l4, msg = assign_tanks(date, location, car)
-        return g1, l1, g2, l2, g3, l3, g4, l4, msg
-    except Exception:
-        return (
-            [], "❌錯誤",
-            [], "❌錯誤",
-            [], "❌錯誤",
-            [], "❌錯誤",
-            "❌錯誤：無法載入資料"
-        )
-
-def clear_tanks():
-    return [], "No Tank", [], "No Tank", [], "No Tank", [], "No Tank", "⚠️警告：請先選取有效車號"
-
-    
 #============================================================================================================================================================
 
 with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; font-size: 16px; padding: 10px; margin-bottom: 10px; transition: color 0.3s ease; }") as demo:
@@ -1687,56 +1724,8 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
            
             gr.HTML(prefer_back_camera())
 
-        #Module 2
-        with gr.Tab("AI處理"):
-            abnormal_list = gr.State([])
-            state = gr.Textbox("ℹ️選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
-            
-            location_dropdownAI = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
-            run_btn = gr.Button("🤖運行AI")
-                
-            # Build image and text components first
-            txts, imgs = [], []
-            for i in range(10):
-                with gr.Row():
-                    img = gr.Image(None, label=f"Image {i+1}", visible=True, width=150, interactive=False)
-                    imgs.append(img)
-                    txt = gr.Textbox(value=None, label=f"Text {i+1}", visible=True)
-                    txts.append(txt)
-
-            collect_btn = gr.Button("✅儲存所有修改")
-            
-            state2 = gr.Textbox("ℹ️選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
         
-            # Now wire the button with ALL outputs
-            run_btn.click(
-                fn=analysis_rename,
-                inputs=[location_dropdownAI],
-                outputs=[abnormal_list, state, state2] + imgs + txts
-            )
-                
-            abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
-            abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)   
-                
-            collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, state2, abnormal_list])
-            
-        # Module 3
-        with gr.Tab("下載"):
-            with gr.Row():
-                location_dropdown = gr.Dropdown(choices=locations, label="地點", value=locations[0], allow_custom_value=False, filterable=False)
-                date_picker = gr.DateTime(label="日期", include_time=False, value=str(datetime.now(HK_TZ).date().isoformat()))
-
-            output = gr.File(label="下載")
-            state = gr.Textbox("ℹ️選擇日期、地點以便輸出落油紀錄", label="狀態", lines=2)
-
-            export_btn = gr.Button("✅下載")
-            export_btn.click(
-                fn=export,
-                inputs=[location_dropdown, date_picker],
-                outputs=[output, state]
-            )
-
-        # Module 4
+        # Module 2
         with gr.Tab("記錄"):
             with gr.Row():
                 date_picker = gr.DateTime(
@@ -1808,8 +1797,8 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 ]
             )
 
-        # Module 5
-        with gr.Tab("修正"):
+        # Module 3
+        with gr.Tab("修改(N/A)"):
             with gr.Row():
                 date_picker = gr.DateTime(
                     label="日期", include_time=False,
@@ -1821,7 +1810,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     allow_custom_value=False, filterable=False
                 )
                 cartank_dropdown2 = gr.Dropdown(
-                    choices=[], label="車_缸號", value=None,
+                    choices=[], label="車+缸號", value=None,
                     elem_id="cartank_dropdown_adjust",
                     allow_custom_value=False, filterable=False
                 )
@@ -1831,14 +1820,88 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     allow_custom_value=False, filterable=False
                 )
                 option_dropdown2 = gr.Dropdown(
-                    choices=["{請選擇}", "更改照片", "調換照片"], label="修改方法", value="{請選擇}",
+                    choices=["{請選擇}", "更改照片", "調換照片","改數值","刪除照片"], label="修改方法", value="{請選擇}",
                     elem_id="option_adjust",
                     allow_custom_value=False, filterable=False
                 )
                 confirm_btn = gr.Button("✅確認選擇")
 
             adjust_message = gr.Textbox("ℹ️選擇照片詳情及修改方法。", label="Adjust Summary", interactive=False, lines=2)
+            
+            confirm_btn.click(
+                fn=option_director,
+                inputs=[date_picker, location_dropdown2, cartank_dropdown2,image_dropdown2,option_dropdown2],
+                outputs=[
+                    adjust_message
+                ]
+            )
+
+            date_picker.change(
+                fn=update_cartank_dropdown,
+                inputs=[date_picker, location_dropdown2],
+                outputs=[
+                    cartank_dropdown2
+                ]
+            )
+
+            location_dropdown2.change(
+                fn=update_cartank_dropdown,
+                inputs=[date_picker, location_dropdown2],
+                outputs=[
+                    cartank_dropdown2
+                ]
+            )
+
         
+        #Module 4
+        with gr.Tab("AI處理"):
+            abnormal_list = gr.State([])
+            state = gr.Textbox("ℹ️選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
+            
+            location_dropdownAI = gr.Dropdown(choices=locations, label="地點(gps)", value=locations[0], allow_custom_value=False, filterable=False, interactive=True)
+            run_btn = gr.Button("🤖運行AI")
+                
+            # Build image and text components first
+            txts, imgs = [], []
+            for i in range(10):
+                with gr.Row():
+                    img = gr.Image(None, label=f"Image {i+1}", visible=True, width=150, interactive=False)
+                    imgs.append(img)
+                    txt = gr.Textbox(value=None, label=f"Text {i+1}", visible=True)
+                    txts.append(txt)
+
+            collect_btn = gr.Button("✅儲存所有修改")
+            
+            state2 = gr.Textbox("ℹ️選擇地點後按「運行AI」分析照片，如有誤請在分析完畢後更改數值並儲存。" ,label="狀態", lines=5)
+        
+            # Now wire the button with ALL outputs
+            run_btn.click(
+                fn=analysis_rename,
+                inputs=[location_dropdownAI],
+                outputs=[abnormal_list, state, state2] + imgs + txts
+            )
+                
+            abnormal_list.change(fn=show_img, inputs=abnormal_list, outputs=imgs)
+            abnormal_list.change(fn=show_txt, inputs=abnormal_list, outputs=txts)   
+                
+            collect_btn.click(fn=collect_all_texts, inputs=[abnormal_list] + txts + imgs, outputs=[state, state2, abnormal_list])
+
+        
+        # Module 5
+        with gr.Tab("下載"):
+            with gr.Row():
+                location_dropdown = gr.Dropdown(choices=locations, label="地點", value=locations[0], allow_custom_value=False, filterable=False)
+                date_picker = gr.DateTime(label="日期", include_time=False, value=str(datetime.now(HK_TZ).date().isoformat()))
+
+            output = gr.File(label="下載")
+            state = gr.Textbox("ℹ️選擇日期、地點以便輸出落油紀錄", label="狀態", lines=2)
+
+            export_btn = gr.Button("✅下載")
+            export_btn.click(
+                fn=export,
+                inputs=[location_dropdown, date_picker],
+                outputs=[output, state]
+            )
         
         demo.css = """
         #camera_input button {
