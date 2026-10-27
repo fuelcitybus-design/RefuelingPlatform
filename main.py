@@ -1883,7 +1883,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         #camera_input button[aria-label="Capture from camera"] {
                 transform: translateX(10px) scale(2);
         }
-        
+    
         """
 
 # Enable Gradio queue (compatibility fallback)
