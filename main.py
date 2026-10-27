@@ -1887,7 +1887,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             
             confirm_btn.click(
                 fn=option_director,
-                inputs=[date_picker, location_dropdown2, car_dropdown2, tank_dropdown2, image_dropdown2,option_dropdown2],
+                inputs=[date_picker, location_dropdown2, car_dropdown2, image_dropdown2,option_dropdown2],
                 outputs=[
                     adjust_message
                 ]
