@@ -1886,8 +1886,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             with gr.Row():
                 confirm_btn = gr.Button("✅確認選擇")
             with gr.Row():
-                old_photo = gr.gallery(columns=4, elem_id = "old_photo", visible=False)
-            with gr.Row():
                 confirmReal_btn = gr.Button(
                     value = "✅確認修改", 
                     visible=False
