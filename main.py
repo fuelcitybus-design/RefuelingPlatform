@@ -2082,6 +2082,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     value_adjust,
                     confirmReal_btn,
                     adjust_message
+                ]
             )
 
             date_picker.change(
