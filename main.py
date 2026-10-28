@@ -1894,7 +1894,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             with gr.Row():
                 date_picker = gr.DateTime(
                     label="日期", include_time=False,
-                    value = datetime.now(HK_TZ),  
+                    value = datetime.now(),  
                     elem_id = "date_adjust",
                 )
                 location_dropdown2 = gr.Dropdown(
