@@ -1888,7 +1888,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     elem_id="option_adjust",
                     allow_custom_value=False, filterable=False
                 )
-            with gr.row():
+            with gr.Row():
                  gallery_oldPreview = gr.Gallery(columns=1, elem_id = "oldPreview")
             with gr.Row():
                 confirm_btn = gr.Button("✅確認選擇")
