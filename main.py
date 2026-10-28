@@ -410,7 +410,7 @@ def add_timestamp(image_bytes, timestamp, location, quality = 75):
     img = PILImage.open(BytesIO(image_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img)
     try:
-        font = ImageFont.truetype(str(FONT_PATH), 20)
+        font = ImageFont.truetype(str(FONT_PATH), 18)
     except:
         font = ImageFont.load_default()
     text = f"{location[:3]} ** {timestamp}"
