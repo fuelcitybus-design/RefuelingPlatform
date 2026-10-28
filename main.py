@@ -1097,18 +1097,24 @@ def update_caradjust_dropdown(date, location):
 def update_image_dropdown(date, location, car):
     try:
         image_ids_list = get_image_ids(date, location, car)
+        gallery_item = []
         if image_ids_list:
             image_update = gr.update(choices=["請選擇"] + image_ids_list, value="請選擇")
+            id,tank_name = car.split("_")
+            gallery_item, msg = find_jpg_images(date, location, id, tank_name)
         else:
             image_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
-        return (image_update)
+        return (image_update, gallery_item)
     except Exception:
         return (
-            gr.update(choices=["錯誤"], value="錯誤")
+            gr.update(choices=["錯誤"], value="錯誤"),
+            []
         )
 
 def option_director(date, location, cartank, image, option):
+    if image == None or image == "沒有記錄":
+        return "⚠️警告：請選擇有效照片"
     if option == "更改照片":
         return "ℹ️更改照片：上載新照片然後確認"
     elif option == "調換照片":
@@ -1882,17 +1888,49 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     elem_id="option_adjust",
                     allow_custom_value=False, filterable=False
                 )
-                
+            with gr.row():
+                 gallery_oldPreview = gr.Gallery(columns=1, elem_id = "oldPreview")
             with gr.Row():
                 confirm_btn = gr.Button("✅確認選擇")
+
+
+            #INformation for new stuff
+            with gr.Row():
+                date_picker_new = gr.DateTime(
+                    label="日期", include_time=False,
+                    value = datetime.now(HK_TZ),
+                    elem_id = "date_adjust2",
+                )
+                location_dropdown2_new = gr.Dropdown(
+                    choices=locations, label="地點", value=locations[0],
+                    allow_custom_value=False, filterable=False
+                )
+                car_dropdown2_new = gr.Dropdown(
+                    choices=[], label="車號", value=None,
+                    elem_id="car_dropdown_adjust2",
+                    allow_custom_value=False, filterable=False
+                )
+                tank_dropdown2_new = gr.Dropdown(
+                    choices=[], label="缸號", value=None,
+                    elem_id="tank_dropdown_adjust2",
+                    allow_custom_value=False, filterable=False
+                )
+                image_dropdown2_new = gr.Dropdown(
+                    choices=[], label="照名", value=None,
+                    elem_id="image_dropdown_adjust2",
+                    allow_custom_value=False, filterable=False
+                )
+            with gr.row():
+                 gallery_newPreview = gr.Gallery(columns=1, elem_id = "newPreview")
+
             with gr.Row():
                 confirmReal_btn = gr.Button(
-                    value = "✅確認修改", 
+                    value = "✅確認修改",
                     visible=False
                 )
 
             adjust_message = gr.Textbox("ℹ️選擇照片詳情及修改方法。", label="Adjust Summary", interactive=False, lines=2)
-            
+
             confirm_btn.click(
                 fn=option_director,
                 inputs=[date_picker, location_dropdown2, car_dropdown2, image_dropdown2,option_dropdown2],
@@ -1921,7 +1959,8 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 fn=update_image_dropdown,
                 inputs=[date_picker, location_dropdown2,car_dropdown2],
                 outputs=[
-                    image_dropdown2
+                    image_dropdown2,
+                    gallery_oldPreview
                 ]
             )
     
