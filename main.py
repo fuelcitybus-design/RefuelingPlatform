@@ -1144,16 +1144,16 @@ def option_director(date, location, cartank, image, option):
             selected_option = ""
             msg = "⚠️警告：請選擇修改方法"
 
-return [
-        gr.update(visible=bool(vis_toggle[0])),
-        gr.update(visible=bool(vis_toggle[1])),
-        gr.update(visible=bool(vis_toggle[2])),
-        gr.update(visible=bool(vis_toggle[3])),
-        gr.update(visible=bool(vis_toggle[4])),
-        gr.update(visible=bool(vis_toggle[5])),
-        gr.update(visible=bool(vis_toggle[6])),
-        gr.update(visible=bool(vis_toggle[7]))
-    ], msg
+    return [
+            gr.update(visible=bool(vis_toggle[0])),
+            gr.update(visible=bool(vis_toggle[1])),
+            gr.update(visible=bool(vis_toggle[2])),
+            gr.update(visible=bool(vis_toggle[3])),
+            gr.update(visible=bool(vis_toggle[4])),
+            gr.update(visible=bool(vis_toggle[5])),
+            gr.update(visible=bool(vis_toggle[6])),
+            gr.update(visible=bool(vis_toggle[7]))
+        ], msg
 
 
 #=========================================================================================================================
