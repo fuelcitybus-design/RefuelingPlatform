@@ -1920,7 +1920,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     elem_id="image_dropdown_adjust2",
                     allow_custom_value=False, filterable=False
                 )
-            with gr.row():
+            with gr.Row():
                  gallery_newPreview = gr.Gallery(columns=1, elem_id = "newPreview")
 
             with gr.Row():
