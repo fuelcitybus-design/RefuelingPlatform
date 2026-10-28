@@ -1895,7 +1895,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 date_picker = gr.DateTime(
                     label="日期", include_time=False,
                     value = datetime.now(HK_TZ),  
-                    allow_custom_value=False, filterable=False, interactive=True,
                     elem_id = "date_adjust",
                 )
                 location_dropdown2 = gr.Dropdown(
@@ -1929,7 +1928,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     label="日期", include_time=False,
                     value = datetime.now(HK_TZ),
                     elem_id = "date_adjust2",
-                    allow_custom_value=False, filterable=False, interactive=True,
                     visible=False
                 )
                 location_dropdown2_new = gr.Dropdown(
