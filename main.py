@@ -1974,7 +1974,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     tank_dropdown2_new,
                     image_dropdown2_new,
                     gallery_newPreview,
-                    value_adjust.
+                    value_adjust,
                     confirmReal_btn
                 ] + adjust_message
             )
