@@ -1041,6 +1041,9 @@ def clear_tanks():
 
 
 ###Module 3: Adjustor
+global selected_option
+selected_option = ""
+
 def get_image_ids(date, location, car):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
@@ -1113,21 +1116,44 @@ def update_image_dropdown(date, location, car):
         )
 
 def option_director(date, location, cartank, image, option):
+    msg = ""
+    selected_option = ""
+    vis_toggle = [0,0,0,0,0,0,0,0]
     if image == None or image == "沒有記錄":
-        return "⚠️警告：請選擇有效照片"
-    if option == "更改照片":
-        return "ℹ️更改照片：上載新照片然後確認"
-    elif option == "調換照片":
-        return "ℹ️調換照片：選擇調換對象"
-    elif option == "改數值":
-        if not("油車油錶" in image):
-            return "⚠️警告：此照片並非此修正方法適用對象"
-        else:
-            return "ℹ️改數值：輸入新油數"
-    elif option == "刪除照片":
-        return "ℹ️刪除照片：確認刪除這張相片？"
+        msg = "⚠️警告：請選擇有效照片"
     else:
-        return "⚠️警告：請選擇修改方法"
+        if option == "調換照片":
+            selected_option = option
+            for i in range(5):
+                vis_toggle[i] = 1
+            vis_toggle[7] = 1
+            msg = "ℹ️調換照片：選擇調換對象"
+        elif option == "改數值":
+            if not("油車油錶" in image):
+                msg = "⚠️警告：此照片並非此修正方法適用對象"
+            else:
+                selected_option = option
+                vis_toggle[6] = 1
+                vis_toggle[7] = 1
+                msg = "ℹ️改數值：輸入新油數"
+        elif option == "刪除照片":
+            selected_option = option
+            vis_toggle[7] = 1
+            msg = "ℹ️刪除照片：確認刪除這張相片？(按 確認修改)"
+        else:
+            selected_option = ""
+            msg = "⚠️警告：請選擇修改方法"
+
+return [
+        gr.update(visible=bool(vis_toggle[0])),
+        gr.update(visible=bool(vis_toggle[1])),
+        gr.update(visible=bool(vis_toggle[2])),
+        gr.update(visible=bool(vis_toggle[3])),
+        gr.update(visible=bool(vis_toggle[4])),
+        gr.update(visible=bool(vis_toggle[5])),
+        gr.update(visible=bool(vis_toggle[6])),
+        gr.update(visible=bool(vis_toggle[7]))
+    ], msg
 
 
 #=========================================================================================================================
@@ -1861,6 +1887,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 ]
             )
 
+        
         # Module 3
         with gr.Tab("修改(N/A)"):
             with gr.Row():
@@ -1884,7 +1911,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     allow_custom_value=False, filterable=False
                 )
                 option_dropdown2 = gr.Dropdown(
-                    choices=["{請選擇}", "更改照片", "調換照片","改數值","刪除照片"], label="修改方法", value="{請選擇}",
+                    choices=["{請選擇}", "調換照片","改數值","刪除照片"], label="修改方法", value="{請選擇}",
                     elem_id="option_adjust",
                     allow_custom_value=False, filterable=False
                 )
@@ -1900,29 +1927,35 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     label="日期", include_time=False,
                     value = datetime.now(HK_TZ),
                     elem_id = "date_adjust2",
+                    visible=False
                 )
                 location_dropdown2_new = gr.Dropdown(
                     choices=locations, label="地點", value=locations[0],
-                    allow_custom_value=False, filterable=False
+                    allow_custom_value=False, filterable=False,
+                    visible=False
                 )
                 car_dropdown2_new = gr.Dropdown(
                     choices=[], label="車號", value=None,
                     elem_id="car_dropdown_adjust2",
-                    allow_custom_value=False, filterable=False
+                    allow_custom_value=False, filterable=False,
+                    visible=False
                 )
                 tank_dropdown2_new = gr.Dropdown(
                     choices=[], label="缸號", value=None,
                     elem_id="tank_dropdown_adjust2",
-                    allow_custom_value=False, filterable=False
+                    allow_custom_value=False, filterable=False,
+                    visible=False
                 )
                 image_dropdown2_new = gr.Dropdown(
                     choices=[], label="照名", value=None,
                     elem_id="image_dropdown_adjust2",
-                    allow_custom_value=False, filterable=False
+                    allow_custom_value=False, filterable=False,
+                    visible=False
                 )
             with gr.Row():
-                 gallery_newPreview = gr.Gallery(columns=1, elem_id = "newPreview")
-
+                 gallery_newPreview = gr.Gallery(columns=1, elem_id = "newPreview", visible=False)
+            with gr.Row():
+                 value_adjust = gr.Textbox(value=None, label=f"改數值", visible=False, elem_id = "value_adjust")
             with gr.Row():
                 confirmReal_btn = gr.Button(
                     value = "✅確認修改",
@@ -1935,8 +1968,15 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 fn=option_director,
                 inputs=[date_picker, location_dropdown2, car_dropdown2, image_dropdown2,option_dropdown2],
                 outputs=[
-                    adjust_message
-                ]
+                    date_picker_new, 
+                    location_dropdown2_new, 
+                    car_dropdown2_new, 
+                    tank_dropdown2_new,
+                    image_dropdown2_new,
+                    gallery_newPreview,
+                    value_adjust.
+                    confirmReal_btn
+                ] + adjust_message
             )
 
             date_picker.change(
