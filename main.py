@@ -1116,7 +1116,9 @@ def update_preview(date, location, car, image):
     try:
         url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}/{image}"
         response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
-        return response
+        response.raise_for_status()
+        img = Image.open(BytesIO(response.content))
+        return [img]
     except Exception:
         return []
 
