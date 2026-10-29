@@ -1991,31 +1991,25 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             date_picker.change(
                 fn=update_caradjust_dropdown,
                 inputs=[date_picker, location_dropdown2],
-                outputs=[
-                    car_dropdown2
-                ]
+                outputs=[car_dropdown2]
             )
 
             location_dropdown2.change(
                 fn=update_caradjust_dropdown,
                 inputs=[date_picker, location_dropdown2],
-                outputs=[
-                    car_dropdown2
-                ]
+                outputs=[car_dropdown2]
             )
 
             car_dropdown2.change(
                 fn=update_image_dropdown,
                 inputs=[date_picker, location_dropdown2,car_dropdown2],
-                outputs=[
-                    image_dropdown2
-                ]
+                outputs=[image_dropdown2]    
             )
 
             image_dropdown2.change(
                 fn = update_preview,
                 inputs = [date_picker, location_dropdown2,car_dropdown2,image_dropdown2],
-                output = gallery_oldPreview
+                outputs = [gallery_oldPreview]
             )
             
     
