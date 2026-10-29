@@ -1112,7 +1112,7 @@ def update_image_dropdown(date, location, car):
             gr.update(choices=["錯誤"], value="錯誤")
         )
 
-def update_preview_dropdown(date, location, car, image):
+def update_preview(date, location, car, image):
     try:
         url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}/{image}"
         response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
