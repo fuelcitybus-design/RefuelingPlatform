@@ -1102,18 +1102,23 @@ def update_image_dropdown(date, location, car):
         image_ids_list = get_image_ids(date, location, car)
         gallery_item = []
         if image_ids_list:
-            image_update = gr.update(choices=["請選擇"] + image_ids_list, value="請選擇")
-            id,tank_name = car.split("_")
-            gallery_item, msg = find_jpg_images(date, location, id, tank_name)
+            image_update = gr.update(choices=["請選擇"] + image_ids_list, value="請選擇")                
         else:
             image_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
         return (image_update, gallery_item)
     except Exception:
         return (
-            gr.update(choices=["錯誤"], value="錯誤"),
-            []
+            gr.update(choices=["錯誤"], value="錯誤")
         )
+
+def update_preview_dropdown(date, location, car, image):
+    try:
+        url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}/{image}"
+        response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
+        return response
+    except Exception:
+        return []
 
 def option_director(date, location, cartank, image, option):
     msg = ""
@@ -2001,10 +2006,16 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 fn=update_image_dropdown,
                 inputs=[date_picker, location_dropdown2,car_dropdown2],
                 outputs=[
-                    image_dropdown2,
-                    gallery_oldPreview
+                    image_dropdown2
                 ]
             )
+
+            image_dropdown2.change(
+                fn = update_preview,
+                inputs = [date_picker, location_dropdown2,car_dropdown2,image_dropdown2],
+                output = gallery_oldPreview
+            )
+            
     
 
         
