@@ -1089,7 +1089,7 @@ def update_caradjust_dropdown(date, location):
         else:
             car_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
-        return (car_update)
+        return car_update
     except Exception:
         return (
             gr.update(choices=["錯誤"], value="錯誤")
@@ -1117,7 +1117,7 @@ def update_preview(date, location, car, image):
         response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
         response.raise_for_status()
         img = Image.open(BytesIO(response.content))
-        return [img]
+        return img
     except Exception:
         return []
 
