@@ -1099,13 +1099,12 @@ def update_caradjust_dropdown(date, location):
 def update_image_dropdown(date, location, car):
     try:
         image_ids_list = get_image_ids(date, location, car)
-        gallery_item = []
         if image_ids_list:
             image_update = gr.update(choices=image_ids_list, value=image_ids_list[0])                
         else:
             image_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
-        return (image_update, gallery_item)
+        return image_update
     except Exception:
         return (
             gr.update(choices=["錯誤"], value="錯誤")
