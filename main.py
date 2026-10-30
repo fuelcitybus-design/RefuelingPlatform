@@ -1100,7 +1100,7 @@ def update_image_dropdown(date, location, car):
     try:
         image_ids_list = get_image_ids(date, location, car)
         if image_ids_list:
-            image_update = gr.update(choices=image_ids_list, value=image_ids_list[0])                
+            image_update = gr.update(choices=["請選擇"] + image_ids_list, value="請選擇")                
         else:
             image_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
@@ -1114,7 +1114,6 @@ def update_preview(date, location, car, image):
     try:
         url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}/{image}"
         response = requests.get(url, auth=HTTPBasicAuth(USERNAME, PASSWORD), timeout=10)
-        response.raise_for_status()
         img = Image.open(BytesIO(response.content))
         return img
     except Exception:
