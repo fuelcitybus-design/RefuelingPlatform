@@ -1102,7 +1102,7 @@ def update_image_dropdown(date, location, car):
         image_ids_list = get_image_ids(date, location, car)
         gallery_item = []
         if image_ids_list:
-            image_update = gr.update(choices=["請選擇"] + image_ids_list, value="請選擇")                
+            image_update = gr.update(choices=image_ids_list, value=image_ids_list[0])                
         else:
             image_update = gr.update(choices=["沒有記錄"], value="沒有記錄")
 
