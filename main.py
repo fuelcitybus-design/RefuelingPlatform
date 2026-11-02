@@ -1907,6 +1907,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 date_picker = gr.DateTime(
                     label="日期", include_time=False,
                     value = datetime.now(),  
+                    interactive = True
                     elem_id = "date_adjust",
                 )
                 location_dropdown2 = gr.Dropdown(
@@ -1938,18 +1939,20 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             with gr.Row():
                 date_picker_new = gr.DateTime(
                     label="日期", include_time=False,
-                    value = datetime.now(HK_TZ),
+                    interactive = True,
                     elem_id = "date_adjust2",
                     visible=False
                 )
                 location_dropdown2_new = gr.Dropdown(
                     choices=locations, label="地點", value=locations[0],
+                    interactive = True,
                     allow_custom_value=False, filterable=False,
                     visible=False
                 )
                 car_dropdown2_new = gr.Dropdown(
-                    choices=[], label="車號", value=None,
+                    choices=car_ids, label="車號", value=None,
                     elem_id="car_dropdown_adjust2",
+                    interactive = True,
                     allow_custom_value=False, filterable=False,
                     visible=False
                 )
