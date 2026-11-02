@@ -1175,6 +1175,23 @@ def option_director(date, location, cartank, image, option):
 ###Module 4: AI proessor function
 abnormal_count = 0
 
+def update_image_adjust_dropdown(location, car):
+    image_choices = tab_list_S.get(location, ["{請選擇}"])
+    if car == "每日開油單":
+        return gr.update(
+            choices=["每日開油單"],
+            value="每日開油單",
+            label="缸號",
+            interactive=True
+        )
+    else:
+        return gr.update(
+            choices=image_choices,
+            value=image_choices[0],
+            label="照名",
+            interactive=True
+        )
+
 # Image Enhancement
 def auto_adjust_brightness_contrast(img_cv, clip_limit=2.0, tile_grid_size=(8,8)):
     lab = cv2.cvtColor(img_cv, cv2.COLOR_BGR2LAB)
@@ -1951,7 +1968,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     visible=False
                 )
                 car_dropdown2_new = gr.Dropdown(
-                    choices=car_ids, label="車號", value=None,
+                    choices=car_ids, label="車號", value=car_ids[0],
                     elem_id="car_dropdown_adjust2",
                     interactive = True,
                     allow_custom_value=False, filterable=False,
@@ -2031,6 +2048,16 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 fn=update_tank_dropdown,
                 inputs=[location_dropdown2_new, car_dropdown2_new],
                 outputs=tank_dropdown2_new
+            )
+            car_dropdown2_new.change(
+                fn=update_tank_dropdown,
+                inputs=[location_dropdown2_new, car_dropdown2_new],
+                outputs=tank_dropdown2_new
+            )
+            tank_dropdown2_new.change(
+                fn = update_image_adjust_dropdown.
+                inputs=[location_dropdown2_new, car_dropdown2_new],
+                outputs=image_dropdown2_new
             )
     
 
