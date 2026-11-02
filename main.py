@@ -1111,17 +1111,20 @@ def update_image_dropdown(date, location, car):
         )
 
 def update_preview(date, location, car, image):
-    img = []
     try:
-        url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}/{image}"
-        file_response = requests.get(url, auth=auth, timeout=10)
-        if file_response.status_code == 200:
+        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+        filename = image
+        url = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}/{filename}"
+        response = requests.get(url, auth=auth, timeout=10)
+        if response.status_code == 200:
+            os.makedirs("kudu_cache", exist_ok=True)
             local_cache_path = os.path.join("kudu_cache", filename)
             with open(local_cache_path, "wb") as f:
-                f.write(file_response.content)
-            img.append((local_cache_path, filename))
-        return img
-    except Exception:
+                f.write(response.content)
+            return [local_cache_path]  # For Gallery
+        return []
+    except Exception as e:
+        print(f"Preview Error: {e}")
         return []
 
 def option_director(date, location, cartank, image, option):
