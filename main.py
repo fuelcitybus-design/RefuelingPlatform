@@ -2055,7 +2055,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 outputs=tank_dropdown2_new
             )
             tank_dropdown2_new.change(
-                fn = update_image_adjust_dropdown.
+                fn = update_image_adjust_dropdown,
                 inputs=[location_dropdown2_new, car_dropdown2_new],
                 outputs=image_dropdown2_new
             )
