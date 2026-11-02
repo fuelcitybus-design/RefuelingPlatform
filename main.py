@@ -1939,6 +1939,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             with gr.Row():
                 date_picker_new = gr.DateTime(
                     label="日期", include_time=False,
+                    value = datetime.now(), 
                     interactive = True,
                     elem_id = "date_adjust2",
                     visible=False
@@ -2019,7 +2020,18 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 inputs = [date_picker, location_dropdown2,car_dropdown2,image_dropdown2],
                 outputs = [gallery_oldPreview]
             )
+
+            date_picker_new.change(
+                fn=update_caradjust_dropdown,
+                inputs=[date_picker, location_dropdown2],
+                outputs=[car_dropdown2]
+            )
             
+            location_dropdown2_new.change(
+                fn=update_tank_dropdown,
+                inputs=[location_dropdown2_new, car_dropdown2_new],
+                outputs=tank_dropdown2_new
+            )
     
 
         
