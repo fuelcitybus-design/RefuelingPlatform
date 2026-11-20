@@ -1714,7 +1714,7 @@ def export(request: gr.Request, location, date):
         sort_list_WM = aligned_list_WM
         add_data(wb, carid, tankid, before[1], after[1], sort_list, sort_list_WM, i)
     
-    save_url = f"EXPORT_FOLDER/{location}_{date}.xlsx"
+    save_url = f"{EXPORT_FOLDER}/{location}_{date}.xlsx"
     local_path = f"/tmp/{location}_{date}.xlsx"
     wb.save(local_path)
 
