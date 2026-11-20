@@ -25,7 +25,6 @@ FONT_PATH = Path(__file__).resolve().parent / "Roboto-Regular.ttf"
 print("Font path:", FONT_PATH)
 print("Exists:", FONT_PATH.exists())
 
-
 from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.formula import ArrayFormula
 from openpyxl.utils import get_column_letter
