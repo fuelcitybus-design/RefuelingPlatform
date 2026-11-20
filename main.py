@@ -1516,6 +1516,7 @@ def export(request: gr.Request, location, date):
     client_ip = request.client.host if request else "unknown"
     username = request.username if request and hasattr(request, "username") else "anonymous"
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+    EXPORT_FOLDER = f"https://{KUDU_HOST}/api/vfs/exports/{location}"
     folder_url = f"{ROOT_FOLDER}/{date}/{location}/"
     folder_url_WM = f"{ROOT_FOLDER_WM}/{date}/{location}/"
     template_url = f"{ROOT_FOLDER}/template.xlsx"
@@ -1713,8 +1714,8 @@ def export(request: gr.Request, location, date):
         sort_list = aligned_list
         sort_list_WM = aligned_list_WM
         add_data(wb, carid, tankid, before[1], after[1], sort_list, sort_list_WM, i)
-        
-    save_url = f"{folder_url}/{location}_{date}.xlsx"
+    
+    save_url = f"EXPORT_FOLDER/{location}_{date}.xlsx"
     local_path = f"/tmp/{location}_{date}.xlsx"
     wb.save(local_path)
 
