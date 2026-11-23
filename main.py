@@ -1132,9 +1132,10 @@ def update_preview(date, location, car, image):
         return []
 
 def update_gallery_newPreview(date, location, car, tank, image):
+    filename = f"{image}.jpg"
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        url = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}_{tank}/{image}.jpg"
+        url = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}_{tank}/{filename}"
         print(
                     url,
                     file=sys.stderr,
