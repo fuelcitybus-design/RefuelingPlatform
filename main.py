@@ -1153,6 +1153,21 @@ def update_gallery_newPreview(date, location, car, tank, image):
         print(f"Preview Error: {e}")
         return None
 
+def delete_kudu_image(file_url):
+    try:
+        response = requests.delete(
+            file_url,
+            auth=auth,
+            headers={"If-Match": "*"},
+            timeout=10,
+        )
+        response.raise_for_status()
+        print(f"Deleted: {file_url}")
+        return True
+    except requests.RequestException as exc:
+        print(f"Failed to delete {file_url}: {exc}")
+        return False
+
 def option_director(date, location, cartank, image, option):
     msg = ""
     selected_option = ""
@@ -1206,7 +1221,12 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
     elif option == "改數值":
         return []
     elif option == "刪除照片":
-        return [] 
+        N_delete = delete_kudu_image(image_original_N)
+        WM_delete = delete_kudu_image(image_original_WM)
+        if N_delete == True && WM_delete == True:
+            return  f"✅成功删除照片: {date}/{location}/{car}/{image}"
+        else
+            return f"⚠️警告：非完整/無法删除照片: {date}/{location}/{car}/{image}"
     else:    
         return []
 
