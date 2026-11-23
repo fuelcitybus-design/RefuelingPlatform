@@ -1139,7 +1139,7 @@ def update_gallery_newPreview(date, location, car, tank, image):
         return []
     except Exception as e:
         print(f"Preview Error: {e}")
-        return []
+        return None
 
 def option_director(date, location, cartank, image, option):
     msg = ""
