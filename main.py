@@ -1126,6 +1126,21 @@ def update_preview(date, location, car, image):
         print(f"Preview Error: {e}")
         return []
 
+def update_gallery_newPreview(date, location, car, tank, image):
+    try:
+        url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}_{tank}/{image}"
+        response = requests.get(url, auth=auth, timeout=10)
+        if response.status_code == 200:
+            os.makedirs("kudu_cache", exist_ok=True)
+            local_cache_path = os.path.join("kudu_cache", filename)
+            with open(local_cache_path, "wb") as f:
+                f.write(response.content)
+            return [local_cache_path]  # For Gallery
+        return []
+    except Exception as e:
+        print(f"Preview Error: {e}")
+        return []
+
 def option_director(date, location, cartank, image, option):
     msg = ""
     selected_option = ""
@@ -1135,7 +1150,7 @@ def option_director(date, location, cartank, image, option):
     else:
         if option == "調換照片":
             selected_option = option
-            for i in range(5):
+            for i in range(6):
                 vis_toggle[i] = 1
             vis_toggle[7] = 1
             msg = "ℹ️調換照片：選擇調換對象"
@@ -2044,12 +2059,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 inputs = [date_picker, location_dropdown2,car_dropdown2,image_dropdown2],
                 outputs = [gallery_oldPreview]
             )
-
-            date_picker_new.change(
-                fn=update_caradjust_dropdown,
-                inputs=[date_picker, location_dropdown2],
-                outputs=[car_dropdown2]
-            )
             
             location_dropdown2_new.change(
                 fn=update_tank_dropdown,
@@ -2065,6 +2074,11 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 fn = update_image_adjust_dropdown,
                 inputs=[location_dropdown2_new, car_dropdown2_new],
                 outputs=image_dropdown2_new
+            )
+            image_dropdown_new.change(
+                fn = update_gallery_newPreview,
+                inputs=[date_picker_new, location_dropdown2_new, car_dropdown2_new, tank_dropdown2_new, image_dropdown_new],
+                outputs=gallery_newPreview
             )
     
 
