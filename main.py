@@ -1133,6 +1133,7 @@ def update_preview(date, location, car, image):
 
 def update_gallery_newPreview(date, location, car, tank, image):
     try:
+        date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
         url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}_{tank}/{image}.jpg"
         print(
                     url,
@@ -1192,7 +1193,13 @@ def option_director(date, location, cartank, image, option):
             msg
           )
 
-def adjust_execute(date, location, car, tank, image, option):
+def adjust_execute(date, location, car, image, date_new, location_new, car_new, tank_new, image_new, option):
+    date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
+    date_new = date_str = datetime.fromtimestamp(date_new).strftime('%Y-%m-%d')
+    image_original_N = f"{ROOT_FOLDER}/{date}/{location}/{car}/{image}"
+    image_original_WM = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}/{image}"
+    image_new_N = f"{ROOT_FOLDER}/{date_new}/{location_new}/{car_new}_{tank}/{image_new}.jpg"
+    image_new_WM = f"{ROOT_FOLDER_WM}/{date_new}/{location_new}/{car}_{tank}/{image_new}.jpg"
     if option == "調換照片":
         return []
     elif option == "改數值":
@@ -2057,7 +2064,9 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
 
             confirmReal_btn.click(
                 fn = adjust_execute,
-                inputs = [date_picker_new, location_dropdown2_new, car_dropdown2_new, tank_dropdown2_new, image_dropdown2_new, option_dropdown2],
+                inputs = [date_picker, location_dropdown2, car_dropdown2, image_dropdown2, 
+                          date_picker_new, location_dropdown2_new, car_dropdown2_new, tank_dropdown2_new, image_dropdown2_new, 
+                          option_dropdown2],
                 outputs = adjust_message
             )
 
