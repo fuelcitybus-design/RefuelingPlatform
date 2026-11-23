@@ -1114,6 +1114,11 @@ def update_preview(date, location, car, image):
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
         filename = image
         url = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}/{filename}"
+        print(
+                    url,
+                    file=sys.stderr,
+                    flush=True
+                )
         response = requests.get(url, auth=auth, timeout=10)
         if response.status_code == 200:
             os.makedirs("kudu_cache", exist_ok=True)
@@ -1129,6 +1134,11 @@ def update_preview(date, location, car, image):
 def update_gallery_newPreview(date, location, car, tank, image):
     try:
         url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}_{tank}/{image}.jpg"
+        print(
+                    url,
+                    file=sys.stderr,
+                    flush=True
+                )
         response = requests.get(url, auth=auth, timeout=10)
         if response.status_code == 200:
             os.makedirs("kudu_cache", exist_ok=True)
@@ -1183,6 +1193,10 @@ def option_director(date, location, cartank, image, option):
           )
 
 def adjust_execute(date, location, car, tank, image, option):
+    if option == "調換照片":
+    elif option == "改數值":
+    elif option == "刪除照片":
+        
     return []
 
 #=========================================================================================================================
