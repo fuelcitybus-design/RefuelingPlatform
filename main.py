@@ -2077,7 +2077,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             )
             image_dropdown2_new.change(
                 fn = update_gallery_newPreview,
-                inputs=[date_picker_new, location_dropdown2_new, car_dropdown2_new, tank_dropdown2_new, image_dropdown_new],
+                inputs=[date_picker_new, location_dropdown2_new, car_dropdown2_new, tank_dropdown2_new, image_dropdown2_new],
                 outputs=gallery_newPreview
             )
     
