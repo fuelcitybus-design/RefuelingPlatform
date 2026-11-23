@@ -1134,7 +1134,7 @@ def update_preview(date, location, car, image):
 def update_gallery_newPreview(date, location, car, tank, image):
     try:
         date_str = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
-        url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}_{tank}/{image}.jpg"
+        url = f"{ROOT_FOLDER_WM}/{date_str}/{location}/{car}_{tank}/{image}.jpg"
         print(
                     url,
                     file=sys.stderr,
@@ -1198,8 +1198,8 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
     date_new = date_str = datetime.fromtimestamp(date_new).strftime('%Y-%m-%d')
     image_original_N = f"{ROOT_FOLDER}/{date}/{location}/{car}/{image}"
     image_original_WM = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}/{image}"
-    image_new_N = f"{ROOT_FOLDER}/{date_new}/{location_new}/{car_new}_{tank}/{image_new}.jpg"
-    image_new_WM = f"{ROOT_FOLDER_WM}/{date_new}/{location_new}/{car}_{tank}/{image_new}.jpg"
+    image_new_N = f"{ROOT_FOLDER}/{date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
+    image_new_WM = f"{ROOT_FOLDER_WM}/{date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
     if option == "調換照片":
         return []
     elif option == "改數值":
@@ -1741,8 +1741,7 @@ def export(request: gr.Request, location, date):
             file_url = f"{subfolder_url_WM}{img}"
             sort_list_WM.append(file_url)
      
-        
-
+    
         sort_list = [before[0], after[0]] + sort_list
         # Build a fixed-length list aligned to tab_names
         aligned_list = []
