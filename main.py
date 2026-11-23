@@ -1182,6 +1182,8 @@ def option_director(date, location, cartank, image, option):
             msg
           )
 
+def adjust_execute(date, location, car, tank, image, option):
+    return []
 
 #=========================================================================================================================
 
@@ -2034,6 +2036,12 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     confirmReal_btn,
                     adjust_message
                 ]
+            )
+
+            confirmReal_btn.click(
+                fn = adjust_execute,
+                inputs = [date_picker_new, location_dropdown2_new, car_dropdown2_new, tank_dropdown2_new, image_dropdown2_new, option_dropdown2],
+                outputs = adjust_message
             )
 
             date_picker.change(
