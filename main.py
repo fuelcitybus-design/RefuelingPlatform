@@ -1997,13 +1997,13 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     visible=False
                 )
                 tank_dropdown2_new = gr.Dropdown(
-                    choices=[], label="缸號", value=None,
+                    choices=["{請選擇}"], label="缸號", value="{請選擇}",
                     elem_id="tank_dropdown_adjust2",
                     allow_custom_value=False, filterable=False,
                     visible=False
                 )
                 image_dropdown2_new = gr.Dropdown(
-                    choices=["{請選擇}"], label="照名", value=choices[0],
+                    choices=["{請選擇}"], label="照名", value="{請選擇}",
                     elem_id="image_dropdown_adjust2",
                     allow_custom_value=False, filterable=False,
                     visible=False
