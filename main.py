@@ -1153,6 +1153,65 @@ def update_gallery_newPreview(date, location, car, tank, image):
         print(f"Preview Error: {e}")
         return None
 
+
+def kudu_swap_images(source_url, destination_url, timeout=15):
+    """Swap two Kudu files, or move the existing file if only one exists."""
+
+    def get_file(url):
+        response = requests.get(url, auth=auth, timeout=timeout)
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        return response.content
+
+    def put_file(url, content):
+        response = requests.put(
+            url,
+            data=content,
+            auth=auth,
+            headers={"If-Match": "*"},
+            timeout=timeout,
+        )
+        response.raise_for_status()
+
+    def delete_file(url):
+        response = requests.delete(
+            url,
+            auth=auth,
+            headers={"If-Match": "*"},
+            timeout=timeout,
+        )
+        response.raise_for_status()
+
+    if source_url.rstrip("/") == destination_url.rstrip("/"):
+        return "Same path; nothing to do."
+
+    source_data = get_file(source_url)
+    destination_data = get_file(destination_url)
+
+    if source_data is None and destination_data is None:
+        return "Neither path contains a file."
+
+    if source_data is not None and destination_data is not None:
+        put_file(source_url, destination_data)
+        try:
+            put_file(destination_url, source_data)
+        except Exception:
+            # Attempt to restore the source if the second write fails.
+            put_file(source_url, source_data)
+            raise
+        return True
+
+    if source_data is not None:
+        put_file(destination_url, source_data)
+        delete_file(source_url)
+        return True
+
+    put_file(source_url, destination_data)
+    delete_file(destination_url)
+    return True
+
+
 def delete_kudu_image(file_url):
     try:
         response = requests.delete(
@@ -1216,10 +1275,18 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
     image_original_WM = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}/{image}"
     image_new_N = f"{ROOT_FOLDER}/{date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
     image_new_WM = f"{ROOT_FOLDER_WM}/{date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
+    
     if option == "調換照片":
-        return []
+        N_swap = kudu_swap_images(image_original_N, image_new_N)
+        WM_swap = kudu_swap_images(image_original_WM, image_new_WM)
+        if N_swap == True and WM_swap == True:
+            return  f"✅成功調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
+        else:
+            return f"⚠️警告：非完整/無法調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
+            
     elif option == "改數值":
         return []
+        
     elif option == "刪除照片":
         N_delete = delete_kudu_image(image_original_N)
         WM_delete = delete_kudu_image(image_original_WM)
@@ -1227,6 +1294,7 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
             return  f"✅成功删除照片: {date}/{location}/{car}/{image}"
         else:
             return f"⚠️警告：非完整/無法删除照片: {date}/{location}/{car}/{image}"
+            
     else:    
         return []
 
