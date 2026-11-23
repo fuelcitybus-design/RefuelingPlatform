@@ -1128,7 +1128,7 @@ def update_preview(date, location, car, image):
 
 def update_gallery_newPreview(date, location, car, tank, image):
     try:
-        url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}_{tank}/{image}"
+        url = f"{ROOT_FOLDER_WM}/{date}/{location}/{car}_{tank}/{image}.jpg"
         response = requests.get(url, auth=auth, timeout=10)
         if response.status_code == 200:
             os.makedirs("kudu_cache", exist_ok=True)
