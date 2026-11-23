@@ -1225,7 +1225,7 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
         WM_delete = delete_kudu_image(image_original_WM)
         if N_delete == True and WM_delete == True:
             return  f"✅成功删除照片: {date}/{location}/{car}/{image}"
-        else
+        else:
             return f"⚠️警告：非完整/無法删除照片: {date}/{location}/{car}/{image}"
     else:    
         return []
