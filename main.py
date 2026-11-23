@@ -1175,6 +1175,13 @@ def option_director(date, location, cartank, image, option):
 abnormal_count = 0
 
 def update_image_adjust_dropdown(location, car):
+    if location == "{請選擇}":
+        return gr.update(
+            choices="",
+            value="",
+            label="照名",
+            interactive=False
+        )
     image_choices = tab_list_S.get(location, ["{請選擇}"])
     if car == "每日開油單":
         return gr.update(
