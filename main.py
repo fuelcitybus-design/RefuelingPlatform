@@ -1194,10 +1194,13 @@ def option_director(date, location, cartank, image, option):
 
 def adjust_execute(date, location, car, tank, image, option):
     if option == "調換照片":
+        return []
     elif option == "改數值":
+        return []
     elif option == "刪除照片":
-        
-    return []
+        return [] 
+    else:    
+        return []
 
 #=========================================================================================================================
 
