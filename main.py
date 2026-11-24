@@ -1268,7 +1268,7 @@ def option_director(date, location, cartank, image, option):
             msg
           )
 
-def adjust_execute(date, location, car, image, date_new, location_new, car_new, tank_new, image_new, option):
+def adjust_execute(date, location, car, image, date_new, location_new, car_new, tank_new, image_new, value_adjust, option):
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
     date_new = date_str = datetime.fromtimestamp(date_new).strftime('%Y-%m-%d')
     image_original_N = f"{ROOT_FOLDER}/{date}/{location}/{car}/{image}"
@@ -1285,6 +1285,9 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
             return f"⚠️警告：非完整/無法調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
             
     elif option == "改數值":
+        value_tab = image.rsplit(".", 1)[0].split("_", 1)[0]
+        new_name = f"{value_tab}_{value_adjust}.jpg"
+        kudu_rename(image_original_N, new_name)
         return []
         
     elif option == "刪除照片":
@@ -2154,6 +2157,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 fn = adjust_execute,
                 inputs = [date_picker, location_dropdown2, car_dropdown2, image_dropdown2, 
                           date_picker_new, location_dropdown2_new, car_dropdown2_new, tank_dropdown2_new, image_dropdown2_new, 
+                          value_adjust,
                           option_dropdown2],
                 outputs = adjust_message
             )
