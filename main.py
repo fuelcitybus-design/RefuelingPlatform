@@ -1972,7 +1972,6 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 fn=save_images,
                 inputs=[location_dropdown, car_dropdown, tank_dropdown] + image_inputs,
                 outputs=output_text,
-                concurrency_limit=1
             )
             
             confirm_btn.click(
@@ -2300,9 +2299,9 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
         """
 
 # Enable Gradio queue (compatibility fallback)
-try:
-    demo.queue(concurrency_count=4)
-except TypeError:
-    demo.queue()
+#try:
+    #demo.queue(concurrency_count=4)
+#except TypeError:
+    #demo.queue()
 
 app = gr.mount_gradio_app(app, demo, path="/",max_file_size="10MB")
