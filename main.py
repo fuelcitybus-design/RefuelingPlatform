@@ -1280,15 +1280,20 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
         N_swap = kudu_swap_images(image_original_N, image_new_N)
         WM_swap = kudu_swap_images(image_original_WM, image_new_WM)
         if N_swap == True and WM_swap == True:
-            return  f"✅成功調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
+            return  f"✅成功調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg
+                    \nℹ️若調換「油車油錶」請重新進行AI處理。"
         else:
             return f"⚠️警告：非完整/無法調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
             
     elif option == "改數值":
         value_tab = image.rsplit(".", 1)[0].split("_", 1)[0]
         new_name = f"{value_tab}_{value_adjust}.jpg"
-        kudu_rename(image_original_N, new_name)
-        return []
+        N_revalue = kudu_rename(image_original_N, new_name)
+        WM_revalue = kudu_rename(image_original_WM, new_name)
+        if N_revalue == True and WM_revalue == True:
+            return  f"✅成功更改數值: {date}/{location}/{car}/{new_name}"
+        else:
+            return f"⚠️警告：非完整/無法更改數值: {date}/{location}/{car}/{new_name}"
         
     elif option == "刪除照片":
         N_delete = delete_kudu_image(image_original_N)
