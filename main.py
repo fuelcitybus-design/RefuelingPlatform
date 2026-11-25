@@ -1280,8 +1280,7 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
         N_swap = kudu_swap_images(image_original_N, image_new_N)
         WM_swap = kudu_swap_images(image_original_WM, image_new_WM)
         if N_swap == True and WM_swap == True:
-            return  f"✅成功調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg
-                    \nℹ️若調換「油車油錶」請重新進行AI處理。"
+            return  f"✅成功調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg\nℹ️若調換「油車油錶」請重新進行AI處理。"
         else:
             return f"⚠️警告：非完整/無法調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg"
             
