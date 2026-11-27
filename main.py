@@ -172,6 +172,18 @@ tab_list_S = {
         "WCD黃竹坑": ["油尺前", "封條(旗仔)", "油車油錶前", "油車油錶後", "油尺後", "收據"],
         "WKD西九": ["車廠油錶前", "封條(旗仔)", "油車油錶前", "油車油錶後", "車廠油錶後", "收據"]}
 
+adjust_key = {
+        "CFD創富": "CFD2026!",
+        "CWD柴灣": "CWD2026@",
+        "SHD小蠔灣": "SHD2026#",
+        "SWD上環": "SWD2026$",
+        "TCD東涌": "TCD2026%",
+        "TKD將軍澳": "TKD2026^",
+        "TMD屯門": "TMD2026&",
+        "WCD黃竹坑": "WCD2026*",
+        "WKD西九": "WKD2026("
+        }
+
 required_tabs = ["油車油錶前", "油車油錶後"]
 forced_check = False
 ROOT_FOLDER = f"https://{KUDU_HOST}/api/vfs/data"
@@ -1285,6 +1297,11 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
                 kudu_rename(item, "油車油錶前.jpg")
             if "油車油錶後" in item:
                 kudu_rename(item, "油車油錶後.jpg")
+        print(
+                    f"{N_swap}{WM_swap}",
+                    file=sys.stderr,
+                    flush=True
+                )
         if N_swap == True and WM_swap == True:
             return  f"✅成功調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg\nℹ️若調換「油車油錶」請重新進行AI處理。"
         else:
