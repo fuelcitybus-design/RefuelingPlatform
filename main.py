@@ -1279,6 +1279,12 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
     if option == "調換照片":
         N_swap = kudu_swap_images(image_original_N, image_new_N)
         WM_swap = kudu_swap_images(image_original_WM, image_new_WM)
+        file_list = [image_original_N, image_new_N, image_original_WM, image_new_WM]
+        for item in file_list:
+            if "油車油錶前" in item:
+                kudu_rename(item, "油車油錶前.jpg")
+            if "油車油錶後" in item:
+                kudu_rename(item, "油車油錶後.jpg")
         if N_swap == True and WM_swap == True:
             return  f"✅成功調換照片: {date}/{location}/{car}/{image} & {date_new}/{location_new}/{car_new}_{tank_new}/{image_new}.jpg\nℹ️若調換「油車油錶」請重新進行AI處理。"
         else:
