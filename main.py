@@ -1240,7 +1240,7 @@ def delete_kudu_image(file_url):
 def option_director(date, location, cartank, image, option):
     msg = ""
     selected_option = ""
-    vis_toggle = [0,0,0,0,0,0,0,0]
+    vis_toggle = [0,0,0,0,0,0,0,0,0,0]
     if image == None or image == "沒有記錄":
         msg = "⚠️警告：請選擇有效照片"
     else:
@@ -1249,6 +1249,7 @@ def option_director(date, location, cartank, image, option):
             for i in range(6):
                 vis_toggle[i] = 1
             vis_toggle[7] = 1
+            vis_toggle[8] = 1
             msg = "ℹ️調換照片：選擇調換對象"
         elif option == "改數值":
             if not("油車油錶" in image):
@@ -1257,10 +1258,12 @@ def option_director(date, location, cartank, image, option):
                 selected_option = option
                 vis_toggle[6] = 1
                 vis_toggle[7] = 1
+                vis_toggle[8] = 1
                 msg = "ℹ️改數值：輸入新油數"
         elif option == "刪除照片":
             selected_option = option
             vis_toggle[7] = 1
+            vis_toggle[8] = 1
             msg = "ℹ️刪除照片：確認刪除這張相片？(按 確認修改)"
         else:
             selected_option = ""
@@ -1275,10 +1278,11 @@ def option_director(date, location, cartank, image, option):
             gr.update(visible=bool(vis_toggle[5])),
             gr.update(visible=bool(vis_toggle[6])),
             gr.update(visible=bool(vis_toggle[7])),
+            gr.update(visible=bool(vis_toggle[8])),
             msg
           )
 
-def adjust_execute(date, location, car, image, date_new, location_new, car_new, tank_new, image_new, value_adjust, option):
+def adjust_execute(date, location, car, image, date_new, location_new, car_new, tank_new, image_new, value_adjust, password, option):
     date = datetime.fromtimestamp(date).strftime('%Y-%m-%d')
     date_new = date_str = datetime.fromtimestamp(date_new).strftime('%Y-%m-%d')
     image_original_N = f"{ROOT_FOLDER}/{date}/{location}/{car}/{image}"
@@ -2166,6 +2170,8 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
             with gr.Row():
                  value_adjust = gr.Textbox(value=None, label=f"改數值", visible=False, elem_id = "value_adjust")
             with gr.Row():
+                 password = gr.Textbox(value=None, label=f"廠專屬密碼", visible=False, elem_id = "password")
+            with gr.Row():
                 confirmReal_btn = gr.Button(
                     value = "✅確認修改",
                     visible=False
@@ -2184,6 +2190,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                     image_dropdown2_new,
                     gallery_newPreview,
                     value_adjust,
+                    password,
                     confirmReal_btn,
                     adjust_message
                 ]
@@ -2193,7 +2200,7 @@ with gr.Blocks(head=prefer_back_camera(), css="#status-bar { font-weight: bold; 
                 fn = adjust_execute,
                 inputs = [date_picker, location_dropdown2, car_dropdown2, image_dropdown2, 
                           date_picker_new, location_dropdown2_new, car_dropdown2_new, tank_dropdown2_new, image_dropdown2_new, 
-                          value_adjust,
+                          value_adjust,password,
                           option_dropdown2],
                 outputs = adjust_message
             )
