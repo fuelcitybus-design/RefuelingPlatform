@@ -1466,6 +1466,8 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
         ocr_number = ocr_from_kudu(file_url)
         new_name = f"X_油車油錶前_{ocr_number}.jpg" if int(ocr_number) != 0 else f"油車油錶前_{ocr_number}.jpg"
         kudu_rename(file_url, new_name)
+        const file_url_WM = file_url.replace('/data/', '/data_WM/')
+        kudu_rename(file_url_WM, new_name)
         num_analysis += 1
 
     # 油車後
@@ -1473,6 +1475,8 @@ def analysis_rename(location, request: gr.Request, root_folder_O=ROOT_FOLDER):
         ocr_number = ocr_from_kudu(file_url)
         new_name = f"X_油車油錶後_{ocr_number}.jpg" if int(ocr_number) < 6000 else f"油車油錶後_{ocr_number}.jpg"
         kudu_rename(file_url, new_name)
+        const file_url_WM = file_url.replace('/data/', '/data_WM/')
+        kudu_rename(file_url_WM, new_name)
         num_analysis += 1
 
     # Collect abnormal entries
@@ -1587,6 +1591,8 @@ def collect_all_texts(request: gr.Request, abnormal_list, *args):
             num_update += 1
         viewed += 1
         kudu_rename(file_url, new_name)
+        const file_url_WM = file_url.replace('/data/', '/data_WM/')
+        kudu_rename(file_url_WM, new_name)
 
     if abnormal_count > 10:
         result = analysis_rename(location=None, request=request, root_folder_O=ROOT_FOLDER)
