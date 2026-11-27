@@ -1291,10 +1291,16 @@ def adjust_execute(date, location, car, image, date_new, location_new, car_new, 
         WM_swap = kudu_swap_images(image_original_WM, image_new_WM)
         file_list = [image_original_N, image_new_N, image_original_WM, image_new_WM]
         for item in file_list:
-            if "油車油錶前" in item:
-                kudu_rename(item, "油車油錶前.jpg")
-            if "油車油錶後" in item:
-                kudu_rename(item, "油車油錶後.jpg")
+            filename = item.rsplit("/", 1)[-1]
+            if "油車油錶前" in filename:
+                canonical_name = "油車油錶前.jpg"
+            elif "油車油錶後" in filename:
+                canonical_name = "油車油錶後.jpg"
+            else:
+                continue
+
+            if filename != canonical_name:
+                kudu_rename(item, canonical_name)
         print(
                     f"{N_swap}{WM_swap}",
                     file=sys.stderr,
