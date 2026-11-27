@@ -1202,7 +1202,7 @@ def kudu_swap_images(source_url, destination_url, timeout=15):
     destination_data = get_file(destination_url)
 
     if source_data is None and destination_data is None:
-        return "Neither path contains a file."
+        return False
 
     if source_data is not None and destination_data is not None:
         put_file(source_url, destination_data)
@@ -1211,7 +1211,7 @@ def kudu_swap_images(source_url, destination_url, timeout=15):
         except Exception:
             # Attempt to restore the source if the second write fails.
             put_file(source_url, source_data)
-            raise
+            return False
         return True
 
     if source_data is not None:
@@ -1219,9 +1219,7 @@ def kudu_swap_images(source_url, destination_url, timeout=15):
         delete_file(source_url)
         return True
 
-    put_file(source_url, destination_data)
-    delete_file(destination_url)
-    return True
+    return False
 
 
 def delete_kudu_image(file_url):
